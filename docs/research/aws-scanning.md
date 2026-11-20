@@ -6,37 +6,13 @@ Step 1 of the pipeline: get a full inventory with read-only credentials.
 - Ask the customer for an IAM user or role with the AWS managed policy `ReadOnlyAccess` (arn:aws:iam::aws:policy/ReadOnlyAccess). `SecurityAudit` alone misses some describe calls, so recommend both.
 - Better for real customers: a cross-account role with an `ExternalId` and `sts:AssumeRole`, so no long-lived keys are shared.
 - Never store keys, never log them, never send them to an LLM. Short-lived STS creds only in memory.
-- Scan every enabled region (`ec2.describe_regions(AllRegions=False)`): click-ops users often forget resources in other regions.
+- Click-ops users often forget resources in other regions, so offer `--all-regions` (see below).
 
-## Option A: Former2 (chosen dependency)
-Repo: https://github.com/iann0036/former2 (MIT), local copy in `corpus/tools/former2`.
+## Not used: Former2 and other AWS-to-Terraform tools
+Decision: we write our own boto3 scanner. Former2, aws2tf, Terraformer and terracognita all output AWS-provider Terraform, which is not what we need, and each has a blocker (Terraformer archived Mar 2026, terracognita pinned to AWS provider 4.9.0, Former2 browser-first with an "experimental" CLI on the end-of-support JS SDK v2, aws2tf needs Terraform 1.12 + AWS CLI v2 + jq and emits HCL, not an inventory).
+Former2 stays in `corpus/tools/former2` as a reference for what raw describe data looks like (`f2data` is the unmodified SDK response). Note from reading it: default VPC/SG resources are easy to skip by accident, and click-ops users often run everything in the default VPC, so our scanner must include them.
 
-Status (checked 2026-11-20):
-- Not archived or deprecated. Low maintenance: last commits July 2026 (region adds), CLI code last changed July 2024, 182 open issues.
-- The README calls the CLI "experimental, use at your own risk".
-- Depends on `aws-sdk` v2 for JS (AWS end-of-support Sept 2025). It still runs but gets no fixes.
-- Covers 148 service modules. Terraform output covers almost all our in-scope types, except `aws_db_instance`, which is missing from its TF output (CloudFormation `AWS::RDS::DBInstance` is covered). The raw data does include RDS (`f2type: 'rds.instance'`), which is why we consume raw data, not its HCL.
-
-Run (Docker, since node/npm isn't installed on dev machines here; use podman if docker needs root):
-```bash
-docker build https://github.com/iann0036/former2.git#master:cli -t former2:local
-docker run --rm -t -v "$PWD":/former2 -v ~/.aws:/root/.aws:ro former2:local generate \
-  --output-raw-data raw.json \
-  --output-terraform aws.tf \
-  --region eu-west-1 \
-  --exclude-services "CloudWatch,KMS"
-```
-Useful flags: `--services`, `--exclude-services`, `--search-filter`, `--regex-filter`, `--profile`, `--region`, `--include-default-resources`, `--sort-output`.
-
-Raw output shape (from `cli/main.js`): a JSON array of
-```json
-{ "f2id": "...", "f2type": "ec2.instance", "f2data": { /* the original describe_* item */ }, "f2region": "eu-west-1" }
-```
-`f2data` is the unmodified SDK response, so our IR adapter maps the same fields as boto3 would. Verify the exact keys (`f2region` etc.) in spike 0.
-
-Known risks to check in spike 0: one region per run (loop over regions), errors are swallowed (`updateDatatable failed` only warns), default VPC/SG resources are skipped unless `--include-default-resources` (click-ops users often run everything in the default VPC, so we need this flag on).
-
-## Option B: native boto3 (fallback, and for the core services)
+## Our scanner: boto3
 Read-only calls per service. All are paginated, so use `get_paginator`.
 
 | Service | Calls | Gives us |
@@ -51,7 +27,9 @@ Read-only calls per service. All are paginated, so use `get_paginator`.
 | Cost | Cost Explorer `get_cost_and_usage` (needs `ce:GetCostAndUsage`, in ReadOnlyAccess) | real monthly AWS cost per service |
 | Pricing | `pricing.get_products` (us-east-1 endpoint) | list price per instance type, as a fallback |
 
-Testing without an account: `moto` mocks all of the above for boto3. It does not help with Former2, which needs real endpoints.
+Testing without an account: `moto` mocks all of the above for boto3.
+
+Regions: by default scan only `--region`. `--all-regions` loops over `ec2.describe_regions(AllRegions=False)`, slower but catches forgotten resources.
 
 ## Dependency edges to build (step 2)
 | From | To | Field |

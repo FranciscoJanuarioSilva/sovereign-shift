@@ -53,7 +53,8 @@ Data sources: `dedicated_server(s)`, `dedicated_server_operating_systems`, `dedi
 - No block volumes (only `root_disk_size` 5-1000 GB with `root_disk_storage_type` LOCAL or CENTRAL).
 - No object storage. v1.32.0 (2026-10-19) added `object_storage_bucket/_user/_group/_access_key`, but v1.32.1 reverted it: "Object storage isn't yet completely ready to use in Terraform" (PR #599). Expect it to come back. Until then, use the S3-compatible API (see `leaseweb-platform.md`).
 - No managed DB, queues, functions, CDN, IAM or Kubernetes resources.
-- No load balancer to target-group membership resource in the docs. Check `docs/schemas/leaseweb.json` before emitting targets.
+- No target group membership. Confirmed in the schema and in `target_group_resource.go` (attributes `id, name, protocol, port, region, health_check` only). The API can do it (`registerTargets`), so finalize does.
+- Security groups and firewall rules: also API only. See `leaseweb-api.md`.
 
 ## Key attributes
 
@@ -78,7 +79,8 @@ resource "leaseweb_public_cloud_instance" "web" {
 ```
 - Valid `region` values: `eu-west-3`, `us-east-1`, `eu-central-1`, `ap-southeast-1`, `us-west-1`, `eu-west-2`, `ca-central-1`, `ap-northeast-1`.
 - Valid `type` values: families `lsw.m*` (general), `lsw.c*` (compute), `lsw.r*` (memory), `lsw.g6.*`, `lsw.gr6.*` (GPU), with generations 3, 4, 5, 5a, 6a and sizes large to 24xlarge. Full list in the schema dump.
-- Gotcha: `ssh_key` and `user_data` can't both be set. If the AWS instance has both, inject the key into cloud-init `user_data`.
+- Gotcha: `ssh_key` and `user_data` can't both be set. We always use `user_data` (cloud-init brings up `eth1` too) and put the key in it.
+- `user_data` is sent as plain text, not base64 (SDK `model_launch_instance_opts.go`).
 - Gotcha: the `image.id` values are Leaseweb OS ids like `UBUNTU_22_04_64BIT`, not AMIs. Map the AMI's OS family to the closest id (list via the `leaseweb_public_cloud_images` data source).
 
 ### `leaseweb_public_cloud_load_balancer_listener`
@@ -90,13 +92,15 @@ resource "leaseweb_public_cloud_instance" "web" {
 ### `leaseweb_dns_resource_record_set`
 `domain_name`, `name` (FQDN with trailing dot), `type` (A, AAAA, CAA, CNAME, MX, NS, SRV, TXT, SOA, DS, TLSA), `content` (list), `ttl` (one of 60, 300, 1800, 3600, 14400, 28800, 43200, 86400, so round the AWS TTL to the nearest one). Route 53 alias records have no equivalent: resolve the alias to the new LB IP (A record) or a CNAME.
 
-## Platform caveat: old vs new Public Cloud
+## Plan and validate
+- `terraform validate` needs no token.
+- Provider Configure fails without a token ("Missing Leaseweb API token") but makes no API call, and the instance and target group resources only have static validators. So `plan` for new resources should work with `LEASEWEB_TOKEN=dummy`. Verify on the VM.
 
-The provider's public cloud resources take the 8 AWS-style region codes above. These match the old Leaseweb Public Cloud platform (EC2-compatible API, multi-region). The new Public Cloud platform (NL only for now, AZs `eu-west-3-az1/az2`) is OpenStack-based: networks, routers, subnets, security groups, volumes, and Octavia-style load balancers with pools and `TERMINATED_HTTPS`. These are reachable through the OpenStack API, so the `terraform-provider-openstack/openstack` provider is the likely way to get networking and security groups on the new platform.
-Open question to ask Leaseweb at the hackathon: which platform does `leaseweb_public_cloud_*` target today, and what is the Keystone auth URL for the new platform? See `leaseweb-platform.md`.
+## Platform: which one the provider hits
+The provider calls the Leaseweb REST API `https://api.leaseweb.com/publicCloud/v1` through `leaseweb-go-sdk/publiccloud` (`internal/provider/client/client.go`). There's no OpenStack or Keystone code. The KB describes a new OpenStack-based platform (NL, AZs `eu-west-3-az1/az2`) and an old one, and doesn't say which one `publicCloud/v1` serves. For us it doesn't matter: we target the provider and the same REST API. `GET /regions` with the token shows what's available.
 
-## OpenStack provider (fallback target)
-Schema subset in `docs/schemas/openstack-subset.json` (provider v3.4.0). Relevant resources: `openstack_compute_instance_v2`, `openstack_networking_{network,subnet,router,router_interface,secgroup,secgroup_rule,floatingip,port}_v2`, `openstack_blockstorage_volume_v3`, `openstack_lb_{loadbalancer,listener,pool,member,monitor}_v2`. These cover exactly the gaps in the Leaseweb provider (VPC, SG, EBS, ALB internals).
+## OpenStack provider (roadmap only)
+Schema subset in `docs/schemas/openstack-subset.json` (provider v3.4.0), kept for reference. The MVP doesn't target it.
 
 ## Real-world usage found
 Almost none on GitHub. `remerge/terraform-modules` (`leaseweb/server/installation`, `op/host/leaseweb`) is the only external repo found using the provider. Use the provider's own `examples/` as few-shot material.

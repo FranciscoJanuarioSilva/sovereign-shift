@@ -49,12 +49,14 @@ Sources: https://kb.leaseweb.com/kb/object-storage/object-storage-overview/, htt
 - Products: Reserved (500 GB to 1 PB, 100 GB steps, 1 month to 3 year terms) and On Demand. Usage (storage, egress, API calls) is billed on top. Unit prices are only in the ordering API (`https://api.leaseweb.com/ordering/v1`).
 - Management API: `/objectStorage/v1/objectStorages` (buckets, users, groups, access keys).
 - Locations (ordering page): AMS-01, FRA-01, LON-01, MTL-02, SIN-01, WDC-02. Orders are limited to the API key's Leaseweb entity, and new customers need KYC.
-- Terraform: the native resources were reverted in provider v1.32.1. For now, emit buckets with the `aws` provider pointed at the Leaseweb endpoint (`endpoints { s3 = "https://nl.object-storage.io" }`, `s3_use_path_style = true`, `skip_credentials_validation`, `skip_requesting_account_id`, `skip_region_validation`) or with the `minio` provider. To validate in the spike: not confirmed by Leaseweb docs yet.
+- Terraform: the native resources were reverted in provider v1.32.1. MVP: bucket creation and copy with rclone in the runbook. Untested idea for later: the `aws` provider pointed at the Leaseweb endpoint (`endpoints { s3 = "https://nl.object-storage.io" }`, `s3_use_path_style = true`, `skip_credentials_validation`, `skip_requesting_account_id`, `skip_region_validation`) or the `minio` provider.
 
 ## Networking
 - Leaseweb VPC (https://kb.leaseweb.com/kb/leaseweb-vpc/leaseweb-vpc-overview/): "first release phase", set up via support ticket. L2 isolated or L3 routed networks (up to 5, no ACLs between them). Connects dedicated servers and public cloud. Network ACLs and security groups are "available in a future release".
 - Private Network (https://kb.leaseweb.com/kb/private-network/private-network-overview/): metro-wide L2, free traffic within a metro. Connects dedicated servers, colocation, public cloud, Elastic Compute, VMware and file/block storage. Doesn't connect object storage or VPS. Default DHCP /27, max /24, jumbo frames.
-- Conclusion for the tool: AWS VPC/subnets/SGs have no 1:1 Terraform target in the Leaseweb provider. Emit them as OpenStack networking resources (new platform), or as cloud-init firewall rules (ufw/nftables) plus a manual note.
+- Public cloud private network inside the instance: interface `eth1`, not up by default, DHCP must be configured (netplan/nmcli). Source: https://kb.leaseweb.com/kb/public-cloud/public-cloud-adding-public-cloud-instance-to-private-network/
+- Each instance has its own security group, "IP-table based", rules managed in the portal "or via the API", default rule ALL from 0.0.0.0/0. Source: https://kb.leaseweb.com/kb/public-cloud/public-cloud-managing-firewall-of-public-cloud/
+- Conclusion for the tool: VPC/subnets collapse to the private network (`has_private_network`). Security groups go to the Public Cloud API through finalize (`leaseweb-api.md`).
 
 ## Databases
 No managed Postgres/MySQL product found in the KB navigation. Treat RDS as "self-host on an instance" (cloud-init installs Postgres/MySQL, plus a backup cron to object storage), or "Managed Kubernetes + operator" for bigger setups. Confirm with Leaseweb staff.
@@ -84,9 +86,11 @@ Source: https://kb.leaseweb.com/kb/compliance-security/security-certifications/
 - Leaseweb Global B.V. is Dutch-headquartered. EU ownership and GDPR statements weren't on the pages read, so cite their own site before using it in the pitch.
 - Note for the "EU sovereign" story: the US/SG/CA entities exist, so recommend NL/DE entities and EU locations only.
 
-## Open questions for Leaseweb staff
-1. Which platform does `leaseweb_public_cloud_*` hit, and is the new NL platform in the provider?
-2. Keystone/OpenStack auth URL and region name for the new platform. Can customers use the OpenStack Terraform provider?
-3. Price list API for public cloud instance types (for the cost report).
-4. ETA for object storage in the provider.
-5. Any managed database on the roadmap?
+## Answered by reading the SDK (see `leaseweb-api.md`)
+- The provider uses the `publicCloud/v1` REST API, not OpenStack.
+- Prices come from `GET /instanceTypes` (`prices.hourly`, `prices.monthly`).
+
+## Still open (nice to know, not blocking)
+1. ETA for object storage in the provider.
+2. Any managed database on the roadmap?
+3. Load balancer prices.

@@ -2,10 +2,8 @@
 
 Provider `hashicorp/aws` v6.73.0 (schema dump 2026-11-20). In-scope schemas are in `docs/schemas/aws-subset.json`. Full docs for each resource are in `corpus/aws/terraform-provider-aws/website/docs/r/`.
 
-We don't need to parse AWS HCL in the main flow (we scan the live account), but we use it for:
-- the Terraform-customer path (`sovereign-shift convert ./infra`), a cheap extra since the mapping is the same,
-- golden tests: corpus examples -> IR -> Leaseweb,
-- the side-by-side diff in the TUI (Former2's `aws.tf` vs our Leaseweb output).
+We don't parse AWS HCL in the MVP (we scan the live account). This file is reference for the scanner's field names and for golden tests.
+Roadmap, not MVP: a path for customers who already have AWS Terraform (`sovereign-shift convert ./infra`), since the mapping is the same.
 
 ## HCL basics an agent needs
 - Blocks: `terraform {}`, `provider "aws" { region = ... }`, `resource "<type>" "<name>" {}`, `data "<type>" "<name>" {}`, `variable`, `output`, `locals`, `module`.

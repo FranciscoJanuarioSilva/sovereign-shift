@@ -9,6 +9,9 @@ Four jobs. Everything else is deterministic.
 
 `--no-ai` produces the full output with template defaults, and the report lists the gaps as manual work.
 
+## Provider choice
+The team picks the provider and key. Notes below are on the options we looked at.
+
 ## OpenRouter, with EU in-region routing
 Sources: https://openrouter.ai/docs/guides/features/in-region-routing, https://openrouter.ai/docs/guides/features/sovereign-ai, https://openrouter.ai/blog/announcements/us-in-region-routing (checked 2026-11-20)
 - Base URL `https://eu.openrouter.ai/api/v1`. Prompts and completions are decrypted in the EU and only sent to providers in the EU/EEA, UK or Switzerland. Same API key and model ids, smaller model list.
@@ -22,7 +25,7 @@ Sources: https://openrouter.ai/docs/guides/features/in-region-routing, https://o
 - Config: `SOVEREIGN_AI_BASE_URL`, `SOVEREIGN_AI_API_KEY`, `SOVEREIGN_AI_MODEL`, with optional per-agent overrides.
 - Structured output with a JSON schema on every call. Validate with pydantic. On failure, retry once, then fall back (see each agent).
 - **Cache** every response keyed by a hash of its input, in `out/.cache/`. The demo replays cached answers, so it doesn't depend on network or model speed.
-- **Redaction** before every call: keys, passwords, tokens, `user_data` secrets, account IDs, IP addresses. The model only sees resource metadata.
+- **Redaction** before every call: keys, passwords, tokens, `user_data` contents, account IDs, host IP addresses. Keep CIDRs in security group rules: the reviewer needs them. The model only sees resource metadata.
 
 ## Agents (plain Python, no framework)
 
@@ -33,17 +36,17 @@ Sources: https://openrouter.ai/docs/guides/features/in-region-routing, https://o
 
 ### 2. Runbook
 - Input: one mapped resource, the template steps for its type from `runbook/templates/`, and the target Leaseweb values.
-- Output: `{steps: [{id, order, inputs}], notes[], not_capable[]}`. The agent never writes a command. Commands are filled from templates by our code.
-- Validator: step ids must exist in the template, placeholders must be sourced (inventory or `<CUSTOMER: ...>`), and the final command must match the template exactly. Anything else is dropped.
+- Output: step ids in order, input values, notes, `not_capable[]` (shape in `docs/contracts.md`). The agent never writes a command. Our code renders commands from the templates.
+- Validator: step ids must exist in the template and inputs must be declared in it. Customer inputs always render as `<CUSTOMER: ...>`. Anything else is dropped.
 - Fallback: template default steps, flagged `generated_by: template-default`.
 
 ### 3. Reviewer
-- Input: the nftables rules generated from security groups, and the source SG rules.
+- Input: the Leaseweb security group rules from `finalize.json`, and the source AWS SG rules.
 - Output: `{ok, issues: [{rule, problem, suggested_change}]}`. Suggested changes are shown to the user. They are not applied automatically.
-- Fallback: rules ship as generated, marked "unreviewed".
+- Fallback: rules are applied as generated, marked "unreviewed".
 
 ### 4. Explainer
-- Input: the final report JSON.
+- Input: `report.json`. Cut first if time runs short.
 - Output: a short summary, plus an optional architecture paragraph from the graph. English by default, Portuguese on request.
 - Fallback: no summary section.
 

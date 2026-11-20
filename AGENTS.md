@@ -5,15 +5,16 @@ Guide for AI coding agents and humans working on sovereign-shift. Read `PLAN.md`
 ## What this is
 sovereign-shift scans a "ClickOps" AWS account (built in the console, no IaC) with read-only credentials. It rebuilds the dependency graph, translates to Leaseweb, and writes:
 - Leaseweb Terraform,
+- `finalize.json`: Leaseweb API calls Terraform can't make (security groups, LB targets), run by `sovereign-shift finalize` after `terraform apply`,
 - a graph,
 - an AI-personalised data migration runbook,
-- one HTML report with cost, manual work and security findings.
+- a report (`report.md` + `report.json`) with cost, manual work and security findings.
 
 Built for a 5-hour hackathon build. Scope and priorities are in `PLAN.md`.
 
 ## Read before working
 - `PLAN.md`: scope, pipeline, runbook design, AI use, timeline.
-- `docs/contracts.md`: JSON shapes for `inventory.json`, `graph.json`, `mapping.json`, `runbook.json`. Keep them stable.
+- `docs/contracts.md`: JSON shapes for every file between steps. Keep them stable.
 - `docs/research/README.md`: index of facts about AWS and Leaseweb. Check it before guessing.
 - `docs/schemas/*.json`: exact provider schemas. Never emit an attribute that isn't in them.
 
@@ -21,15 +22,17 @@ Built for a 5-hour hackathon build. Scope and priorities are in `PLAN.md`.
 ```
 sovereign_shift/
   scanner/      # boto3 describe/list calls -> inventory
-  graph/        # relationships from IDs (networkx)
+  graph/        # relationships from IDs (networkx) + security checks
   translator/   # rules from mappings/, then AI for unmappable resources
-  generator/    # Jinja2 templates -> Terraform, nftables cloud-init
-  runbook/      # template library + runbook agent + validator
+  generator/    # Jinja2 templates -> Terraform + cloud-init, and finalize.json
+  finalize/     # Leaseweb REST API calls after terraform apply (SGs, LB targets)
+  runbook/      # renders commands from templates + validator
   ai/           # OpenAI-compatible client, redaction, agent prompts
-  report/       # static HTML report
+  report/       # report.json + report.md (Mermaid graph)
   cli.py        # typer
   prompts/      # plain-text prompt files, one per agent
 mappings/       # YAML: instance types, regions, services, security rules
+data/           # leaseweb_catalog.json (from the API), aws_prices.json
 runbook/templates/  # YAML: allowed runbook steps per resource type
 docs/           # research, contracts, schemas
 scripts/        # fetch-corpus.sh, extract_schemas.py
@@ -39,7 +42,7 @@ corpus/         # reference repos, gitignored
 ```
 
 ## Stack
-Python 3.11+, boto3, pydantic, networkx, typer, jinja2, openai SDK (custom `base_url`), pytest, moto. No Textual, no FastAPI in the MVP.
+Python 3.11+, boto3, pydantic, networkx, typer, jinja2, openai SDK (custom `base_url`), httpx (Leaseweb API), pytest, moto. No Textual, no FastAPI in the MVP.
 
 ## Commands
 ```bash
@@ -47,23 +50,27 @@ Python 3.11+, boto3, pydantic, networkx, typer, jinja2, openai SDK (custom `base
 pytest
 sovereign-shift scan --profile readonly --region eu-west-1
 sovereign-shift all --from-snapshot examples/sample_inventory.json --no-ai --out out/
+sovereign-shift finalize --out out/ --dry-run      # after terraform apply; drop --dry-run to call the API
 ```
 Terraform isn't installed on this machine. Run it through the container:
 `podman run --rm -v "$PWD/out/terraform":/w:Z -w /w docker.io/hashicorp/terraform:1.9.8 validate`
 
 ## Rules
 - **Deterministic first.** Rules and templates produce the Terraform, the firewall config and the cost table. AI only handles resources with no Leaseweb equivalent, the runbook personalisation, and summaries.
-- **AI never writes HCL or firewall rules.** It returns JSON, validated with pydantic. The generator writes the files.
-- **Runbook commands come only from `runbook/templates/`.** The runbook agent may choose steps, order them, fill placeholders and add notes. It may not write commands. The validator rejects any step id not in the library, any command that differs from its template, and any placeholder it can't source.
+- **AI never writes HCL, firewall rules or commands.** It returns JSON, validated with pydantic. Our code writes the files.
+- **Runbook commands come only from `runbook/templates/`.** The runbook agent returns step ids, their order, input values and notes. Our code renders the commands from the templates. The validator rejects any step id not in the library and any input that isn't from inventory or marked `<CUSTOMER: ...>`.
 - **AI can claim a capability only when a template exists.** Resources without a template go to the manual section, with prose only.
 - **Every AI output is marked** `ai-suggested` in the generated files and report, with its justification.
 - **Everything generated must pass `terraform validate`.** Nothing is silently dropped. Anything unmapped goes into the report.
 - **`--no-ai` must always work**, offline, from a snapshot.
 - **AWS access is read-only.** Never write to the customer's account. Never store or log credentials.
-- **No secrets to the LLM.** Redact keys, passwords, tokens, `user_data` secrets and account IDs before every call. Runbooks show `<CUSTOMER: ...>` placeholders, never values.
-- **Default AI endpoint:** OpenRouter EU (`https://eu.openrouter.ai/api/v1`). Keep the base URL configurable.
+- **No secrets to the LLM.** Redact keys, passwords, tokens, `user_data` contents, account IDs and host IPs before every call. Keep CIDRs in security group rules (the reviewer needs `0.0.0.0/0`). Runbooks show `<CUSTOMER: ...>` placeholders, never values.
+- **AI endpoint:** OpenAI-compatible, base URL, key and model from env vars. The team picks the provider.
 - **Region trap:** Leaseweb `eu-west-3` is Amsterdam, AWS `eu-west-3` is Paris. Always map through `mappings/regions.yaml`.
 - **Elastic IPs are manual.** `leaseweb_public_cloud_ip` doesn't reserve addresses.
+- **Security groups and LB targets go through finalize**, never Terraform (the provider has no resources for them). Leaseweb firewall rules only take CIDRs, so SG-to-SG rules become /32 rules on the source instances' private IPs, resolved after apply. See `docs/research/leaseweb-api.md`.
+- **`user_data` is plain text**, not base64. It always brings up `eth1` (private network) with DHCP and carries the SSH key, since `ssh_key` and `user_data` can't both be set.
+- **LB backends need `has_private_network = true`**, or they can't be registered as targets.
 - **Facts in docs need a source URL and a date.** Mark unverified things "verify".
 
 ## Code style
@@ -73,4 +80,4 @@ Terraform isn't installed on this machine. Run it through the container:
 ## Git
 - Plain commit messages. No `Co-Authored-By` trailers, and no mention of Anthropic or Claude in commits or PRs.
 - Don't commit `corpus/`, `out/`, `*.tfvars`, `*.tfstate*`, real `raw.json` or `inventory.json`, or `.env`.
-- License: pending. See the open question in `PLAN.md`.
+- License: Apache-2.0.

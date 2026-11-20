@@ -1,3 +1,5 @@
+> Superseded by `PLAN.md` and `AGENTS.md`. Kept as the original brief.
+
 # sovereign-shift: project brief
 
 ## Context

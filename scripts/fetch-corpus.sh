@@ -53,7 +53,7 @@ for m in vpc ec2-instance security-group alb rds s3-bucket; do
   clone "terraform-aws-modules/terraform-aws-$m" "$dest/aws/terraform-aws-$m"
 done
 
-# tools we depend on or compare against
+# tools we compare against (reference only, not dependencies)
 clone iann0036/former2 "$dest/tools/former2"
 
 echo "done, corpus in $dest"
