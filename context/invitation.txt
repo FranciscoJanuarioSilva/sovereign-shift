@@ -1,0 +1,36 @@
+Hackathon Portugal 2026
+
+Hackathon Theme
+
+The theme of this event will be “InfraHack: AI for Cloud Infrastructure”.
+
+InfraHack explores how AI can be used to make cloud infrastructure smarter, safer, more efficient and more independent, with a focus on cloud operations, security, data protection, and migration.
+
+AI for cloud infrastructure is the focus, and we want participants to demonstrate a creative mindset and ability to problem-solve in a collaborative environment.
+
+We want to see a showcase of knowledge and understanding, with considerations including factors such as data protection, cloud security, and sovereign cloud.
+
+Do you have an idea for hyperscaler alternatives, infrastructure automation, or more secure cloud operations? Show us what you’ve got!
+
+The Evaluation Criteria
+
+• Innovation: the judges will be looking at originality, creativity, and the relevance of solutions submitted.
+• Applicability: consider real-world potential, ideally demonstrated through a prototype or demo.
+• Technical complexity: quality will be taken into account, along with implementation and use of AI and cloud infrastructure.
+• Presentation & clarity: there should be a demonstration of an ability to explain the problem, solution, technical approach, and impact.
+
+Who Can Participate
+
+This event is open to developers and tech professionals of all levels.
+
+You can register for free as a team of 3 to 5 people or as an individual who will be assigned to a team. Note: you will need to bring your own laptop.
+
+Agenda
+
+Date: November 20, 2026
+Location: DeHouse Picoas, Lisbon
+
+Schedule:
+• 08:00 - 16:00: Challenge
+• 16:00 - 17:00: Presentations, evaluation and awards
+• 17:00 - 19:00: Drinks and snacks
