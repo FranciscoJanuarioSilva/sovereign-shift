@@ -61,6 +61,8 @@ Every module reads and writes JSON files, so people can work in parallel from fi
 ```
 Resource types in the MVP: `ec2_instance`, `ebs_volume`, `elastic_ip`, `key_pair`, `vpc`, `subnet`, `security_group`, `lb`, `target_group`, `lb_listener`, `db_instance`, `s3_bucket`, `route53_zone`, `route53_record`. Anything else the scanner sees goes in with `"type": "other"` and `properties.aws_type`, so the report can list it.
 
+Cloudflare inventories use `source: cloudflare`, `regions: ["global"]`, the same relation shape, and resource types prefixed with `cloudflare_`. IDs begin with `cf:` and include the resource kind. Worker bindings retain their name and type through graph relations and resource nodes. Binding values, source code and stored application data are excluded. DNS record sets are grouped by zone, name and type. Account-level Cloudflare cost fields in the report use the `cloudflare_` prefix and the monthly total is null when billing is unknown.
+
 Secrets are never stored. `user_data` is stored only as a hash and a length. Public keys from `describe_key_pairs(IncludePublicKey=True)` are fine to store (they're public).
 
 ## graph.json (graph)

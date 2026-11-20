@@ -628,6 +628,14 @@ def elastic_ip(r: dict[str, Any], ctx: Context) -> MappingEntry:
     )
 
 
+def cloudflare_dns_record(r: dict[str, Any], ctx: Context) -> MappingEntry:
+    if props(r).get("manual_review") or props(r).get("record_type") not in {"A", "AAAA", "CNAME"}:
+        result = unsupported(r, ctx)
+        result.justification = "Review proxy behavior or record-specific settings before DNS cutover."
+        return result
+    return route53_record(r, ctx)
+
+
 RULES: dict[str, Callable[[dict[str, Any], Context], MappingEntry]] = {
     "ec2_instance": ec2_instance,
     "security_group": security_group,
@@ -636,6 +644,9 @@ RULES: dict[str, Callable[[dict[str, Any], Context], MappingEntry]] = {
     "lb_listener": lb_listener,
     "target_group": target_group,
     "s3_bucket": s3_bucket,
+    "cloudflare_r2_bucket": s3_bucket,
+    "cloudflare_dns_zone": route53_zone,
+    "cloudflare_dns_record": cloudflare_dns_record,
     "route53_record": route53_record,
     "route53_zone": route53_zone,
     "key_pair": key_pair,

@@ -16,6 +16,7 @@ from sovereign_shift.artifacts import read, save
 from sovereign_shift.finalize.apply import finalize
 from sovereign_shift.generator.build import generate
 from sovereign_shift.graph import build_graph, render_html
+from sovereign_shift.scanner import cloudflare
 from sovereign_shift.scanner.aws import scan
 from sovereign_shift.graph.security import findings
 from sovereign_shift.models import Inventory
@@ -36,12 +37,23 @@ def scan_command(
     profile: Annotated[str | None, typer.Option(help="AWS shared configuration profile.")] = None,
     region: Annotated[list[str] | None, typer.Option(help="AWS region to scan. Repeat for multiple regions.")] = None,
     out: Annotated[Path, typer.Option(help="Output directory.")] = Path("out"),
+    source: Annotated[str, typer.Option(help="Source cloud (aws or cloudflare).")] = "aws",
 ) -> None:
-    """Write inventory.json using read-only AWS calls."""
+    """Write inventory.json using read-only source API calls."""
     try:
-        if not region and os.getenv("AWS_REGION"):
-            region = [os.environ["AWS_REGION"]]
-        inventory = scan(boto3.Session(profile_name=profile), region)
+        if source == "cloudflare":
+            if profile or region:
+                raise typer.BadParameter("--profile and --region apply only to AWS")
+            inventory = cloudflare.scan()
+        elif source == "aws":
+            if not region and os.getenv("AWS_REGION"):
+                region = [os.environ["AWS_REGION"]]
+            inventory = scan(boto3.Session(profile_name=profile), region)
+        else:
+            raise typer.BadParameter("--source must be aws or cloudflare")
+    except cloudflare.ScanError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from None
     except ClientError as exc:
         typer.echo(f"AWS scan failed in {exc.operation_name}: {exc.response['Error']['Code']}", err=True)
         raise typer.Exit(1) from None
@@ -145,13 +157,14 @@ def all_command(
     target_region: Annotated[str | None, typer.Option()] = None,
     out: Annotated[Path, typer.Option()] = Path("out"),
     no_ai: Annotated[bool, typer.Option()] = False,
+    source: Annotated[str | None, typer.Option(help="Live source cloud (aws or cloudflare).")] = None,
 ) -> None:
     """Scan or load a snapshot, translate it and generate the assessment."""
     if from_snapshot is None:
-        scan_command(profile, region, out)
+        scan_command(profile, region, out, source or "aws")
     else:
-        if profile or region:
-            raise typer.BadParameter("--profile and --region apply only to live scans")
+        if profile or region or source:
+            raise typer.BadParameter("--source, --profile and --region apply only to live scans")
         snapshot = json.loads(from_snapshot.read_text())
         Inventory.model_validate(snapshot)
         save(out, "inventory", snapshot)

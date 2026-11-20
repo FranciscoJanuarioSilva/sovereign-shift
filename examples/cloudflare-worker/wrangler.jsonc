@@ -1,0 +1,18 @@
+{
+  "name": "shift-demo",
+  "main": "src/index.js",
+  "compatibility_date": "2026-06-01",
+  "preview_urls": false,
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true },
+  "d1_databases": [{ "binding": "DB", "database_name": "shift-demo-catalog", "database_id": "00000000-0000-4000-8000-000000000001" }],
+  "kv_namespaces": [{ "binding": "SETTINGS", "id": "00000000000000000000000000000001" }],
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "shift-demo-assets" }],
+  "durable_objects": { "bindings": [{ "name": "DEPOT", "class_name": "Depot" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Depot"] }],
+  "queues": {
+    "producers": [{ "binding": "EVENTS", "queue": "shift-demo-events" }],
+    "consumers": [{ "queue": "shift-demo-events", "max_batch_timeout": 1 }]
+  },
+  "workflows": [{ "binding": "AUDIT", "name": "shift-demo-audit", "class_name": "Audit" }],
+  "triggers": { "crons": ["0 9 * * *"] }
+}

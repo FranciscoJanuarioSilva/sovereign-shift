@@ -1,0 +1,10 @@
+{
+  "name": "sovereign-shift-worker-demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local --test-scheduled",
+    "seed": "wrangler d1 execute DB --local --file data/catalog.sql && wrangler kv key put catalog --binding SETTINGS --local --path data/catalog.json && wrangler r2 object put shift-demo-assets/guide.txt --local --file data/guide.txt"
+  },
+  "devDependencies": { "wrangler": "4.104.0" }
+}

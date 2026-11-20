@@ -103,6 +103,11 @@ def ai_payload(resource: dict[str, Any], ctx: Context) -> dict[str, Any]:
         {"type": o["type"], "aws_type": (o.get("properties") or {}).get("aws_type"), "name": o.get("name")}
         for o in ctx.related(resource) + ctx.referrers(resource["id"])
     ]
+    if resource["type"].startswith("cloudflare_"):
+        # binding types and topology are enough to suggest a replacement.
+        return {"resource": {"type": resource["type"], "record_type": (resource.get("properties") or {}).get("record_type")},
+                "neighbours": [{"type": item["type"]} for item in neighbours[:15]],
+                "leaseweb_can_host": LEASEWEB_CAPABILITIES}
     return redact({
         "resource": {
             "type": resource["type"],
@@ -170,6 +175,7 @@ def translate(
         if not ai.enabled:
             ai_info["disabled_reason"] = ai.why_disabled()
     return Mapping(
+        source=inventory.get("source", "aws"),
         generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         target_region=target_region or region_for(regions[0] if regions else None),
         catalog_source=catalog_source,
@@ -189,6 +195,8 @@ def summary(mapping: Mapping) -> str:
     ai_text = f", ai answered {ai.get('answered', 0)}/{ai.get('asked', 0)}" if ai.get("used") else ""
     if ai.get("disabled_reason"):
         ai_text += f" (ai off: {ai['disabled_reason']})"
+    if mapping.source == "cloudflare":
+        return f"{len(mapping.entries)} resources -> {mapping.target_region}: {parts}{ai_text}. Costs unpriced."
     return f"{len(mapping.entries)} resources -> {mapping.target_region}: {parts}{ai_text}. monthly estimate aws {aws:.2f} eur vs leaseweb {lsw:.2f} eur"
 
 

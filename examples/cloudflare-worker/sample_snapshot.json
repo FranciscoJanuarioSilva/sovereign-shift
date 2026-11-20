@@ -1,0 +1,173 @@
+{
+  "source": "cloudflare",
+  "account_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "regions": [
+    "global"
+  ],
+  "scanned_at": "2026-11-20T09:00:00+00:00",
+  "resources": [
+    {
+      "id": "cf:kv_namespace:demo-kv",
+      "type": "cloudflare_kv_namespace",
+      "name": "shift-demo-settings",
+      "region": "global",
+      "properties": {},
+      "relations": []
+    },
+    {
+      "id": "cf:d1:demo-db",
+      "type": "cloudflare_d1",
+      "name": "shift-demo-catalog",
+      "region": "global",
+      "properties": {},
+      "relations": []
+    },
+    {
+      "id": "cf:r2_bucket:shift-demo-assets",
+      "type": "cloudflare_r2_bucket",
+      "name": "shift-demo-assets",
+      "region": "global",
+      "properties": {},
+      "relations": []
+    },
+    {
+      "id": "cf:workflow:shift-demo-audit",
+      "type": "cloudflare_workflow",
+      "name": "shift-demo-audit",
+      "region": "global",
+      "properties": {},
+      "relations": [
+        {
+          "type": "runs_on",
+          "target": "cf:worker:shift-demo"
+        }
+      ]
+    },
+    {
+      "id": "cf:durable_object_namespace:demo-depot",
+      "type": "cloudflare_durable_object_namespace",
+      "name": "Depot",
+      "region": "global",
+      "properties": {},
+      "relations": []
+    },
+    {
+      "id": "cf:queue:shift-demo-events",
+      "type": "cloudflare_queue",
+      "name": "shift-demo-events",
+      "region": "global",
+      "properties": {},
+      "relations": [
+        {
+          "type": "consumed_by",
+          "target": "cf:worker:shift-demo"
+        }
+      ]
+    },
+    {
+      "id": "cf:worker:shift-demo",
+      "type": "cloudflare_worker",
+      "name": "shift-demo",
+      "region": "global",
+      "properties": {},
+      "relations": [
+        {
+          "type": "binds_DB",
+          "target": "cf:d1:demo-db"
+        },
+        {
+          "type": "binds_FILES",
+          "target": "cf:r2_bucket:shift-demo-assets"
+        },
+        {
+          "type": "binds_EVENTS",
+          "target": "cf:queue:shift-demo-events"
+        },
+        {
+          "type": "binds_SETTINGS",
+          "target": "cf:kv_namespace:demo-kv"
+        },
+        {
+          "type": "binds_AUDIT",
+          "target": "cf:workflow:shift-demo-audit"
+        },
+        {
+          "type": "binds_DEPOT",
+          "target": "cf:durable_object_namespace:demo-depot"
+        },
+        {
+          "type": "binds_ASSETS",
+          "target": "cf:assets:shift-demo/ASSETS"
+        }
+      ]
+    },
+    {
+      "id": "cf:assets:shift-demo/ASSETS",
+      "type": "cloudflare_assets",
+      "name": "ASSETS",
+      "region": "global",
+      "properties": {},
+      "relations": []
+    },
+    {
+      "id": "cf:cron_trigger:shift-demo/0 9 * * *",
+      "type": "cloudflare_cron_trigger",
+      "name": "0 9 * * *",
+      "region": "global",
+      "properties": {},
+      "relations": [
+        {
+          "type": "triggers",
+          "target": "cf:worker:shift-demo"
+        }
+      ]
+    },
+    {
+      "id": "cf:dns_zone:demo-zone",
+      "type": "cloudflare_dns_zone",
+      "name": "example.test",
+      "region": "global",
+      "properties": {},
+      "relations": []
+    },
+    {
+      "id": "cf:dns_record:demo-zone/stock.example.test/A",
+      "type": "cloudflare_dns_record",
+      "name": "stock.example.test",
+      "region": "global",
+      "properties": {
+        "domain_name": "example.test",
+        "record_type": "A",
+        "ttl": 300,
+        "values": [
+          "192.0.2.23",
+          "192.0.2.24"
+        ]
+      },
+      "relations": [
+        {
+          "type": "in_zone",
+          "target": "cf:dns_zone:demo-zone"
+        }
+      ]
+    },
+    {
+      "id": "cf:dns_record:demo-zone/edge.example.test/A",
+      "type": "cloudflare_dns_record",
+      "name": "edge.example.test",
+      "region": "global",
+      "properties": {
+        "domain_name": "example.test",
+        "record_type": "A",
+        "manual_review": true
+      },
+      "relations": [
+        {
+          "type": "in_zone",
+          "target": "cf:dns_zone:demo-zone"
+        }
+      ]
+    }
+  ],
+  "denied": []
+}

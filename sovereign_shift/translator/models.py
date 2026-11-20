@@ -42,6 +42,7 @@ class MappingEntry(BaseModel):
 
 
 class Mapping(BaseModel):
+    source: str = "aws"
     generated_at: str
     target_region: str
     catalog_source: str

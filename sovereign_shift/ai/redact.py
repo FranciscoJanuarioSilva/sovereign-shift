@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 SECRET_KEYS = re.compile(r"pass|secret|token|credential|private|user_?data|environment|env_vars|auth|cert", re.I)
+CF_ACCOUNT_ID = re.compile(r"(?<![a-fA-F0-9])[a-fA-F0-9]{32}(?![a-fA-F0-9])")
 ACCOUNT_ID = re.compile(r"(?<!\d)\d{12}(?!\d)")
 # a bare ip, but not a cidr (cidrs stay, the reviewer needs 0.0.0.0/0)
 HOST_IP = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d./])")
@@ -11,6 +12,7 @@ ARN = re.compile(r"arn:aws[\w-]*:[^\s\"']+")
 
 
 def redact_text(text: str) -> str:
+    text = CF_ACCOUNT_ID.sub("<account>", text)
     text = ARN.sub("<arn>", text)
     text = ACCOUNT_ID.sub("<account>", text)
     return HOST_IP.sub("<ip>", text)

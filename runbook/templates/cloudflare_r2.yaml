@@ -1,0 +1,13 @@
+resource_type: cloudflare_r2_bucket
+engine: null
+steps:
+- id: r2-bucket-copy
+  title: Copy objects to the configured Leaseweb remote
+  command: rclone copy "r2:{bucket}" "leaseweb:{target_bucket}"
+  verify: rclone check --one-way "r2:{bucket}" "leaseweb:{target_bucket}"
+  inputs:
+    bucket:
+      source: inventory
+      field: name
+    target_bucket:
+      source: customer

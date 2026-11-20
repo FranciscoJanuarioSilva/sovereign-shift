@@ -80,7 +80,10 @@ def runbook(out: Path, inventory: dict, mapping: dict, no_ai: bool) -> dict:
             if kind == "db_instance"
             else None
         )
-        steps = library.get((kind, engine), [])
+        template_kind = kind
+        if kind == "cloudflare_dns_record" and entries[identifier]["via"] == "terraform":
+            template_kind = "route53_record"
+        steps = library.get((template_kind, engine), [])
         entry = dict(
             source_id=identifier,
             source_type=kind,

@@ -126,11 +126,15 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
             "The smallest Leaseweb size is 2 vCPU, so tiny AWS instances map to a bigger, pricier VM.",
         ],
     }
-    for provider in ("aws", "leaseweb"):
+    source_cloud = inventory.get("source", "aws")
+    source_label = "Cloudflare" if source_cloud == "cloudflare" else "AWS"
+    if source_cloud == "cloudflare":
+        cost["assumptions"] = ["Cloudflare usage and billing were not scanned. Migration costs are unpriced."]
+    for provider in (source_cloud, "leaseweb"):
         values = [c.get(provider) for c in costs]
         cost[provider + "_priced_subtotal_eur"] = round(sum(v for v in values if v is not None), 2)
         cost[provider + "_monthly_eur"] = (
-            round(sum(values), 2) if None not in values else None
+            round(sum(values), 2) if None not in values and (values or source_cloud == "aws") else None
         )
     account = inventory.get("account_id", "")
     counts = Counter(e["status"] for e in entries.values())
@@ -157,6 +161,8 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
         finalize=plan,
         terraform_files=sorted(p.name for p in (out / "terraform").glob("*.tf")),
     )
+    if inventory.get("denied"):
+        data["denied"] = inventory["denied"]
     if not no_ai:
         insights(out, data, inventory)
     if account:
@@ -170,7 +176,7 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
         data["graph"]["mermaid"],
         "```",
         "## Monthly costs (EUR)",
-        "| Resource | AWS type | AWS | Leaseweb type | Leaseweb |",
+        f"| Resource | {source_label} type | {source_label} | Leaseweb type | Leaseweb |",
         "|---|---|---:|---|---:|",
     ]
 
@@ -184,9 +190,13 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
             f"{cell(c.get('leaseweb_type') or '')}{flag} | {eur(c.get('leaseweb'), c.get('leaseweb_estimated', False))} |"
         )
     lines += [
-        f"| **Total** | | {cost['aws_priced_subtotal_eur']:.2f} | | {cost['leaseweb_priced_subtotal_eur']:.2f} |",
+        f"| **Total** | | {cost[source_cloud + '_priced_subtotal_eur']:.2f} | | {cost['leaseweb_priced_subtotal_eur']:.2f} |"
+        if costs or source_cloud == "aws" else "| **Total** | | unknown | | unknown |",
         "\n".join(f"- {a}" for a in cost["assumptions"]),
     ]
+    if data.get("denied"):
+        lines.extend(["## Scan coverage", "Access was denied for these operations."])
+        lines.extend(f"- {cell(item['operation'])}" for item in data["denied"])
     if oversized:
         lines.append(
             f"{len(oversized)} of {len(costs)} priced resources are smaller than Leaseweb's smallest size (2 vCPU). "

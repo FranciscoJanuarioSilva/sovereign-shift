@@ -1,6 +1,6 @@
 # sovereign-shift
 
-Scan a ClickOps AWS account with read-only credentials and get:
+Scan a ClickOps AWS or Cloudflare account with read-only credentials and get:
 
 - Leaseweb Terraform, plus the Leaseweb API calls Terraform can't make yet (security groups, load balancer targets),
 - a dependency graph,
@@ -32,6 +32,20 @@ never retrieved. Route 53 TXT and other free-form record values are marked with
 `values_omitted: true` because they can contain tokens.
 Keep the inventory local, as it contains infrastructure metadata including AWS
 account IDs and resource tags.
+
+## Cloudflare inventory
+
+Set `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` in the environment or local `.env`. Use account-scoped read permissions for Workers Scripts, Workers KV Storage, D1, Workers R2 Storage, Queues and Workflows, plus Zone Read and DNS Read for the account's zones. Denied operations appear in the inventory and assessment.
+
+```bash
+sovereign-shift scan --source cloudflare --out out/cloudflare
+sovereign-shift all --source cloudflare --out out/cloudflare
+sovereign-shift all --from-snapshot examples/cloudflare-worker/sample_snapshot.json --no-ai --out out/cloudflare-demo
+```
+
+The scanner inventories Workers, bindings, cron triggers, Durable Object namespaces, Workflows, Queues, D1 databases, KV namespaces, default-jurisdiction R2 buckets, and DNS zones and records. It reads metadata only. DNS-only A, AAAA and ordinary CNAME records use the Leaseweb DNS generator. Proxied, flattened and other record types go through the alternative assessment. R2 uses the object-storage mapping and a runbook that expects configured `r2:` and `leaseweb:` rclone remotes. Other Worker services and unfamiliar bindings use the existing AI fallback. With `--no-ai`, every discovered resource still appears in the report. Cloudflare usage costs are unpriced.
+
+Run the [seeded demo Worker](examples/cloudflare-worker/README.md) locally or assess its synthetic snapshot offline.
 
 ## Downstream pipeline
 Install Python 3.11+ and run the downstream stages with scanner and translator artifacts in the same output directory.
