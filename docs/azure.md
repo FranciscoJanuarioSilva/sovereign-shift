@@ -16,7 +16,7 @@ We had no Azure account. The mapping is tested with a hand-built sample of what 
 - Prices: `scripts/fetch_azure_prices.py` reads the public Azure Retail Prices API (no key) into the `regional` block of `data/aws_instance_types.json`. Database (flexible server) prices aren't fetched yet, so databases show `unknown` and stay out of the totals.
 
 ## Run it
-See [usage.md](usage.md#scan-an-azure-subscription). The GitHub workflow has no Azure option: run the sample locally.
+See [usage.md](usage.md#scan-an-azure-subscription). On GitHub, run the workflow with source **azure-demo**: it runs this sample with no credentials. The workflow has no live Azure option yet, because that needs a subscription and a Reader service principal.
 
 ## Not done yet
 - A live run, which needs a subscription and a Reader service principal.

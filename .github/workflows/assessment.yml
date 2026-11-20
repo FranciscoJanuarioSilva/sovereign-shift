@@ -8,7 +8,7 @@ on:
         options:
           - demo
           - aws
-          - azure
+          - azure-demo
           - cloudflare
         default: demo
       use_ai:
@@ -53,18 +53,12 @@ jobs:
         run: |
           : "${AWS_REGION:?Set AWS_REGION}" "${AWS_ACCESS_KEY_ID:?Set read-only credentials}" "${AWS_SECRET_ACCESS_KEY:?Set read-only credentials}"
           sovereign-shift scan --region "$AWS_REGION" --out out
-      - name: Scan Azure
-        if: inputs.source == 'azure'
-        env:
-          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_READER_CLIENT_SECRET }}
+      - name: Load Azure sample inventory
+        if: inputs.source == 'azure-demo'
         run: |
-          : "${AZURE_SUBSCRIPTION_ID:?Set AZURE_SUBSCRIPTION_ID}" "${AZURE_TENANT_ID:?Set AZURE_TENANT_ID}" "${AZURE_CLIENT_ID:?Set AZURE_CLIENT_ID}" "${AZURE_CLIENT_SECRET:?Set the Reader service principal secret}"
-          # the azure sdk is an optional extra, only this source needs it
-          python -m pip install -e '.[azure]'
-          sovereign-shift scan --source azure --out out
+          # made-up sample of what the Azure scanner returns, no credentials involved
+          mkdir -p out
+          cp testdata/azure_inventory.json out/inventory.json
       - name: Read Cloudflare Worker inventory
         if: inputs.source == 'cloudflare'
         env:
@@ -119,7 +113,7 @@ jobs:
           terraform -chdir=out/terraform init -backend=false -input=false
           terraform -chdir=out/terraform validate
       - uses: actions/upload-artifact@v4
-        if: inputs.source == 'demo' || inputs.publish_live_results
+        if: inputs.source == 'demo' || inputs.source == 'azure-demo' || inputs.publish_live_results
         with:
           name: migration-assessment-${{ github.run_id }}
           retention-days: 3
