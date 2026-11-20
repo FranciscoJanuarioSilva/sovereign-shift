@@ -10,6 +10,7 @@ on:
           - aws
           - azure-demo
           - cloudflare
+          - gcp
         default: demo
       use_ai:
         description: Enable configured OpenRouter suggestions
@@ -22,6 +23,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   assess:
@@ -95,6 +97,21 @@ jobs:
           save(Path("out"), "inventory", inventory)
           print("Read scoped Cloudflare Worker inventory")
           PYSCAN
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        if: inputs.source == 'gcp'
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - name: Scan Google Cloud
+        if: inputs.source == 'gcp'
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          : "${GCP_PROJECT_ID:?Set GCP_PROJECT_ID}"
+          python -m pip install -e '.[gcp]'
+          sovereign-shift scan --source gcp --project "$GCP_PROJECT_ID" --out out
       - name: Build assessment
         env:
           USE_AI: ${{ inputs.use_ai }}
