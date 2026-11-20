@@ -39,18 +39,25 @@ From `internal/provider/provider.go` and `publiccloud/instance_resource.go`:
 - Validation is static only (enum validators for region, type, storage type and contract type, plus 5-1000 for `root_disk_size`). Nothing checks instance type availability per region at plan time.
 - `terraform validate` doesn't need a token.
 
-## Prices (fallback until we have a token)
-With a token, `GET /instanceTypes?region=eu-west-3` gives real prices, so fetch them into `data/leaseweb_catalog.json`.
-Without one, these are the only figures found (third party, not Leaseweb's site):
+## Prices
+Checked 2026-11-20 with a real token. `GET /instanceTypes?region=<region>` returns, per type:
+`name`, `resources.{cpu,memory,gpu,publicNetworkSpeed,privateNetworkSpeed}`, `prices.{hourly,monthly}` (strings),
+`minDiskSize` and `storageTypes` (`CENTRAL` and/or `LOCAL`). The list is paginated (`limit` 50, `offset`, `_metadata.totalCount`, 84 types per region).
+`GET /regions` returns all 10 regions: eu-west-3 Amsterdam, eu-central-1 Frankfurt, eu-west-2 London, us-east-1 Washington,
+us-west-1 San Francisco, us-west-2 Los Angeles, ca-central-1 Montreal, ap-southeast-1 Singapore, ap-southeast-2 Sydney, ap-northeast-1 Japan.
 
-| Item | Price | Source |
-|---|---|---|
-| `lsw.c6a.large` (2 vCPU / 4 GB) | 34.39 EUR/month | https://www.vpsbenchmarks.com/hosters/leaseweb/plans (updated 2026-11-06) |
-| `lsw.m3.large` (2 vCPU / 7 GB) | 29.44 EUR/month | same |
-| compute family | USD 14.29-18.12 per vCPU/month | same |
-| general purpose family | USD 17.58-22.38 per vCPU/month | same |
-| traffic | 1 TB/month pooled free, then 2.20 EUR/TB (1-15 TB); incoming free | same |
-| object storage | 0.017 EUR/GB/month, minimum 500 GB | same |
+Things that matter for the translator:
+- **Each region is billed in its own currency** (`_metadata.currency`): EUR for Amsterdam and Frankfurt, GBP London, USD for the US regions, CAD, SGD, AUD, JPY. Never put a non-EUR number in a EUR total.
+- **Many types are local-NVMe only.** In eu-west-3, 42 of 74 non-GPU types (including all `5a` and `6a`) only support `LOCAL` root disks. `root_disk_storage_type = "CENTRAL"` on those fails at apply, so the translator picks the kind the type supports. Databases prefer central-capable types.
+- **Real memory is not exactly the family ratio** (`lsw.c3.large` has 3 GiB, `lsw.m3.large` 7 GiB, `lsw.c6a.large` 4 GiB, `lsw.m6a.large` 8 GiB).
+- Real Amsterdam prices (EUR per month): `lsw.c6a.large` 33.05, `lsw.m6a.large` 37.38, `lsw.r6a.large` 46.06, `lsw.m3.large` 29.04.
 
-Load balancer prices weren't found. Leaseweb's own pricing pages are JS-rendered and can't be fetched.
-Pitch angle: AWS egress is about USD 0.09/GB, and Leaseweb includes 1 TB. Put traffic in the cost comparison, because that's where Leaseweb wins, and small instances (smallest is 2 vCPU) are where it loses.
+How we use it, without making end users bring a token:
+- `scripts/fetch_leaseweb_catalog.py` (maintainers, needs `LEASEWEB_TOKEN`) writes `data/leaseweb_catalog.json`, which is committed.
+- The translator reads that snapshot (or the file named by `SOVEREIGN_LEASEWEB_CATALOG`). It's authoritative for the account that made it. Contract discounts and taxes aren't in it.
+- Without a snapshot, `data/leaseweb_public_prices.json` holds a dated, sourced list of public website prices:
+  - New OpenStack Public Cloud: https://www.leaseweb.com/en/products-services/cloud/public-cloud-openstack/pricing
+  - Older Public Cloud GPU list: https://www.leaseweb.com/products-services/cloud/public-cloud/pricing
+  - Same-named OpenStack prices are proxies on a different platform, marked `*` in the report.
+
+Not in the compute subtotal: storage, traffic, public IPs, load balancers. Reference figures from the website: 1 TB pooled outgoing traffic per month included, then EUR 2.20/TB at the first tier; older Public Cloud local NVMe from EUR 0.0300/GB/month and network SSD EUR 0.0800/GB/month; the new OpenStack cloud (a different platform) has Value block storage at EUR 0.0700/GB/month and load balancers at EUR 11.02, 22.05 and 44.17/month. Verify exact regional pricing before making customer-facing savings claims.

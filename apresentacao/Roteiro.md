@@ -49,5 +49,5 @@ Olhem para o público e terminem com o convite.
 ## Perguntas do júri
 
 - **Onde entra a IA?** É opcional e pode sugerir alternativas ou personalizar o runbook. Os comandos vêm de templates e passam por validação. A demo local corre com a IA desligada.
-- **Quanto se poupa?** As três linhas com preços na loja fictícia somam 155,95 €/mês na AWS e 113,49 €/mês na Leaseweb. Para um orçamento é preciso completar os preços em falta.
+- **Quanto se poupa?** As três linhas com preços na loja fictícia somam 162,80 €/mês na AWS e 104,52 €/mês na Leaseweb (menos 36%, cerca de 699 € por ano). Os preços vêm das APIs de preços da AWS e da Leaseweb (tabela da Leaseweb guardada no repositório, sem precisar de chave). Detalhe em `docs/cost-assessment.md`. Só entra computação: armazenamento, tráfego e balanceadores ficam de fora, por isso não é um orçamento.
 - **Podemos repetir?** Repetimos a leitura e a geração sobre a conta real. A repetição de um aprovisionamento ou de uma transferência de dados precisa de um ensaio próprio.

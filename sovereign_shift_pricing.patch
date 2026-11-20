@@ -1,0 +1,334 @@
+diff --git a/sovereign_shift/translator/catalog.py b/sovereign_shift/translator/catalog.py
+--- a/sovereign_shift/translator/catalog.py
++++ b/sovereign_shift/translator/catalog.py
+@@ -11,6 +11,7 @@
+ ROOT = Path(__file__).resolve().parents[2]
+ SCHEMA = ROOT / "docs" / "schemas" / "leaseweb.json"
+ CATALOG = ROOT / "data" / "leaseweb_catalog.json"
++PUBLIC_PRICES = ROOT / "data" / "leaseweb_public_prices.json"
+ AWS_TYPES = ROOT / "data" / "aws_instance_types.json"
+ REGIONS = ROOT / "mappings" / "regions.yaml"
+ IMAGES = ROOT / "mappings" / "images.yaml"
+@@ -65,20 +66,31 @@
+     }
++
++
++@cache
++def published_prices() -> dict:
++    """Official public website snapshot; OpenStack prices are proxies, not legacy quotes."""
++    return json.loads(PUBLIC_PRICES.read_text())["prices"] if PUBLIC_PRICES.exists() else {}
+ 
+ 
+ def _fallback_types() -> list[LswType]:
+     out = []
++    public = published_prices()
+     for name in schema_enums()["type"]:
+         parsed = parse_name(name)
+         if not parsed or parsed[2] not in SIZE_VCPU:
+             continue
+         family, generation, size = parsed
+         vcpu = SIZE_VCPU[size]
+-        price = KNOWN_PRICES.get(name)
++        published = public.get(name)
++        price = float(published["monthly_eur"]) if published else KNOWN_PRICES.get(name)
+         out.append(LswType(
+             name=name, family=family, generation=generation, vcpu=vcpu,
+             memory_gib=KNOWN_MEMORY.get(name, vcpu * RATIO.get(family, 4)),
+             price_monthly_eur=price if price is not None else round(vcpu * EUR_PER_VCPU.get(family, 20.0), 2),
+-            price_estimated=price is None, region=None,
++            # Only the older Public Cloud's own GPU list prices are directly comparable.
++            # Matching OpenStack SKUs are proxies; third-party prices also stay estimated.
++            price_estimated=not (published and published["platform"] == "legacy_public_cloud"),
++            region=None,
+         ))
+     return out
+ 
+@@ -108,7 +120,7 @@
+         types = _api_types(data)
+         if types:
+             return tuple(types), f"catalog:{data.get('source', 'api')}:{data.get('fetched_at', '?')}"
+-    return tuple(_fallback_types()), "fallback:provider-schema+estimated-prices"
++    return tuple(_fallback_types()), "fallback:official-public-list+openstack-proxies+estimates"
+ 
+ 
+ @cache
+diff --git a/sovereign_shift/report/build.py b/sovereign_shift/report/build.py
+--- a/sovereign_shift/report/build.py
++++ b/sovereign_shift/report/build.py
+@@ -89,5 +89,7 @@
+         "assumptions": [
+             "Monthly EUR estimates supplied by Translate. Only compute (instances, databases) is priced, the rest has no separate cost here.",
+-            "AWS: approximate on-demand list prices. Leaseweb: catalog price, or an estimate where marked *.",
++            "AWS: approximate on-demand list prices. Leaseweb: API or public list pricing; * means estimated (including OpenStack proxies).",
++            "Public OpenStack compute prices reflect 1-month savings plans on a DIFFERENT platform and are not confirmed legacy API prices.",
++            "Additional storage, traffic, public IPs and load balancers are not included in this compute subtotal.",
+             "The smallest Leaseweb size is 2 vCPU, so tiny AWS instances map to a bigger, pricier VM.",
+         ],
+diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@ -82,5 +82,16 @@
+ Runbook defaults are offline. For optional AI notes, omit `--no-ai` and set
+ `SOVEREIGN_AI_API_KEY`, `SOVEREIGN_AI_MODEL` and optionally `SOVEREIGN_AI_BASE_URL`.
+ 
++### Pricing without a Leaseweb API token
++
++The translator loads a checked-in snapshot in `data/leaseweb_public_prices.json` when
++`data/leaseweb_catalog.json` (an authenticated API catalog) is absent. The source
++URLs and snapshot date are stored in that file. The snapshot includes older
++Public Cloud GPU list prices and same-name CPU prices from **New Public Cloud
++(OpenStack)**; the latter are **proxies**, not verified rates for the older
++Public Cloud API targeted by this tool. OpenStack monthly prices assume a
++1-month savings plan. Proxy and extrapolated prices appear with `*` in
++`report.md`; actual account pricing still requires `LEASEWEB_TOKEN`. The
++compute subtotal does not include storage, load balancers or traffic.
+ 
+ License: [Apache-2.0](LICENSE).
+diff --git a/docs/research/leaseweb-api.md b/docs/research/leaseweb-api.md
+--- a/docs/research/leaseweb-api.md
++++ b/docs/research/leaseweb-api.md
+@@ -42,15 +42,41 @@
+ ## Prices (fallback until we have a token)
+-With a token, `GET /instanceTypes?region=eu-west-3` gives real prices, so fetch them into `data/leaseweb_catalog.json`.
+-Without one, these are the only figures found (third party, not Leaseweb's site):
+ 
+-| Item | Price | Source |
+-|---|---|---|
+-| `lsw.c6a.large` (2 vCPU / 4 GB) | 34.39 EUR/month | https://www.vpsbenchmarks.com/hosters/leaseweb/plans (updated 2026-11-06) |
+-| `lsw.m3.large` (2 vCPU / 7 GB) | 29.44 EUR/month | same |
+-| compute family | USD 14.29-18.12 per vCPU/month | same |
+-| general purpose family | USD 17.58-22.38 per vCPU/month | same |
+-| traffic | 1 TB/month pooled free, then 2.20 EUR/TB (1-15 TB); incoming free | same |
+-| object storage | 0.017 EUR/GB/month, minimum 500 GB | same |
++The project targets the **older** Public Cloud REST API and Terraform provider.
++The authenticated `GET /instanceTypes?region=eu-west-3` response is authoritative
++for that account, region and billing contract, and overrides all local fallback
++prices when saved to `data/leaseweb_catalog.json`.
+ 
+-Load balancer prices weren't found. Leaseweb's own pricing pages are JS-rendered and can't be fetched.
+-Pitch angle: AWS egress is about USD 0.09/GB, and Leaseweb includes 1 TB. Put traffic in the cost comparison, because that's where Leaseweb wins, and small instances (smallest is 2 vCPU) are where it loses.
++Without an API token, `data/leaseweb_public_prices.json` contains a dated,
++sourced snapshot of public website prices:
++
++| Example SKU | EUR/month | Website platform | How the report labels it |
++|---|---:|---|---|
++| `lsw.m6a.large` | 34.68 | New Public Cloud (OpenStack) | Estimated `*` |
++| `lsw.c6a.large` | 30.35 | New Public Cloud (OpenStack) | Estimated `*` |
++| `lsw.r6a.large` | 43.36 | New Public Cloud (OpenStack) | Estimated `*` |
++| `lsw.g6.xlarge` | 253.40 | Older Public Cloud | Published list price |
++
++Sources checked 2026-11-20:
++- New OpenStack Public Cloud: https://www.leaseweb.com/en/products-services/cloud/public-cloud-openstack/pricing
++- Older Public Cloud GPU list: https://www.leaseweb.com/products-services/cloud/public-cloud/pricing
++
++**Platform mismatch warning:** matching SKU names on the new OpenStack cloud
++do not establish prices for the older Public Cloud REST API. Its public
++monthly prices assume a 1-month savings plan and Netherlands availability;
++do not present these proxies as quotes. Public list prices can also differ by
++region, contract, discounts and taxes. If neither public nor API prices are
++available, the existing vCPU-based fallback remains an estimate. The older
++third-party observed `lsw.m3.large` price (€29.44/month) also stays estimated.
++
++Official website networking and storage examples are useful for reporting,
++but **not currently included in the translator's compute cost total**:
++- Older Public Cloud: 1 TB pooled outgoing traffic/month included, then
++  €2.20/TB at the first tier; local NVMe starts at €0.0300/GB/month and
++  network SSD at €0.0800/GB/month.
++- New OpenStack cloud (a different platform): Value block storage
++  €0.0700/GB/month and load balancers €11.02, €22.05, €44.17/month.
++  Those rates must not be silently added to older-platform cost totals.
++
++The report's total is a **priced compute subtotal**, not a complete invoice.
++Verify exact regional pricing, storage, traffic and load balancers before
++making customer-facing savings claims.
+diff --git a/data/leaseweb_public_prices.json b/data/leaseweb_public_prices.json
+new file mode 100644
+--- /dev/null
++++ b/data/leaseweb_public_prices.json
+@@ -0,0 +1,136 @@
++{
++  "checked_at": "2026-11-20",
++  "currency": "EUR",
++  "sources": {
++    "new_public_cloud_openstack": {
++      "url": "https://www.leaseweb.com/en/products-services/cloud/public-cloud-openstack/pricing",
++      "description": "New OpenStack Public Cloud (Netherlands), 1-month compute savings plan; ESTIMATE ONLY for this project's older Public Cloud REST API."
++    },
++    "legacy_public_cloud": {
++      "url": "https://www.leaseweb.com/products-services/cloud/public-cloud/pricing",
++      "description": "Older Public Cloud GPU published monthly list prices, subject to region and contract."
++    }
++  },
++  "prices": {
++    "lsw.m6a.large": {
++      "monthly_eur": 34.68,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.m6a.xlarge": {
++      "monthly_eur": 72.07,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.m6a.2xlarge": {
++      "monthly_eur": 146.83,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.m6a.4xlarge": {
++      "monthly_eur": 296.37,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.m6a.8xlarge": {
++      "monthly_eur": 595.43,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.m6a.12xlarge": {
++      "monthly_eur": 894.5,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.m6a.16xlarge": {
++      "monthly_eur": 1193.57,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.c6a.large": {
++      "monthly_eur": 30.35,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.c6a.xlarge": {
++      "monthly_eur": 63.39,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.c6a.2xlarge": {
++      "monthly_eur": 129.49,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.c6a.4xlarge": {
++      "monthly_eur": 261.68,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.c6a.8xlarge": {
++      "monthly_eur": 526.05,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.c6a.12xlarge": {
++      "monthly_eur": 790.43,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.r6a.large": {
++      "monthly_eur": 43.36,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.r6a.xlarge": {
++      "monthly_eur": 89.41,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.r6a.2xlarge": {
++      "monthly_eur": 181.52,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.r6a.4xlarge": {
++      "monthly_eur": 365.75,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.r6a.8xlarge": {
++      "monthly_eur": 734.19,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.r6a.12xlarge": {
++      "monthly_eur": 1102.64,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.r6a.16xlarge": {
++      "monthly_eur": 1471.08,
++      "platform": "new_public_cloud_openstack"
++    },
++    "lsw.g6.xlarge": {
++      "monthly_eur": 253.4,
++      "platform": "legacy_public_cloud"
++    },
++    "lsw.g6.2xlarge": {
++      "monthly_eur": 307.8,
++      "platform": "legacy_public_cloud"
++    },
++    "lsw.g6.4xlarge": {
++      "monthly_eur": 416.6,
++      "platform": "legacy_public_cloud"
++    },
++    "lsw.g6.8xlarge": {
++      "monthly_eur": 634.22,
++      "platform": "legacy_public_cloud"
++    },
++    "lsw.g6.16xlarge": {
++      "monthly_eur": 1069.65,
++      "platform": "legacy_public_cloud"
++    },
++    "lsw.gr6.4xlarge": {
++      "monthly_eur": 485.92,
++      "platform": "legacy_public_cloud"
++    },
++    "lsw.gr6.8xlarge": {
++      "monthly_eur": 773.05,
++      "platform": "legacy_public_cloud"
++    },
++    "lsw.g6.18xlarge": {
++      "monthly_eur": 1210.64,
++      "platform": "legacy_public_cloud"
++    },
++    "lsw.g6.12xlarge": {
++      "monthly_eur": 1448.88,
++      "platform": "legacy_public_cloud"
++    },
++    "lsw.g6.24xlarge": {
++      "monthly_eur": 2107.75,
++      "platform": "legacy_public_cloud"
++    }
++  }
++}
+diff --git a/tests/test_public_pricing.py b/tests/test_public_pricing.py
+new file mode 100644
+--- /dev/null
++++ b/tests/test_public_pricing.py
+@@ -0,0 +1,45 @@
++"""Pricing sources: official old Public Cloud versus different-platform proxies."""
++
++import json
++
++from sovereign_shift.translator import catalog
++
++
++def test_public_fallback_distinguishes_legacy_prices_and_proxies(tmp_path, monkeypatch):
++    monkeypatch.setattr(catalog, "CATALOG", tmp_path / "missing-api.json")
++    catalog.leaseweb_types.cache_clear()
++    try:
++        types, source = catalog.leaseweb_types()
++        prices = {item.name: item for item in types}
++        assert "openstack-proxies" in source
++        assert prices["lsw.m6a.large"].price_monthly_eur == 34.68
++        assert prices["lsw.m6a.large"].price_estimated is True
++        assert prices["lsw.c6a.large"].price_monthly_eur == 30.35
++        assert prices["lsw.c6a.large"].price_estimated is True
++        assert prices["lsw.g6.xlarge"].price_monthly_eur == 253.40
++        assert prices["lsw.g6.xlarge"].price_estimated is False
++        # A third-party quote, not a confirmed API/account price.
++        assert prices["lsw.m3.large"].price_estimated is True
++    finally:
++        catalog.leaseweb_types.cache_clear()
++
++
++def test_authenticated_catalog_wins_over_public_snapshot(tmp_path, monkeypatch):
++    source = tmp_path / "leaseweb_catalog.json"
++    source.write_text(json.dumps({
++        "source": "api", "fetched_at": "2026-11-20",
++        "instance_types": [{
++            "name": "lsw.m6a.large", "vcpu": 2, "memory_gib": 8,
++            "region": "eu-west-3", "price_monthly_eur": 50.00,
++        }],
++    }))
++    monkeypatch.setattr(catalog, "CATALOG", source)
++    catalog.leaseweb_types.cache_clear()
++    try:
++        types, catalog_source = catalog.leaseweb_types()
++        assert catalog_source == "catalog:api:2026-11-20"
++        assert len(types) == 1
++        assert types[0].price_monthly_eur == 50.0
++        assert types[0].price_estimated is False
++    finally:
++        catalog.leaseweb_types.cache_clear()

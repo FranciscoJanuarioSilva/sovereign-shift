@@ -49,7 +49,8 @@ def test_report_is_readable(tmp_path):
     # only priced rows, by name, with the leaseweb type and the over-provisioning flag
     assert "| web-1 | t3.large |" in costs
     assert "| orders | db.t3.medium |" in costs and "over-provisioned" in costs
-    assert "unknown" not in costs and "sg-web" not in costs
+    rows = [line for line in costs.splitlines() if line.startswith("|")]
+    assert not any("unknown" in row for row in rows) and "sg-web" not in costs
     runbook = report.split("## Migration runbook")[1]
     assert "### orders" in runbook and "### web-sg" not in runbook
     assert "No separate data move for:" in runbook

@@ -1,6 +1,7 @@
 """Reference data the translator needs: leaseweb instance types, aws specs and prices, regions, images."""
 
 import json
+import os
 import re
 from dataclasses import dataclass
 from functools import cache
@@ -11,6 +12,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = ROOT / "docs" / "schemas" / "leaseweb.json"
 CATALOG = ROOT / "data" / "leaseweb_catalog.json"
+PUBLIC_PRICES = ROOT / "data" / "leaseweb_public_prices.json"
 AWS_TYPES = ROOT / "data" / "aws_instance_types.json"
 REGIONS = ROOT / "mappings" / "regions.yaml"
 IMAGES = ROOT / "mappings" / "images.yaml"
@@ -40,6 +42,8 @@ class LswType:
     price_monthly_eur: float | None
     price_estimated: bool
     region: str | None  # none means every region
+    # root disk kinds this type can use in its region. the fallback table can't know, so it allows both
+    storage_types: tuple[str, ...] = ("central", "local")
 
     @property
     def rank(self) -> int:
@@ -65,20 +69,31 @@ def schema_enums() -> dict[str, list[str]]:
     }
 
 
+@cache
+def published_prices() -> dict:
+    """Official public website snapshot; OpenStack prices are proxies, not legacy quotes."""
+    return json.loads(PUBLIC_PRICES.read_text())["prices"] if PUBLIC_PRICES.exists() else {}
+
+
 def _fallback_types() -> list[LswType]:
     out = []
+    public = published_prices()
     for name in schema_enums()["type"]:
         parsed = parse_name(name)
         if not parsed or parsed[2] not in SIZE_VCPU:
             continue
         family, generation, size = parsed
         vcpu = SIZE_VCPU[size]
-        price = KNOWN_PRICES.get(name)
+        published = public.get(name)
+        price = float(published["monthly_eur"]) if published else KNOWN_PRICES.get(name)
         out.append(LswType(
             name=name, family=family, generation=generation, vcpu=vcpu,
             memory_gib=KNOWN_MEMORY.get(name, vcpu * RATIO.get(family, 4)),
             price_monthly_eur=price if price is not None else round(vcpu * EUR_PER_VCPU.get(family, 20.0), 2),
-            price_estimated=price is None, region=None,
+            # Only the older Public Cloud's own GPU list prices are directly comparable.
+            # Matching OpenStack SKUs are proxies; third-party prices also stay estimated.
+            price_estimated=not (published and published["platform"] == "legacy_public_cloud"),
+            region=None,
         ))
     return out
 
@@ -92,23 +107,33 @@ def _api_types(data: dict) -> list[LswType]:
         price = item.get("price_monthly_eur")
         if price is None and item.get("price_hourly_eur") is not None:
             price = round(float(item["price_hourly_eur"]) * 730, 2)
+        # a region billed in GBP, JPY... has no eur price: that's unknown, not an estimate
+        foreign = item.get("currency", "EUR") != "EUR"
         out.append(LswType(
             name=item["name"], family=parsed[0], generation=parsed[1],
             vcpu=int(item["vcpu"]), memory_gib=float(item["memory_gib"]),
-            price_monthly_eur=price, price_estimated=price is None, region=item.get("region"),
+            price_monthly_eur=price, price_estimated=price is None and not foreign, region=item.get("region"),
+            storage_types=tuple(item.get("storage_types") or ("central", "local")),
         ))
     return out
 
 
+def catalog_path() -> Path:
+    """The committed snapshot, or the customer's own file via SOVEREIGN_LEASEWEB_CATALOG (e.g. contract prices)."""
+    own = os.environ.get("SOVEREIGN_LEASEWEB_CATALOG")
+    return Path(own) if own else CATALOG
+
+
 @cache
 def leaseweb_types() -> tuple[tuple[LswType, ...], str]:
-    """Real catalog from data/leaseweb_catalog.json if a token fetched it, else built from the provider schema."""
-    if CATALOG.exists():
-        data = json.loads(CATALOG.read_text())
+    """Leaseweb API snapshot (committed, no token needed to use it), else built from the provider schema."""
+    path = catalog_path()
+    if path.exists():
+        data = json.loads(path.read_text())
         types = _api_types(data)
         if types:
             return tuple(types), f"catalog:{data.get('source', 'api')}:{data.get('fetched_at', '?')}"
-    return tuple(_fallback_types()), "fallback:provider-schema+estimated-prices"
+    return tuple(_fallback_types()), "fallback:official-public-list+openstack-proxies+estimates"
 
 
 @cache

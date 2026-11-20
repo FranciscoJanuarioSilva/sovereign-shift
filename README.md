@@ -82,6 +82,25 @@ attachment. Review manual items in the report before deployment.
 Runbook defaults are offline. For optional AI notes, omit `--no-ai` and set
 `SOVEREIGN_AI_API_KEY`, `SOVEREIGN_AI_MODEL` and optionally `SOVEREIGN_AI_BASE_URL`.
 
+### Leaseweb prices (no API token needed)
+
+`data/leaseweb_catalog.json` is a committed snapshot of the Leaseweb Public Cloud catalog:
+all regions, every instance type with its real vCPU, RAM, supported disk kinds and price.
+The translator reads it, so **you do not need a Leaseweb token to run an assessment**.
+Prices are in EUR for EUR regions (Amsterdam, Frankfurt). Regions that Leaseweb bills in
+another currency (London in GBP, ...) show `unknown` instead of a guessed conversion.
+
+- **Your own prices:** if you have contract prices, point `SOVEREIGN_LEASEWEB_CATALOG` at a
+  file in the same format and it replaces the snapshot.
+- **Refreshing the snapshot (maintainers, needs a token):**
+  `LEASEWEB_TOKEN=... python scripts/fetch_leaseweb_catalog.py`, then commit the file.
+- **No snapshot at all:** the translator falls back to `data/leaseweb_public_prices.json`
+  (public website prices, with proxies marked `*`) and estimates.
+- AWS prices: `python scripts/fetch_aws_prices.py --profile sovereign-readonly --region eu-north-1 --inventory out/live/inventory.json` stores real on-demand prices for the scanned region (read-only Pricing API). Without them the report uses approximate prices and stars them. Worked numbers: `docs/cost-assessment.md`.
+- The report states which source it used and how old the snapshot is. The total is a
+  compute subtotal: storage, traffic, public IPs and load balancers are not included.
+- Many newer types (the `5a` and `6a` generations) only offer local NVMe disks. The
+  translator picks the disk kind each type supports and notes it in the report.
 
 License: [Apache-2.0](LICENSE).
 

@@ -73,12 +73,20 @@ def entry(resource: dict[str, Any], ctx: Context, **fields: Any) -> MappingEntry
 AWS_TYPE_RE = re.compile(r"^(?:db\.)?([a-z]+)(\d+)([a-z-]*)\.(\w+)$")
 
 
-def aws_specs(instance_type: str) -> tuple[float | None, float | None, float | None]:
-    """vcpu, memory gib and hourly usd for an aws type, from data/aws_instance_types.json."""
+def aws_specs(instance_type: str, aws_region: str | None = None) -> tuple[float | None, float | None, float | None]:
+    """vcpu, memory gib and hourly usd for an aws type, from data/aws_instance_types.json.
+
+    A real price for the resource's own region (scripts/fetch_aws_prices.py) wins over the approximate table.
+    """
     data = catalog.aws_types()
     spec = data["ec2"].get(instance_type.removeprefix("db."))
     hourly = data["rds"].get(instance_type) if instance_type.startswith("db.") else (spec[2] if spec else None)
-    return (spec[0], spec[1], hourly) if spec else (None, None, hourly)
+    regional = data.get("regional", {}).get(aws_region or "", {}).get(instance_type)
+    return (spec[0] if spec else None, spec[1] if spec else None, regional if regional is not None else hourly)
+
+
+def aws_price_is_real(instance_type: str, aws_region: str | None) -> bool:
+    return instance_type in catalog.aws_types().get("regional", {}).get(aws_region or "", {})
 
 
 def aws_monthly_eur(hourly_usd: float | None, multiplier: float = 1.0) -> float | None:
@@ -88,12 +96,19 @@ def aws_monthly_eur(hourly_usd: float | None, multiplier: float = 1.0) -> float 
     return round(hourly_usd * data["hours_per_month"] * data["usd_to_eur"] * multiplier, 2)
 
 
-def pick_type(vcpu: float, memory: float, region: str, family: str | None) -> tuple[catalog.LswType | None, list[str]]:
-    """Smallest leaseweb type with at least this vcpu and ram, same family if possible, newest generation."""
+def pick_type(
+    vcpu: float, memory: float, region: str, family: str | None, prefer_central: bool = False
+) -> tuple[catalog.LswType | None, list[str]]:
+    """Smallest leaseweb type with at least this vcpu and ram, same family if possible, newest generation.
+
+    prefer_central (databases): only types that can use replicated central storage, if any fit.
+    """
     types, _ = catalog.leaseweb_types()
     in_region = [t for t in types if t.region in (None, region) and t.family in ("c", "m", "r")]
     fits = [t for t in in_region if t.vcpu >= vcpu and t.memory_gib >= memory]
     notes = []
+    if prefer_central and any("central" in t.storage_types for t in fits):
+        fits = [t for t in fits if "central" in t.storage_types]
     candidates = [t for t in fits if t.family == family] if family else []
     if not candidates:
         if family:
@@ -118,11 +133,24 @@ def leaseweb_family(aws_family: str, vcpu: float, memory: float) -> str:
     return "c" if ratio <= 2 else "m" if ratio <= 4 else "r"
 
 
-def size_instance(instance_type: str, vcpu: float | None, memory: float | None, region: str) -> dict[str, Any]:
+def storage_for(lsw: catalog.LswType | None, region: str) -> tuple[str, list[str]]:
+    """Root disk kind the chosen type can actually use. Many newer types only offer local NVMe."""
+    if lsw is None or "central" in lsw.storage_types:
+        return "CENTRAL", []
+    return "LOCAL", [
+        f"{lsw.name} only offers local NVMe disks in {region}: fast, but not replicated, so keep backups "
+        "(central network storage needs an older instance generation)"
+    ]
+
+
+def size_instance(
+    instance_type: str, vcpu: float | None, memory: float | None, region: str,
+    prefer_central: bool = False, aws_region: str | None = None,
+) -> dict[str, Any]:
     """Shared by ec2 and rds: returns type, notes, partial flag and both monthly costs."""
     notes: list[str] = []
     partial = False
-    spec_vcpu, spec_mem, hourly = aws_specs(instance_type)
+    spec_vcpu, spec_mem, hourly = aws_specs(instance_type, aws_region)
     vcpu = vcpu or spec_vcpu
     memory = memory or spec_mem
     match = AWS_TYPE_RE.match(instance_type)
@@ -131,8 +159,6 @@ def size_instance(instance_type: str, vcpu: float | None, memory: float | None, 
         notes.append(f"vcpu/ram of {instance_type} unknown, assumed 2 vcpu / 4 GiB")
         vcpu, memory = vcpu or 2, memory or 4
         partial = True
-    if size in {"nano", "micro", "small", "medium"} or vcpu < 2:
-        notes.append("smallest leaseweb size is 2 vcpu, so this is over-provisioned")
     if "g" in suffix:
         notes.append("aws graviton (arm) -> x86, rebuild images and binaries")
         partial = True
@@ -140,8 +166,14 @@ def size_instance(instance_type: str, vcpu: float | None, memory: float | None, 
         notes.append("gpu/accelerator instance, mapped to a cpu type, review by hand")
         partial = True
     family = leaseweb_family(aws_family, vcpu, memory)
-    chosen, pick_notes = pick_type(vcpu, memory, region, family)
+    chosen, pick_notes = pick_type(vcpu, memory, region, family, prefer_central)
     notes += pick_notes
+    # compare real capacity, not the size name: t3.medium has 2 vcpu / 4 GiB and fits a leaseweb large exactly
+    if chosen and (chosen.vcpu > vcpu or chosen.memory_gib >= 2 * memory):
+        notes.append(
+            f"smallest leaseweb fit is {chosen.vcpu} vcpu / {chosen.memory_gib:g} GiB, "
+            f"more than the {vcpu:g} vcpu / {memory:g} GiB used on aws, so this is over-provisioned"
+        )
     return {
         "type": chosen, "notes": notes, "partial": partial or chosen is None,
         "vcpu": vcpu, "memory": memory, "aws_hourly": hourly,
@@ -171,7 +203,7 @@ def ec2_instance(r: dict[str, Any], ctx: Context) -> MappingEntry:
     p = props(r)
     region = ctx.region_for(r.get("region"))
     instance_type = first(p, "instance_type", "InstanceType", default="unknown")
-    sized = size_instance(instance_type, first(p, "vcpu"), first(p, "memory_gib"), region)
+    sized = size_instance(instance_type, first(p, "vcpu"), first(p, "memory_gib"), region, aws_region=r.get("region"))
     image, image_notes, image_partial, windows = image_for(first(p, "os", "platform_details"))
     notes = sized["notes"] + image_notes
 
@@ -195,6 +227,8 @@ def ec2_instance(r: dict[str, Any], ctx: Context) -> MappingEntry:
     if p.get("user_data_sha256") or p.get("user_data_length"):
         notes.append("instance had user_data on aws, review it and merge it into the cloud-init by hand")
     lsw = sized["type"]
+    storage, storage_notes = storage_for(lsw, region)
+    notes += storage_notes
     status = "partial" if (sized["partial"] or image_partial or extra or too_big) else "auto"
     target = {
         "kind": "public_cloud_instance",
@@ -202,7 +236,7 @@ def ec2_instance(r: dict[str, Any], ctx: Context) -> MappingEntry:
         "instance_type": lsw.name if lsw else None,
         "image_id": image,
         "root_disk_size": disk,
-        "root_disk_storage_type": "CENTRAL",
+        "root_disk_storage_type": storage,
         "has_private_network": True,
         "contract": contract(),
         "ssh_key_name": key,
@@ -218,7 +252,7 @@ def ec2_instance(r: dict[str, Any], ctx: Context) -> MappingEntry:
         r, ctx, status=status if lsw else "manual", via="terraform" if lsw else "report", target=target,
         justification=justification, notes=notes,
         monthly_cost_eur=Cost(
-            aws=aws_eur, aws_estimated=not first(p, "monthly_cost_eur"),
+            aws=aws_eur, aws_estimated=not (first(p, "monthly_cost_eur") or aws_price_is_real(instance_type, r.get("region"))),
             leaseweb=lsw.price_monthly_eur if lsw else None,
             leaseweb_estimated=lsw.price_estimated if lsw else False,
         ),
@@ -326,20 +360,23 @@ def db_instance(r: dict[str, Any], ctx: Context) -> MappingEntry:
     engine = DB_ENGINES.get(engine_raw)
     db_class = first(p, "instance_class", "db_instance_class", default="db.t3.medium")
     multi_az = bool(first(p, "multi_az", default=False))
-    aws_eur = first(p, "monthly_cost_eur") or aws_monthly_eur(aws_specs(db_class)[2], 2.0 if multi_az else 1.0)
+    aws_eur = first(p, "monthly_cost_eur") or aws_monthly_eur(aws_specs(db_class, r.get("region"))[2], 2.0 if multi_az else 1.0)
+    aws_real = aws_price_is_real(db_class, r.get("region"))
     if not engine:
         return entry(
             r, ctx, status="unsupported", via="report", target=None,
             justification=f"No self-hosted recipe for engine '{engine_raw}'.",
             notes=["needs an alternative, see the ai suggestion if any"],
-            monthly_cost_eur=Cost(aws=aws_eur, aws_estimated=True),
+            monthly_cost_eur=Cost(aws=aws_eur, aws_estimated=not aws_real),
         )
-    sized = size_instance(db_class, None, None, region)
+    # a database wants replicated central storage when some fitting type offers it
+    sized = size_instance(db_class, None, None, region, prefer_central=True)
     lsw = sized["type"]
+    disk_kind, disk_notes = storage_for(lsw, region)
     storage = int(first(p, "storage_gib", "allocated_storage", "allocated_storage_gib", default=20))
     disk = min(max(math.ceil(storage * 1.2) + 10, 20), 1000)
     # arm vs x86 doesn't matter for a db engine, it gets reinstalled anyway
-    notes = [n for n in sized["notes"] if "graviton" not in n] + [
+    notes = [n for n in sized["notes"] if "graviton" not in n] + disk_notes + [
         "no managed database on leaseweb, the engine runs on its own instance",
         "data moves with dump/restore, see the runbook",
         "backups, patching and failover become your job (or use an operator on leaseweb managed kubernetes)",
@@ -354,7 +391,7 @@ def db_instance(r: dict[str, Any], ctx: Context) -> MappingEntry:
             "kind": "self_hosted_db", "engine": engine, "engine_version": first(p, "engine_version"),
             "port": DB_PORT[engine], "region": region,
             "instance_type": lsw.name if lsw else None, "image_id": "UBUNTU_24_04_64BIT",
-            "root_disk_size": disk, "root_disk_storage_type": "CENTRAL",
+            "root_disk_size": disk, "root_disk_storage_type": disk_kind,
             "has_private_network": True, "contract": contract(),
         },
         justification=(
@@ -363,7 +400,7 @@ def db_instance(r: dict[str, Any], ctx: Context) -> MappingEntry:
         ),
         notes=notes,
         monthly_cost_eur=Cost(
-            aws=aws_eur, aws_estimated=True,
+            aws=aws_eur, aws_estimated=not aws_real,
             leaseweb=lsw.price_monthly_eur if lsw else None, leaseweb_estimated=lsw.price_estimated if lsw else False,
         ),
     )

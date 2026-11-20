@@ -1,0 +1,136 @@
+{
+  "checked_at": "2026-11-20",
+  "currency": "EUR",
+  "sources": {
+    "new_public_cloud_openstack": {
+      "url": "https://www.leaseweb.com/en/products-services/cloud/public-cloud-openstack/pricing",
+      "description": "New OpenStack Public Cloud (Netherlands), 1-month compute savings plan; ESTIMATE ONLY for this project's older Public Cloud REST API."
+    },
+    "legacy_public_cloud": {
+      "url": "https://www.leaseweb.com/products-services/cloud/public-cloud/pricing",
+      "description": "Older Public Cloud GPU published monthly list prices, subject to region and contract."
+    }
+  },
+  "prices": {
+    "lsw.m6a.large": {
+      "monthly_eur": 34.68,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.m6a.xlarge": {
+      "monthly_eur": 72.07,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.m6a.2xlarge": {
+      "monthly_eur": 146.83,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.m6a.4xlarge": {
+      "monthly_eur": 296.37,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.m6a.8xlarge": {
+      "monthly_eur": 595.43,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.m6a.12xlarge": {
+      "monthly_eur": 894.5,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.m6a.16xlarge": {
+      "monthly_eur": 1193.57,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.c6a.large": {
+      "monthly_eur": 30.35,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.c6a.xlarge": {
+      "monthly_eur": 63.39,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.c6a.2xlarge": {
+      "monthly_eur": 129.49,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.c6a.4xlarge": {
+      "monthly_eur": 261.68,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.c6a.8xlarge": {
+      "monthly_eur": 526.05,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.c6a.12xlarge": {
+      "monthly_eur": 790.43,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.r6a.large": {
+      "monthly_eur": 43.36,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.r6a.xlarge": {
+      "monthly_eur": 89.41,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.r6a.2xlarge": {
+      "monthly_eur": 181.52,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.r6a.4xlarge": {
+      "monthly_eur": 365.75,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.r6a.8xlarge": {
+      "monthly_eur": 734.19,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.r6a.12xlarge": {
+      "monthly_eur": 1102.64,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.r6a.16xlarge": {
+      "monthly_eur": 1471.08,
+      "platform": "new_public_cloud_openstack"
+    },
+    "lsw.g6.xlarge": {
+      "monthly_eur": 253.4,
+      "platform": "legacy_public_cloud"
+    },
+    "lsw.g6.2xlarge": {
+      "monthly_eur": 307.8,
+      "platform": "legacy_public_cloud"
+    },
+    "lsw.g6.4xlarge": {
+      "monthly_eur": 416.6,
+      "platform": "legacy_public_cloud"
+    },
+    "lsw.g6.8xlarge": {
+      "monthly_eur": 634.22,
+      "platform": "legacy_public_cloud"
+    },
+    "lsw.g6.16xlarge": {
+      "monthly_eur": 1069.65,
+      "platform": "legacy_public_cloud"
+    },
+    "lsw.gr6.4xlarge": {
+      "monthly_eur": 485.92,
+      "platform": "legacy_public_cloud"
+    },
+    "lsw.gr6.8xlarge": {
+      "monthly_eur": 773.05,
+      "platform": "legacy_public_cloud"
+    },
+    "lsw.g6.18xlarge": {
+      "monthly_eur": 1210.64,
+      "platform": "legacy_public_cloud"
+    },
+    "lsw.g6.12xlarge": {
+      "monthly_eur": 1448.88,
+      "platform": "legacy_public_cloud"
+    },
+    "lsw.g6.24xlarge": {
+      "monthly_eur": 2107.75,
+      "platform": "legacy_public_cloud"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+scenario,resource,aws_type,aws_eur,leaseweb_type,leaseweb_eur,disk,saving_eur,saving_pct
+store,web-1,t3.large,58.03,lsw.m6a.large,37.38,LOCAL,20.65,35.6
+store,web-2,m6g.large,55.07,lsw.m6a.large,37.38,LOCAL,17.69,32.1
+store,orders,db.t3.medium,49.7,lsw.c5.large,29.76,CENTRAL,19.94,40.1
+live,orders-db,db.t4g.micro,10.75,lsw.c5.large,29.76,CENTRAL,-19.01,-176.8
+live,web-1,t3.micro,7.25,lsw.c6a.large,33.05,LOCAL,-25.8,-355.9
+live,web-2,m7i-flex.large,68.34,lsw.m6a.large,37.38,LOCAL,30.96,45.3

@@ -91,8 +91,10 @@ The full table per `target.kind` is in `docs/contracts.md`, section "As implemen
 - Current state: `.env` has a key but no model, so AI is off and the CLI says so. Nobody has run it against a real model yet.
 
 ## Prices
-- Leaseweb: `data/leaseweb_catalog.json` if a token fetched it (`fetch_leaseweb_catalog.py` isn't written yet). Otherwise types come from the provider schema with estimated prices. Only `lsw.c6a.large` = 34.39 EUR is a real price (third party). The m/r rates are scaled guesses and are flagged `leaseweb_estimated`.
-- AWS: approximate us-east-1 list prices × 730 h × 0.92, flagged `aws_estimated`. Multi-AZ RDS counts double.
+- Leaseweb: `data/leaseweb_catalog.json`, a committed snapshot of the real Public Cloud API (10 regions, 84 types each, vCPU, RAM, supported disk kinds, prices). End users need no token. Refresh it with `LEASEWEB_TOKEN=... python scripts/fetch_leaseweb_catalog.py`, or point `SOVEREIGN_LEASEWEB_CATALOG` at the customer's own file. Only EUR regions get EUR prices (Amsterdam, Frankfurt), other regions show `unknown`. Without a snapshot it falls back to `data/leaseweb_public_prices.json` and estimates (`leaseweb_estimated`).
+- Disk kind: many newer types (`5a`, `6a`) are local-NVMe only, so `root_disk_storage_type` follows the chosen type (`LOCAL` or `CENTRAL`) and the report notes local disks. Databases prefer central-capable types.
+- AWS: real on-demand prices for the resource's own region when `data/aws_instance_types.json` has them (`regional`, filled by `scripts/fetch_aws_prices.py` from the AWS Pricing API, read-only), × 730 h × 0.92. Otherwise approximate us-east-1 prices, flagged `aws_estimated` (starred in the report). Multi-AZ RDS counts double.
+- Over-provisioned flag: raised when the chosen Leaseweb type has more vCPU than AWS, or at least twice the RAM. It compares capacity, not the size name.
 - LB prices are unknown and left out of totals.
 
 ## Verified

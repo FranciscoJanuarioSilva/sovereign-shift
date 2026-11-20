@@ -25,6 +25,38 @@ def display_names(resources: dict, entries: dict) -> dict[str, str]:
     return out
 
 
+def leaseweb_price_notes(source: str) -> list[str]:
+    """Say where the Leaseweb prices came from, so nobody mistakes an estimate for a quote."""
+    if source.startswith("catalog:"):
+        taken = source.split(":", 2)[2][:10]
+        notes = [
+            f"Leaseweb: Public Cloud API prices from a snapshot taken {taken}, in EUR, without taxes or discounts. "
+            "A customer's own contract prices can replace them (SOVEREIGN_LEASEWEB_CATALOG).",
+            "Regions that Leaseweb bills in another currency (e.g. London in GBP) show unknown, never a converted guess.",
+        ]
+        try:
+            age = (datetime.now(timezone.utc) - datetime.fromisoformat(taken + "T00:00:00+00:00")).days
+        except ValueError:
+            return notes
+        if age > 30:
+            notes.append(f"The price snapshot is {age} days old, refresh it before quoting savings.")
+        return notes
+    return [
+        "Leaseweb: no API snapshot found, so prices are public list prices or estimates (marked *).",
+        "Public OpenStack compute prices reflect 1-month savings plans on a DIFFERENT platform and are not confirmed legacy API prices.",
+    ]
+
+
+def aws_price_note(costs: list[dict]) -> str:
+    estimated = [c for c in costs if c.get("aws") is not None and c.get("aws_estimated")]
+    if not costs or not any(c.get("aws") is not None for c in costs):
+        return "AWS: no price available for these resources."
+    if not estimated:
+        return "AWS: on-demand list prices for the scanned region (AWS Pricing API), without Savings Plans or discounts."
+    return ("AWS: on-demand list prices from the AWS Pricing API where marked real, otherwise approximate us-east-1 prices (marked *). "
+            "No Savings Plans or discounts.")
+
+
 def alternative_text(alt: dict) -> str:
     steps = "; ".join(alt.get("manual_steps") or [])
     text = f"AI alternative: {alt.get('name', '?')} (effort {alt.get('effort', '?')}, confidence {alt.get('confidence', '?')})"
@@ -88,7 +120,9 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
         "oversized": len(oversized),
         "assumptions": [
             "Monthly EUR estimates supplied by Translate. Only compute (instances, databases) is priced, the rest has no separate cost here.",
-            "AWS: approximate on-demand list prices. Leaseweb: catalog price, or an estimate where marked *.",
+            aws_price_note(costs),
+            *leaseweb_price_notes(mapping.get("catalog_source", "")),
+            "Additional storage, traffic, public IPs and load balancers are not included in this compute subtotal.",
             "The smallest Leaseweb size is 2 vCPU, so tiny AWS instances map to a bigger, pricier VM.",
         ],
     }
@@ -146,7 +180,7 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
     for c in data["cost"]["lines"]:
         flag = " (over-provisioned)" if c["oversized"] else ""
         lines.append(
-            f"| {cell(c['name'])} | {cell(c.get('aws_type') or '')} | {eur(c.get('aws'))} | "
+            f"| {cell(c['name'])} | {cell(c.get('aws_type') or '')} | {eur(c.get('aws'), c.get('aws_estimated', False))} | "
             f"{cell(c.get('leaseweb_type') or '')}{flag} | {eur(c.get('leaseweb'), c.get('leaseweb_estimated', False))} |"
         )
     lines += [

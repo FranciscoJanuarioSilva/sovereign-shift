@@ -259,15 +259,20 @@ leaseweb_codes:
 ```
 
 ## data/leaseweb_catalog.json
-Written by `scripts/fetch_leaseweb_catalog.py` from `GET /instanceTypes?region=...` and `GET /regions`.
+A committed snapshot of the Leaseweb Public Cloud catalog, so end users need no token. Written by `scripts/fetch_leaseweb_catalog.py` (maintainers, needs `LEASEWEB_TOKEN`) from `GET /regions` and `GET /instanceTypes?region=...`. A customer can supply their own copy with `SOVEREIGN_LEASEWEB_CATALOG`. One instance type per line in the file.
 ```json
 {
-  "fetched_at": "2026-11-20T09:30:00Z",
-  "source": "api | fallback",
-  "regions": [{"code": "eu-west-3", "location": "Amsterdam"}],
+  "fetched_at": "2026-11-20T13:24:00Z",
+  "source": "api",
+  "note": "...",
+  "regions": [{"code": "eu-west-3", "location": "Amsterdam", "currency": "EUR", "storage_types": ["central", "local"]}],
   "instance_types": [
-    {"name": "lsw.c6a.large", "region": "eu-west-3", "vcpu": 2, "memory_gib": 4, "price_hourly_eur": null, "price_monthly_eur": 34.39}
-  ],
-  "traffic": {"included_tb": 1, "overage_eur_per_tb": 2.20}
+    {"name": "lsw.m6a.large", "region": "eu-west-3", "vcpu": 2, "memory_gib": 8.0, "gpu": 0, "currency": "EUR",
+     "price_hourly_local": 0.0528, "price_monthly_local": 37.38, "price_hourly_eur": 0.0528, "price_monthly_eur": 37.38,
+     "storage_types": ["local"], "min_disk_gib": 5}
+  ]
 }
 ```
+- Each region is billed in its own currency. `price_*_eur` is filled only when the region is billed in EUR, otherwise `null` (the report then shows `unknown`). The `*_local` fields always hold the API number in `currency`.
+- `storage_types` is what the type supports as root disk in that region. The translator writes `root_disk_storage_type` from it (`CENTRAL` only when `central` is listed).
+- The translator reads `name`, `region`, `vcpu`, `memory_gib`, `price_monthly_eur`, `currency`, `storage_types`.

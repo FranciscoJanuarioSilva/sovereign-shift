@@ -107,7 +107,7 @@ scanner (boto3) -> inventory.json
 - `--no-ai` and `--from-snapshot <inventory.json>` must both work offline.
 - Former2, aws2tf, Terraformer and terracognita are not dependencies (`docs/research/aws-scanning.md`).
 - Report: Mermaid `flowchart` for the graph and Markdown tables for cost, work and findings. Mermaid renders on GitHub and in the website later (mermaid.js). A cost chart (Mermaid `xychart-beta` or a PNG) only if there's time.
-- Leaseweb catalog: `scripts/fetch_leaseweb_catalog.py` calls `GET /instanceTypes` and `GET /regions` with the token and writes `data/leaseweb_catalog.json`. Fallback values are in `docs/research/leaseweb-api.md`.
+- Leaseweb catalog: `scripts/fetch_leaseweb_catalog.py` (maintainers, with the token) snapshots `GET /instanceTypes` and `GET /regions` into `data/leaseweb_catalog.json`, which is committed. End users need no token: the translator reads the snapshot, or a customer's own file via `SOVEREIGN_LEASEWEB_CATALOG`. Details in `docs/research/leaseweb-api.md`.
 
 Repo layout is in `AGENTS.md`. Files in `mappings/`, `data/` and `docs/` are reference data and must be validated on load.
 
@@ -139,10 +139,9 @@ Priority if time runs short, in order: EC2 + SGs (finalize) > report with cost a
 - Demo dry run, twice, before 15:00.
 
 ## Open questions
-- Leaseweb API token: still missing (the VM login isn't one).
+- Leaseweb API token: we have one (repo secret `LEASEWEB_TOKEN`), used only to refresh the price snapshot. Still untested: `terraform plan`/`apply` and a live finalize.
 - Can the default Leaseweb security group be detached from an instance? Test with the token.
-- Leaseweb region codes other than `eu-west-3` and `eu-central-1`: verify with `GET /regions`.
-- Load balancer prices: from the token's catalog if the API has them, otherwise ask Leaseweb.
+- Load balancer prices: not in `GET /instanceTypes`, so still left out of the cost total. Ask Leaseweb.
 
 ## Resolved
 - AI: OpenRouter global host pinned to Mistral (`eu.openrouter.ai` needs a Business plan). Details in `docs/research/environment.md`.

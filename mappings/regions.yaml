@@ -1,6 +1,7 @@
 # aws region -> leaseweb public cloud region
 # leaseweb reuses aws-style codes but they are different places, never copy the string
-# only eu-west-3 (amsterdam) and eu-central-1 (frankfurt) are confirmed, verify the rest with GET /regions
+# all ten leaseweb codes below were confirmed with GET /regions on 2026-11-20
+# the terraform provider (1.32.1) only accepts eight of them, see provider_accepts and docs/schemas/leaseweb.json
 aws_to_leaseweb:
   eu-west-1: eu-west-3       # dublin -> amsterdam
   eu-west-2: eu-west-3       # london -> amsterdam (uk isn't eu, override with --target-region eu-west-2)
@@ -13,21 +14,24 @@ aws_to_leaseweb:
   us-east-1: us-east-1
   us-east-2: us-east-1
   us-west-1: us-west-1
-  us-west-2: us-west-1
+  us-west-2: us-west-1       # the provider (1.32.1) rejects us-west-2 (los angeles)
   ca-central-1: ca-central-1
   ap-southeast-1: ap-southeast-1
   ap-northeast-1: ap-northeast-1
+  ap-southeast-2: ap-southeast-1 # sydney -> singapore, the provider (1.32.1) rejects ap-southeast-2
 default: eu-west-3
 
 leaseweb_codes:
-  eu-west-3: {location: Amsterdam, country: nl, verified: true}
-  eu-central-1: {location: Frankfurt, country: de, verified: true}
-  eu-west-2: {location: London, country: uk, verified: false}
-  us-east-1: {location: Washington DC, country: us, verified: false}
-  us-west-1: {location: San Francisco, country: us, verified: false}
-  ca-central-1: {location: Montreal, country: ca, verified: false}
-  ap-southeast-1: {location: Singapore, country: sg, verified: false}
-  ap-northeast-1: {location: Tokyo, country: jp, verified: false}
+  eu-west-3: {location: Amsterdam, country: nl, currency: EUR, verified: true}
+  eu-central-1: {location: Frankfurt, country: de, currency: EUR, verified: true}
+  eu-west-2: {location: London, country: uk, currency: GBP, verified: true}
+  us-east-1: {location: Washington, country: us, currency: USD, verified: true}
+  us-west-1: {location: San Francisco, country: us, currency: USD, verified: true}
+  us-west-2: {location: Los Angeles, country: us, currency: USD, verified: true, provider_accepts: false}
+  ca-central-1: {location: Montreal, country: ca, currency: CAD, verified: true}
+  ap-southeast-1: {location: Singapore, country: sg, currency: SGD, verified: true}
+  ap-southeast-2: {location: Sydney, country: au, currency: AUD, verified: true, provider_accepts: false}
+  ap-northeast-1: {location: Japan, country: jp, currency: JPY, verified: true}
 
 # s3-compatible object storage endpoint per country
 # source: kb.leaseweb.com object storage getting started, 2026-11-20

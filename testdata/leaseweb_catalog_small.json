@@ -1,0 +1,46 @@
+{
+  "fetched_at": "2026-01-01T00:00:00Z",
+  "source": "api",
+  "note": "small fixed catalog for the tests, taken from a real snapshot",
+  "regions": [
+    {
+      "code": "eu-central-1",
+      "location": "Frankfurt",
+      "currency": "EUR",
+      "storage_types": [
+        "central",
+        "local"
+      ]
+    },
+    {
+      "code": "eu-west-2",
+      "location": "London",
+      "currency": "GBP",
+      "storage_types": [
+        "central",
+        "local"
+      ]
+    },
+    {
+      "code": "eu-west-3",
+      "location": "Amsterdam",
+      "currency": "EUR",
+      "storage_types": [
+        "central",
+        "local"
+      ]
+    }
+  ],
+  "instance_types": [
+    {"name": "lsw.m6a.large", "region": "eu-central-1", "vcpu": 2, "memory_gib": 8.0, "gpu": 0, "currency": "EUR", "price_hourly_local": 0.0569, "price_monthly_local": 37.38, "price_hourly_eur": 0.0569, "price_monthly_eur": 37.38, "storage_types": ["local"], "min_disk_gib": 5},
+    {"name": "lsw.m6a.large", "region": "eu-west-2", "vcpu": 2, "memory_gib": 8.0, "gpu": 0, "currency": "GBP", "price_hourly_local": 0.0494, "price_monthly_local": 32.45, "price_hourly_eur": null, "price_monthly_eur": null, "storage_types": ["local"], "min_disk_gib": 5},
+    {"name": "lsw.c3.large", "region": "eu-west-3", "vcpu": 2, "memory_gib": 3.0, "gpu": 0, "currency": "EUR", "price_hourly_local": 0.0348, "price_monthly_local": 25.62, "price_hourly_eur": 0.0348, "price_monthly_eur": 25.62, "storage_types": ["central", "local"], "min_disk_gib": 5},
+    {"name": "lsw.c4.large", "region": "eu-west-3", "vcpu": 2, "memory_gib": 3.75, "gpu": 0, "currency": "EUR", "price_hourly_local": 0.0383, "price_monthly_local": 27.89, "price_hourly_eur": 0.0383, "price_monthly_eur": 27.89, "storage_types": ["central", "local"], "min_disk_gib": 5},
+    {"name": "lsw.c6a.large", "region": "eu-west-3", "vcpu": 2, "memory_gib": 4.0, "gpu": 0, "currency": "EUR", "price_hourly_local": 0.0462, "price_monthly_local": 33.05, "price_hourly_eur": 0.0462, "price_monthly_eur": 33.05, "storage_types": ["local"], "min_disk_gib": 5},
+    {"name": "lsw.m3.large", "region": "eu-west-3", "vcpu": 2, "memory_gib": 7.0, "gpu": 0, "currency": "EUR", "price_hourly_local": 0.04, "price_monthly_local": 29.04, "price_hourly_eur": 0.04, "price_monthly_eur": 29.04, "storage_types": ["central", "local"], "min_disk_gib": 5},
+    {"name": "lsw.m5.large", "region": "eu-west-3", "vcpu": 2, "memory_gib": 8.0, "gpu": 0, "currency": "EUR", "price_hourly_local": 0.047, "price_monthly_local": 33.64, "price_hourly_eur": 0.047, "price_monthly_eur": 33.64, "storage_types": ["central", "local"], "min_disk_gib": 5},
+    {"name": "lsw.m6a.large", "region": "eu-west-3", "vcpu": 2, "memory_gib": 8.0, "gpu": 0, "currency": "EUR", "price_hourly_local": 0.0528, "price_monthly_local": 37.38, "price_hourly_eur": 0.0528, "price_monthly_eur": 37.38, "storage_types": ["local"], "min_disk_gib": 5},
+    {"name": "lsw.m6a.xlarge", "region": "eu-west-3", "vcpu": 4, "memory_gib": 16.0, "gpu": 0, "currency": "EUR", "price_hourly_local": 0.1097, "price_monthly_local": 74.77, "price_hourly_eur": 0.1097, "price_monthly_eur": 74.77, "storage_types": ["local"], "min_disk_gib": 5},
+    {"name": "lsw.r6a.large", "region": "eu-west-3", "vcpu": 2, "memory_gib": 16.0, "gpu": 0, "currency": "EUR", "price_hourly_local": 0.066, "price_monthly_local": 46.06, "price_hourly_eur": 0.066, "price_monthly_eur": 46.06, "storage_types": ["local"], "min_disk_gib": 5}
+  ]
+}

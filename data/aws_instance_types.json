@@ -65,5 +65,16 @@
     "db.m6i.large": 0.178,
     "db.r5.large": 0.25,
     "db.r6g.large": 0.225
-  }
+  },
+  "regional": {
+    "eu-north-1": {
+      "m6g.large": 0.082,
+      "m7i-flex.large": 0.10175,
+      "t3.large": 0.0864,
+      "t3.micro": 0.0108,
+      "db.t3.medium": 0.074,
+      "db.t4g.micro": 0.016
+    }
+  },
+  "regional_source": "AWS Pricing API on-demand, USD per hour, Linux/shared and RDS single-AZ, fetched 2026-11-20"
 }

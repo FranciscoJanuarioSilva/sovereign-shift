@@ -33,7 +33,7 @@ sovereign_shift/
   cli.py        # typer
   prompts/      # plain-text prompt files, one per agent
 mappings/       # YAML: instance types, regions, services, security rules
-data/           # leaseweb_catalog.json (from the API), aws_prices.json
+data/           # leaseweb_catalog.json (committed API snapshot, refresh with scripts/fetch_leaseweb_catalog.py), aws_instance_types.json
 runbook/templates/  # YAML: allowed runbook steps per resource type
 docs/           # research, contracts, schemas
 scripts/        # fetch-corpus.sh, extract_schemas.py
