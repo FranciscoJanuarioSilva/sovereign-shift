@@ -19,7 +19,8 @@ sovereign-shift                     the product, the pipeline, the rules every s
 ├── generate-terraform              Leaseweb Terraform from mapping.json
 ├── finalize-leaseweb               security groups and LB targets through the API
 ├── runbook                         data migration steps from templates
-└── report                          report.md / report.json
+├── report                          report.md / report.json
+└── frontend-design                 look and feel of the web app (Anthropic, Apache-2.0)
 ```
 
 | Skill | Use it when |
@@ -38,6 +39,7 @@ sovereign-shift                     the product, the pipeline, the rules every s
 | [finalize-leaseweb](finalize-leaseweb/SKILL.md) | you change or run finalize |
 | [runbook](runbook/SKILL.md) | you add or change runbook templates |
 | [report](report/SKILL.md) | you change what the report shows |
+| [frontend-design](frontend-design/SKILL.md) | you change how the web app in `frontend/web/` looks |
 
 ## Adding a skill
 1. Make a folder named like the skill, with `SKILL.md` inside.

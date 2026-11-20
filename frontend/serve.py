@@ -1,4 +1,8 @@
-"""Serve the local dashboard and analyse uploaded AWS inventories offline."""
+"""Serve the local dashboard: connect a cloud account or upload an inventory, get the assessment.
+
+Credentials typed into the page are used in this process only, for read-only scans.
+They are never written to disk, logged, put in the environment or sent to the AI.
+"""
 
 import json
 import os
@@ -14,19 +18,97 @@ from threading import Lock
 from urllib.parse import urlsplit
 from uuid import uuid4
 import contextlib
+import re
+
+import boto3
+import botocore.exceptions
+import httpx
+
+from sovereign_shift.scanner import aws as aws_scanner
+from sovereign_shift.scanner import cloudflare as cloudflare_scanner
 
 ROOT = Path(__file__).resolve().parent
+DIST = ROOT / "dist"
 MAX_INVENTORY_BYTES = 16 * 1024 * 1024
-ASSETS = {
-    "/": ("index.html", "text/html; charset=utf-8"),
-    "/index.html": ("index.html", "text/html; charset=utf-8"),
-    "/styles.css": ("styles.css", "text/css; charset=utf-8"),
-    "/app.js": ("app.js", "text/javascript; charset=utf-8"),
-    "/demo-inventory.json": ("../testdata/clickops_inventory.json", "application/json"),
+DEMO = ROOT.parent / "testdata/clickops_inventory.json"
+TYPES = {
+    ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".json": "application/json",
+    ".woff2": "font/woff2", ".png": "image/png", ".ico": "image/x-icon",
 }
+AWS_REGION = re.compile(r"^[a-z]{2}(-[a-z]+)+-\d$")
+AWS_KEY_ID = re.compile(r"^(AKIA|ASIA)[A-Z0-9]{16}$")
+# leaseweb destinations the page offers, empty means "closest to the source" (mappings/regions.yaml)
+DESTINATIONS = {"eu-west-3", "eu-central-1", ""}
 
 
-def analyse(inventory: bytes) -> tuple[dict, dict[str, str]]:
+class ScanProblem(Exception):
+    """A message the page can show as is."""
+
+
+def asset(path: str) -> tuple[Path, str] | None:
+    # built react app in dist/, unknown paths fall back to index.html (single page app)
+    if path == "/demo-inventory.json":
+        return DEMO, "application/json"
+    target = (DIST / path.lstrip("/")).resolve()
+    if not target.is_relative_to(DIST.resolve()) or not target.is_file():
+        target = DIST / "index.html"
+    return target, TYPES.get(target.suffix, "application/octet-stream")
+
+
+def can_write(session: boto3.Session, region: str) -> bool:
+    # a dry run answers "would have succeeded" only when the key may create resources
+    try:
+        session.client("ec2", region_name=region).create_security_group(
+            GroupName="sovereign-shift-write-check", Description="dry run only", DryRun=True)
+    except botocore.exceptions.ClientError as error:
+        return error.response["Error"]["Code"] == "DryRunOperation"
+    return True
+
+
+def scan_aws(request: dict) -> dict:
+    key_id = str(request.get("access_key_id", "")).strip()
+    secret = str(request.get("secret_access_key", "")).strip()
+    token = str(request.get("session_token", "")).strip() or None
+    region = str(request.get("region", "")).strip()
+    if not AWS_KEY_ID.match(key_id) or len(secret) < 20:
+        raise ScanProblem("Enter an AWS access key ID (AKIA… or ASIA…) and its secret access key.")
+    if not AWS_REGION.match(region):
+        raise ScanProblem("Choose the AWS region to scan, for example eu-north-1.")
+    # explicit keys only: no profile, no shared files, so nothing on this machine is picked up instead
+    session = boto3.Session(aws_access_key_id=key_id, aws_secret_access_key=secret,
+                            aws_session_token=token, region_name=region)
+    try:
+        session.client("sts").get_caller_identity()
+        if can_write(session, region):
+            raise ScanProblem("This key can change resources in the account. Create a read-only key "
+                              "(AWS managed policy ReadOnlyAccess) and use that one instead.")
+        return aws_scanner.scan(session, [region])
+    except botocore.exceptions.ClientError as error:
+        code = error.response["Error"]["Code"]
+        if code in {"InvalidClientTokenId", "SignatureDoesNotMatch", "UnrecognizedClientException", "ExpiredToken"}:
+            raise ScanProblem("AWS rejected these credentials. Check the key ID, the secret and, for temporary keys, the session token.") from None
+        raise ScanProblem(f"AWS refused {error.operation_name} ({code}). Attach the ReadOnlyAccess policy to this key.") from None
+    except botocore.exceptions.BotoCoreError:
+        raise ScanProblem("Could not reach AWS. Check the network connection and try again.") from None
+
+
+def scan_cloudflare(request: dict) -> dict:
+    account = str(request.get("account_id", "")).strip()
+    token = str(request.get("api_token", "")).strip()
+    if not re.fullmatch(r"[a-fA-F0-9]{32}", account) or not token:
+        raise ScanProblem("Enter the 32-character Cloudflare account ID and an API token with read permissions.")
+    with httpx.Client(base_url="https://api.cloudflare.com/client/v4", timeout=30,
+                      headers={"Authorization": f"Bearer {token}"}) as client:
+        try:
+            return cloudflare_scanner.scan_account(account, client)
+        except cloudflare_scanner.ScanError as error:
+            raise ScanProblem(str(error)) from None
+        except httpx.HTTPError:
+            raise ScanProblem("Could not reach Cloudflare. Check the network connection and try again.") from None
+
+
+def analyse(inventory: bytes, use_ai: bool = False, target_region: str = "") -> tuple[dict, dict[str, str]]:
     with TemporaryDirectory(prefix="sovereign-assessment-") as folder:
         out = Path(folder)
         snapshot = out / "inventory.json"
@@ -34,12 +116,13 @@ def analyse(inventory: bytes) -> tuple[dict, dict[str, str]]:
         subprocess.run(
             [
                 sys.executable, "-m", "sovereign_shift.cli", "all",
-                "--from-snapshot", str(snapshot), "--no-ai", "--out", str(out),
+                "--from-snapshot", str(snapshot), *([] if use_ai else ["--no-ai"]),
+                *(["--target-region", target_region] if target_region else []), "--out", str(out),
             ],
             cwd=ROOT.parent,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            timeout=60,
+            timeout=180 if use_ai else 60,
             check=True,
         )
         report = json.loads((out / "report.json").read_text(encoding="utf-8"))
@@ -103,13 +186,13 @@ def serve(port: int, terraform: str | None = None) -> None:
             if self.headers.get("Host") not in local_hosts:
                 self.send_error(403)
                 return
-            asset = ASSETS.get(urlsplit(self.path).path)
-            if asset is None:
+            found = asset(urlsplit(self.path).path)
+            if found is None:
                 self.send_error(404)
                 return
-            filename, content_type = asset
+            filename, content_type = found
             try:
-                data = (ROOT / filename).read_bytes()
+                data = filename.read_bytes()
             except OSError:
                 self.send_error(500, "Could not read the requested file")
                 return
@@ -121,7 +204,7 @@ def serve(port: int, terraform: str | None = None) -> None:
                 self.problem(403, "Open the dashboard on localhost to analyse an inventory.")
                 return
             route = urlsplit(self.path).path
-            if route not in {"/analyse", "/validate"}:
+            if route not in {"/analyse", "/validate", "/scan"}:
                 self.send_error(404)
                 return
             if self.headers.get_content_type() != "application/json":
@@ -139,8 +222,36 @@ def serve(port: int, terraform: str | None = None) -> None:
             if route == "/validate":
                 self.validate_assessment(body)
                 return
+            use_ai = False
+            target_region = ""
+            if route == "/scan":
+                try:
+                    request = json.loads(body)
+                    if not isinstance(request, dict):
+                        raise ValueError
+                except ValueError:
+                    self.problem(400, "The connection form could not be read. Reload the page and try again.")
+                    return
+                use_ai = request.get("use_ai") is True
+                target_region = str(request.get("target_region", ""))
+                if target_region not in DESTINATIONS:
+                    self.problem(400, "Choose Amsterdam, Frankfurt or the region closest to the source.")
+                    return
+                try:
+                    inventory = scan_aws(request) if request.get("provider") == "aws" else (
+                        scan_cloudflare(request) if request.get("provider") == "cloudflare" else None)
+                except ScanProblem as error:
+                    self.problem(422, str(error))
+                    return
+                finally:
+                    # drop the secrets as soon as the scan is done
+                    request.clear()
+                if inventory is None:
+                    self.problem(400, "Choose AWS or Cloudflare.")
+                    return
+                body = json.dumps(inventory).encode()
             try:
-                report, files = analyse(body)
+                report, files = analyse(body, use_ai, target_region)
             except subprocess.TimeoutExpired:
                 self.problem(504, "The local assessment timed out.")
                 return
@@ -155,7 +266,7 @@ def serve(port: int, terraform: str | None = None) -> None:
                 assessments[assessment_id] = files
                 if len(assessments) > 8:
                     assessments.popitem(last=False)
-            self.json_reply({"report": report, "files": files, "assessment_id": assessment_id})
+            self.json_reply({"report": report, "files": files, "assessment_id": assessment_id, "ai": use_ai})
 
         def validate_assessment(self, body: bytes) -> None:
             try:

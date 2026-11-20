@@ -115,17 +115,31 @@ Runbook defaults are offline. For AI notes and the report's summary and firewall
 - The report states which source it used and how old the snapshot is. The total is a compute subtotal: storage, traffic, public IPs and load balancers are not included.
 - Many newer types (the `5a` and `6a` generations) only offer local NVMe disks. The translator picks the disk kind each type supports and notes it in the report.
 
-## Local dashboard
-
-With the project installed in the virtual environment, run from the repository root:
+## Web app
 
 ```bash
 .venv/bin/python frontend/serve.py --port 8001
 ```
 
-Open <http://127.0.0.1:8001>. The dashboard starts empty. **Upload JSON** accepts an AWS `inventory.json` from the scanner or an existing Sovereign Shift `report.json`. Inventories are analysed by the local server without AI or cloud API calls. Existing reports are read directly in the browser. **View demo** opens the example. Use **Back to report** or **Back to upload** to leave the demo.
+Open <http://127.0.0.1:8001>. Three ways in:
+- **AWS**: access key ID, secret, optional session token and the region. The server checks the key with STS, then refuses it if a dry-run `CreateSecurityGroup` would succeed (the key can change the account). Use a key with the managed policy `ReadOnlyAccess`.
+- **Cloudflare**: account ID and an API token with the read permissions listed above.
+- **From a file**: an `inventory.json` from `sovereign-shift scan`, or a `report.json` from an earlier assessment.
 
-After analysing an inventory or opening the demo, use **Terraform** to inspect and download the generated files and the post-apply `finalize.json`. **Validate Terraform** runs `terraform init -backend=false` and `terraform validate` against those files in a temporary directory. The first step downloads the provider and needs access to the Terraform registry. Use Terraform on `PATH` or pass `--terraform /path/to/terraform` to the server.
+Tick **Add AI suggestions** to run the assessment with the AI settings from `.env`. <http://127.0.0.1:8001/#demo> opens the synthetic demo shop straight away.
+
+How the keys are handled: the scan runs inside `serve.py` with a boto3 session built from the typed keys (no profile, no shared files, no environment variables), the request is cleared once the scan is done, and the server only answers `localhost` with a matching `Origin`. Keys never reach the disk, the logs, the pipeline subprocess or the AI.
+
+The report page shows the route, readiness, costs, security findings, the generated Terraform (download, and **Validate with Terraform** if `terraform` is on `PATH` or passed with `--terraform`), the migration work, the data runbook and the dependencies.
+
+### Changing the web app
+
+The React source is in `frontend/web/`. `frontend/dist/` is the committed build, so running the app needs no Node.
+
+```bash
+npm --prefix frontend/web ci
+npm --prefix frontend/web run build    # writes frontend/dist
+```
 
 ## GitHub Actions
 
