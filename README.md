@@ -155,3 +155,24 @@ and configure Actions secrets `AWS_READONLY_ACCESS_KEY_ID` and
 credentials also set `AWS_READONLY_SESSION_TOKEN`. Enable publication of
 live results only when repository readers may access the infrastructure details.
 Deployment and post-apply finalization are separate from the assessment.
+
+## Local dashboard
+
+With the project installed in the virtual environment, run from the repository root:
+
+```bash
+.venv/bin/python frontend/serve.py --port 8001
+```
+
+Open <http://127.0.0.1:8001>. The dashboard starts empty. **Upload JSON** accepts
+an AWS `inventory.json` from the scanner or an existing Sovereign Shift
+`report.json`. Inventories are analysed by the local server without AI or cloud
+API calls. Existing reports are read directly in the browser. **View demo**
+opens the example. Use **Back to report** or **Back to upload** to leave the demo.
+
+After analysing an inventory or opening the demo, use **Terraform** to inspect
+and download the generated files and the post-apply `finalize.json`.
+**Validate Terraform** runs `terraform init -backend=false` and
+`terraform validate` against those files in a temporary directory. The first
+step downloads the provider and needs access to the Terraform registry. Use
+Terraform on `PATH` or pass `--terraform /path/to/terraform` to the server.
