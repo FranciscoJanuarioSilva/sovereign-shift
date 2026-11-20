@@ -42,3 +42,21 @@ object_storage_endpoints:
   us: https://us.object-storage.io
   ca: https://ca.object-storage.io
   sg: https://sg.object-storage.io
+
+# azure region -> leaseweb public cloud region (only regions the provider accepts)
+azure_to_leaseweb:
+  swedencentral: eu-west-3      # sweden -> amsterdam
+  westeurope: eu-west-3         # netherlands -> amsterdam
+  northeurope: eu-west-3        # ireland -> amsterdam
+  francecentral: eu-west-3      # paris -> amsterdam
+  germanywestcentral: eu-central-1  # frankfurt -> frankfurt
+  switzerlandnorth: eu-central-1
+  italynorth: eu-central-1
+  uksouth: eu-west-3            # london -> amsterdam (override with --target-region eu-west-2)
+  eastus: us-east-1
+  eastus2: us-east-1
+  westus: us-west-1
+  westus2: us-west-1
+  canadacentral: ca-central-1
+  southeastasia: ap-southeast-1
+  japaneast: ap-northeast-1

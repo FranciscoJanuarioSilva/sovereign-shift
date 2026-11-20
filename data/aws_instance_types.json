@@ -74,7 +74,12 @@
       "t3.micro": 0.0108,
       "db.t3.medium": 0.074,
       "db.t4g.micro": 0.016
+    },
+    "swedencentral": {
+      "Standard_B2s": 0.0432,
+      "Standard_D2s_v5": 0.102
     }
   },
-  "regional_source": "AWS Pricing API on-demand, USD per hour, Linux/shared and RDS single-AZ, fetched 2026-11-20"
+  "regional_source": "AWS Pricing API on-demand, USD per hour, Linux/shared and RDS single-AZ, fetched 2026-11-20",
+  "regional_azure_source": "Azure Retail Prices API, Linux pay-as-you-go, USD per hour, fetched 2026-11-20"
 }

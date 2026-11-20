@@ -61,14 +61,16 @@ def tf_names(resources: list[dict[str, Any]]) -> dict[str, str]:
     return names
 
 
-def region_mapper(override: str | None):
+def region_mapper(override: str | None, source: str = "aws"):
     info = catalog.regions()
     valid = set(catalog.schema_enums()["region"])
+    # each source cloud has its own region names (aws eu-north-1, azure swedencentral)
+    table = info.get(f"{source}_to_leaseweb") or info["aws_to_leaseweb"]
 
     def region_for(aws_region: str | None) -> str:
         if override:
             return override
-        mapped = info["aws_to_leaseweb"].get(aws_region or "", info["default"])
+        mapped = table.get(aws_region or "", info["default"])
         return mapped if mapped in valid else info["default"]
 
     return region_for
@@ -141,7 +143,7 @@ def translate(
     if target_region and target_region not in catalog.schema_enums()["region"]:
         raise ValueError(f"{target_region} isn't a leaseweb region: {', '.join(catalog.schema_enums()['region'])}")
     graph = graph or build_graph(inventory)
-    region_for = region_mapper(target_region)
+    region_for = region_mapper(target_region, inventory.get("source", "aws"))
     ctx = Context(
         by_id={r["id"]: r for r in resources}, tf_names=tf_names(resources),
         region_for=region_for, target_region_override=target_region, db_clients=db_clients(graph, resources),
@@ -199,7 +201,7 @@ def summary(mapping: Mapping) -> str:
         ai_text += f" (ai off: {ai['disabled_reason']})"
     if mapping.source == "cloudflare":
         return f"{len(mapping.entries)} resources -> {mapping.target_region}: {parts}{ai_text}. Costs unpriced."
-    return f"{len(mapping.entries)} resources -> {mapping.target_region}: {parts}{ai_text}. monthly estimate aws {aws:.2f} eur vs leaseweb {lsw:.2f} eur"
+    return f"{len(mapping.entries)} resources -> {mapping.target_region}: {parts}{ai_text}. monthly estimate {mapping.source} {aws:.2f} eur vs leaseweb {lsw:.2f} eur"
 
 
 def main_files(inventory_path: Path, graph_path: Path | None, out: Path, target_region: str | None, use_ai: bool) -> Mapping:

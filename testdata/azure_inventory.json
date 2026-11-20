@@ -1,0 +1,434 @@
+{
+ "source": "azure",
+ "account_id": "00000000-0000-0000-0000-000000000000",
+ "scanned_at": "2026-11-20T14:00:00Z",
+ "regions": [
+  "swedencentral"
+ ],
+ "resources": [
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/dnszones/shop.example.com/A/www",
+   "type": "route53_record",
+   "region": "global",
+   "name": "www.shop.example.com.",
+   "properties": {
+    "record_type": "A",
+    "ttl": 300,
+    "values": [
+     "20.0.0.10"
+    ],
+    "cloud_type": "Microsoft.Network/dnszones/recordsets"
+   },
+   "tags": {},
+   "relations": [
+    {
+     "type": "in_zone",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/dnszones/shop.example.com"
+    },
+    {
+     "type": "points_to",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb"
+    },
+    {
+     "type": "points_to",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/publicIPAddresses/lb-ip"
+    }
+   ]
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/dnszones/shop.example.com",
+   "type": "route53_zone",
+   "region": "global",
+   "name": "shop.example.com.",
+   "properties": {
+    "cloud_type": "Microsoft.Network/dnszones"
+   },
+   "tags": {},
+   "relations": []
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/orders-pg",
+   "type": "db_instance",
+   "region": "swedencentral",
+   "name": "orders-pg",
+   "properties": {
+    "engine": "postgres",
+    "engine_version": "16",
+    "instance_class": "Standard_D2ds_v4",
+    "vcpu": 2,
+    "memory_gib": 8.0,
+    "storage_gib": 64,
+    "publicly_accessible": true,
+    "storage_encrypted": true,
+    "multi_az": false,
+    "backup_retention_days": 7,
+    "port": 5432,
+    "cloud_type": "Microsoft.DBforPostgreSQL/flexibleServers"
+   },
+   "tags": {},
+   "relations": [
+    {
+     "type": "uses_security_group",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/orders-pg/firewall"
+    }
+   ]
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/disks/web-1-osdisk",
+   "type": "ebs_volume",
+   "region": "swedencentral",
+   "name": "web-1-osdisk",
+   "properties": {
+    "size_gib": 30,
+    "encrypted": true,
+    "cloud_type": "Microsoft.Compute/disks"
+   },
+   "tags": {},
+   "relations": []
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/disks/web-2-osdisk",
+   "type": "ebs_volume",
+   "region": "swedencentral",
+   "name": "web-2-osdisk",
+   "properties": {
+    "size_gib": 30,
+    "encrypted": true,
+    "cloud_type": "Microsoft.Compute/disks"
+   },
+   "tags": {},
+   "relations": []
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/virtualMachines/web-1",
+   "type": "ec2_instance",
+   "region": "swedencentral",
+   "name": "web-1",
+   "properties": {
+    "instance_type": "Standard_D2s_v5",
+    "vcpu": 2,
+    "memory_gib": 8.0,
+    "os": "0001-com-ubuntu-server-jammy 22_04-lts-gen2",
+    "volumes": [
+     {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/disks/web-1-osdisk",
+      "size_gib": 30,
+      "encrypted": true,
+      "root": true
+     }
+    ],
+    "key_name": "web-1-ssh",
+    "public_ip": true,
+    "cloud_type": "Microsoft.Compute/virtualMachines"
+   },
+   "tags": {
+    "env": "prod"
+   },
+   "relations": [
+    {
+     "type": "in_subnet",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/virtualNetworks/shop-vnet/subnets/web"
+    },
+    {
+     "type": "uses_security_group",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/networkSecurityGroups/web-nsg"
+    },
+    {
+     "type": "uses_volume",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/disks/web-1-osdisk"
+    },
+    {
+     "type": "uses_elastic_ip",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/publicIPAddresses/web-1-ip"
+    }
+   ]
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/virtualMachines/web-2",
+   "type": "ec2_instance",
+   "region": "swedencentral",
+   "name": "web-2",
+   "properties": {
+    "instance_type": "Standard_B2s",
+    "vcpu": 2,
+    "memory_gib": 4.0,
+    "os": "0001-com-ubuntu-server-jammy 22_04-lts-gen2",
+    "volumes": [
+     {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/disks/web-2-osdisk",
+      "size_gib": 30,
+      "encrypted": true,
+      "root": true
+     }
+    ],
+    "key_name": "web-2-ssh",
+    "public_ip": false,
+    "cloud_type": "Microsoft.Compute/virtualMachines"
+   },
+   "tags": {
+    "env": "prod"
+   },
+   "relations": [
+    {
+     "type": "in_subnet",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/virtualNetworks/shop-vnet/subnets/web"
+    },
+    {
+     "type": "uses_security_group",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/networkSecurityGroups/web-nsg"
+    },
+    {
+     "type": "uses_volume",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/disks/web-2-osdisk"
+    }
+   ]
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/publicIPAddresses/lb-ip",
+   "type": "elastic_ip",
+   "region": "swedencentral",
+   "name": "lb-ip",
+   "properties": {
+    "public_ip": "20.0.0.10",
+    "cloud_type": "Microsoft.Network/publicIPAddresses"
+   },
+   "tags": {},
+   "relations": []
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/publicIPAddresses/web-1-ip",
+   "type": "elastic_ip",
+   "region": "swedencentral",
+   "name": "web-1-ip",
+   "properties": {
+    "public_ip": "20.0.0.11",
+    "cloud_type": "Microsoft.Network/publicIPAddresses"
+   },
+   "tags": {},
+   "relations": [
+    {
+     "type": "attached_to",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/virtualMachines/web-1"
+    }
+   ]
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/virtualMachines/web-1/sshKey",
+   "type": "key_pair",
+   "region": "swedencentral",
+   "name": "web-1-ssh",
+   "properties": {
+    "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleOnlyNotARealKey ops@laptop",
+    "cloud_type": "Microsoft.Compute/sshPublicKeys"
+   },
+   "tags": {},
+   "relations": []
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/virtualMachines/web-2/sshKey",
+   "type": "key_pair",
+   "region": "swedencentral",
+   "name": "web-2-ssh",
+   "properties": {
+    "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleOnlyNotARealKey ops@laptop",
+    "cloud_type": "Microsoft.Compute/sshPublicKeys"
+   },
+   "tags": {},
+   "relations": []
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb",
+   "type": "lb",
+   "region": "swedencentral",
+   "name": "shop-lb",
+   "properties": {
+    "lb_type": "network",
+    "scheme": "internet-facing",
+    "cloud_type": "Microsoft.Network/loadBalancers"
+   },
+   "tags": {},
+   "relations": []
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb/loadBalancingRules/http",
+   "type": "lb_listener",
+   "region": "swedencentral",
+   "name": "shop-lb-http",
+   "properties": {
+    "protocol": "TCP",
+    "port": 80,
+    "cloud_type": "Microsoft.Network/loadBalancers/loadBalancingRules"
+   },
+   "tags": {},
+   "relations": [
+    {
+     "type": "listens_on",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb"
+    },
+    {
+     "type": "forwards_to",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb/backendAddressPools/web-pool"
+    }
+   ]
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Web/sites/make-thumbnails",
+   "type": "other",
+   "region": "swedencentral",
+   "name": "make-thumbnails",
+   "properties": {
+    "kind": "functionapp",
+    "cloud_type": "Microsoft.Web/sites"
+   },
+   "tags": {},
+   "relations": []
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Storage/storageAccounts/shopassets",
+   "type": "s3_bucket",
+   "region": "swedencentral",
+   "name": "shopassets",
+   "properties": {
+    "public": true,
+    "encryption": [
+     "AES256"
+    ],
+    "versioning": "Unknown",
+    "cloud_type": "Microsoft.Storage/storageAccounts"
+   },
+   "tags": {},
+   "relations": []
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/orders-pg/firewall",
+   "type": "security_group",
+   "region": "swedencentral",
+   "name": "orders-pg-firewall",
+   "properties": {
+    "ingress": [
+     {
+      "protocol": "tcp",
+      "from_port": 5432,
+      "to_port": 5432,
+      "cidrs": [
+       "0.0.0.0/0"
+      ],
+      "source_groups": []
+     }
+    ],
+    "egress": [],
+    "cloud_type": "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules"
+   },
+   "tags": {},
+   "relations": []
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/networkSecurityGroups/web-nsg",
+   "type": "security_group",
+   "region": "swedencentral",
+   "name": "web-nsg",
+   "properties": {
+    "ingress": [
+     {
+      "protocol": "tcp",
+      "from_port": 22,
+      "to_port": 22,
+      "cidrs": [
+       "0.0.0.0/0"
+      ],
+      "source_groups": []
+     },
+     {
+      "protocol": "tcp",
+      "from_port": 3389,
+      "to_port": 3389,
+      "cidrs": [
+       "0.0.0.0/0"
+      ],
+      "source_groups": []
+     },
+     {
+      "protocol": "tcp",
+      "from_port": 80,
+      "to_port": 80,
+      "cidrs": [
+       "0.0.0.0/0"
+      ],
+      "source_groups": []
+     }
+    ],
+    "egress": [],
+    "cloud_type": "Microsoft.Network/networkSecurityGroups"
+   },
+   "tags": {},
+   "relations": []
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/virtualNetworks/shop-vnet/subnets/web",
+   "type": "subnet",
+   "region": "swedencentral",
+   "name": "web",
+   "properties": {
+    "cidr": "10.0.1.0/24",
+    "cloud_type": "Microsoft.Network/virtualNetworks/subnets"
+   },
+   "tags": {},
+   "relations": [
+    {
+     "type": "in_vpc",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/virtualNetworks/shop-vnet"
+    }
+   ]
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb/backendAddressPools/web-pool",
+   "type": "target_group",
+   "region": "swedencentral",
+   "name": "shop-lb-web-pool",
+   "properties": {
+    "protocol": "HTTP",
+    "port": 80,
+    "target_type": "instance",
+    "health_check_path": "/health",
+    "health_check_protocol": "HTTP",
+    "health_check_port": 80,
+    "targets": [
+     {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/virtualMachines/web-1"
+     },
+     {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/virtualMachines/web-2"
+     }
+    ],
+    "cloud_type": "Microsoft.Network/loadBalancers/backendAddressPools"
+   },
+   "tags": {},
+   "relations": [
+    {
+     "type": "associated_with",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb"
+    },
+    {
+     "type": "targets",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/virtualMachines/web-1"
+    },
+    {
+     "type": "targets",
+     "target": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/virtualMachines/web-2"
+    }
+   ]
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/virtualNetworks/shop-vnet",
+   "type": "vpc",
+   "region": "swedencentral",
+   "name": "shop-vnet",
+   "properties": {
+    "cidr": "10.0.0.0/16",
+    "cloud_type": "Microsoft.Network/virtualNetworks"
+   },
+   "tags": {},
+   "relations": []
+  }
+ ]
+}

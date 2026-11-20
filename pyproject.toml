@@ -11,6 +11,9 @@ dependencies = ["boto3>=1.40,<2", "networkx>=3.2,<4", "typer>=0.12,<1", "pydanti
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10"]
+# live azure scans only, the sample and tests don't need it
+azure = ["azure-identity>=1.15", "azure-mgmt-compute>=30", "azure-mgmt-network>=25", "azure-mgmt-rdbms>=10.1",
+         "azure-mgmt-storage>=21", "azure-mgmt-dns>=8", "azure-mgmt-resource>=23"]
 
 [project.scripts]
 sovereign-shift = "sovereign_shift.cli:app"

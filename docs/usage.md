@@ -35,6 +35,18 @@ The scanner inventories Workers, bindings, cron triggers, Durable Object namespa
 
 The [seeded demo Worker](../examples/cloudflare-worker/README.md) can run locally.
 
+## Scan an Azure subscription
+
+Not verified against a live subscription yet: the mapping is tested with an SDK-shaped sample (`testdata/azure_sdk_sample.json`) and mocks. See [azure.md](azure.md).
+
+```bash
+pip install -e '.[azure]'                     # the Azure SDK, only for live scans
+export AZURE_SUBSCRIPTION_ID=...              # plus Reader credentials for DefaultAzureCredential
+sovereign-shift all --source azure --out out/azure
+sovereign-shift all --from-snapshot testdata/azure_inventory.json --no-ai --out out/azure-sample   # offline sample
+python scripts/fetch_azure_prices.py --inventory out/azure/inventory.json   # real VM prices, public API, no key
+```
+
 ## Run the steps one by one
 
 ```bash

@@ -1,0 +1,375 @@
+{
+ "_note": "hand-built sample in the Azure SDK as_dict() shape, used instead of a live subscription. not real data.",
+ "subscription_id": "00000000-0000-0000-0000-000000000000",
+ "scanned_at": "2026-11-20T14:00:00Z",
+ "vm_sizes": {
+  "swedencentral": [
+   {
+    "name": "Standard_D2s_v5",
+    "number_of_cores": 2,
+    "memory_in_mb": 8192
+   },
+   {
+    "name": "Standard_B2s",
+    "number_of_cores": 2,
+    "memory_in_mb": 4096
+   },
+   {
+    "name": "Standard_D2ds_v4",
+    "number_of_cores": 2,
+    "memory_in_mb": 8192
+   }
+  ]
+ },
+ "virtual_machines": [
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/virtualMachines/web-1",
+   "name": "web-1",
+   "location": "swedencentral",
+   "tags": {
+    "env": "prod"
+   },
+   "hardware_profile": {
+    "vm_size": "Standard_D2s_v5"
+   },
+   "storage_profile": {
+    "image_reference": {
+     "publisher": "Canonical",
+     "offer": "0001-com-ubuntu-server-jammy",
+     "sku": "22_04-lts-gen2"
+    },
+    "os_disk": {
+     "name": "web-1-osdisk",
+     "managed_disk": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/disks/web-1-osdisk"
+     }
+    },
+    "data_disks": []
+   },
+   "os_profile": {
+    "linux_configuration": {
+     "ssh": {
+      "public_keys": [
+       {
+        "key_data": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleOnlyNotARealKey ops@laptop"
+       }
+      ]
+     }
+    }
+   },
+   "network_profile": {
+    "network_interfaces": [
+     {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/networkInterfaces/web-1-nic"
+     }
+    ]
+   }
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/virtualMachines/web-2",
+   "name": "web-2",
+   "location": "swedencentral",
+   "tags": {
+    "env": "prod"
+   },
+   "hardware_profile": {
+    "vm_size": "Standard_B2s"
+   },
+   "storage_profile": {
+    "image_reference": {
+     "publisher": "Canonical",
+     "offer": "0001-com-ubuntu-server-jammy",
+     "sku": "22_04-lts-gen2"
+    },
+    "os_disk": {
+     "name": "web-2-osdisk",
+     "managed_disk": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/disks/web-2-osdisk"
+     }
+    },
+    "data_disks": []
+   },
+   "os_profile": {
+    "linux_configuration": {
+     "ssh": {
+      "public_keys": [
+       {
+        "key_data": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleOnlyNotARealKey ops@laptop"
+       }
+      ]
+     }
+    }
+   },
+   "network_profile": {
+    "network_interfaces": [
+     {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/networkInterfaces/web-2-nic"
+     }
+    ]
+   }
+  }
+ ],
+ "disks": [
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/disks/web-1-osdisk",
+   "name": "web-1-osdisk",
+   "location": "swedencentral",
+   "disk_size_gb": 30,
+   "encryption": {
+    "type": "EncryptionAtRestWithPlatformKey"
+   }
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Compute/disks/web-2-osdisk",
+   "name": "web-2-osdisk",
+   "location": "swedencentral",
+   "disk_size_gb": 30,
+   "encryption": {
+    "type": "EncryptionAtRestWithPlatformKey"
+   }
+  }
+ ],
+ "network_interfaces": [
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/networkInterfaces/web-1-nic",
+   "name": "web-1-nic",
+   "location": "swedencentral",
+   "ip_configurations": [
+    {
+     "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/networkInterfaces/web-1-nic/ipConfigurations/ipconfig1",
+     "subnet": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/virtualNetworks/shop-vnet/subnets/web"
+     },
+     "public_ip_address": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/publicIPAddresses/web-1-ip"
+     }
+    }
+   ]
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/networkInterfaces/web-2-nic",
+   "name": "web-2-nic",
+   "location": "swedencentral",
+   "ip_configurations": [
+    {
+     "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/networkInterfaces/web-2-nic/ipConfigurations/ipconfig1",
+     "subnet": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/virtualNetworks/shop-vnet/subnets/web"
+     }
+    }
+   ]
+  }
+ ],
+ "public_ips": [
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/publicIPAddresses/web-1-ip",
+   "name": "web-1-ip",
+   "location": "swedencentral",
+   "ip_address": "20.0.0.11",
+   "ip_configuration": {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/networkInterfaces/web-1-nic/ipConfigurations/ipconfig1"
+   }
+  },
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/publicIPAddresses/lb-ip",
+   "name": "lb-ip",
+   "location": "swedencentral",
+   "ip_address": "20.0.0.10",
+   "ip_configuration": {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb/frontendIPConfigurations/front"
+   }
+  }
+ ],
+ "virtual_networks": [
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/virtualNetworks/shop-vnet",
+   "name": "shop-vnet",
+   "location": "swedencentral",
+   "address_space": {
+    "address_prefixes": [
+     "10.0.0.0/16"
+    ]
+   },
+   "subnets": [
+    {
+     "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/virtualNetworks/shop-vnet/subnets/web",
+     "name": "web",
+     "address_prefix": "10.0.1.0/24",
+     "network_security_group": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/networkSecurityGroups/web-nsg"
+     }
+    }
+   ]
+  }
+ ],
+ "network_security_groups": [
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/networkSecurityGroups/web-nsg",
+   "name": "web-nsg",
+   "location": "swedencentral",
+   "security_rules": [
+    {
+     "name": "allow-ssh",
+     "priority": 100,
+     "direction": "Inbound",
+     "access": "Allow",
+     "protocol": "Tcp",
+     "source_address_prefix": "*",
+     "destination_port_range": "22"
+    },
+    {
+     "name": "allow-rdp",
+     "priority": 110,
+     "direction": "Inbound",
+     "access": "Allow",
+     "protocol": "Tcp",
+     "source_address_prefix": "Internet",
+     "destination_port_range": "3389"
+    },
+    {
+     "name": "allow-http",
+     "priority": 120,
+     "direction": "Inbound",
+     "access": "Allow",
+     "protocol": "Tcp",
+     "source_address_prefix": "*",
+     "destination_port_range": "80"
+    },
+    {
+     "name": "allow-vnet",
+     "priority": 130,
+     "direction": "Inbound",
+     "access": "Allow",
+     "protocol": "*",
+     "source_address_prefix": "VirtualNetwork",
+     "destination_port_range": "*"
+    }
+   ]
+  }
+ ],
+ "load_balancers": [
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb",
+   "name": "shop-lb",
+   "location": "swedencentral",
+   "frontend_ip_configurations": [
+    {
+     "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb/frontendIPConfigurations/front",
+     "public_ip_address": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/publicIPAddresses/lb-ip"
+     }
+    }
+   ],
+   "backend_address_pools": [
+    {
+     "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb/backendAddressPools/web-pool",
+     "name": "web-pool",
+     "backend_ip_configurations": [
+      {
+       "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/networkInterfaces/web-1-nic/ipConfigurations/ipconfig1"
+      },
+      {
+       "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/networkInterfaces/web-2-nic/ipConfigurations/ipconfig1"
+      }
+     ]
+    }
+   ],
+   "probes": [
+    {
+     "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb/probes/http-probe",
+     "name": "http-probe",
+     "protocol": "Http",
+     "port": 80,
+     "request_path": "/health"
+    }
+   ],
+   "load_balancing_rules": [
+    {
+     "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb/loadBalancingRules/http",
+     "name": "http",
+     "protocol": "Tcp",
+     "frontend_port": 80,
+     "backend_port": 80,
+     "backend_address_pool": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb/backendAddressPools/web-pool"
+     },
+     "probe": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/loadBalancers/shop-lb/probes/http-probe"
+     }
+    }
+   ]
+  }
+ ],
+ "postgres": [
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/orders-pg",
+   "name": "orders-pg",
+   "location": "swedencentral",
+   "version": "16",
+   "sku": {
+    "name": "Standard_D2ds_v4",
+    "tier": "GeneralPurpose"
+   },
+   "storage": {
+    "storage_size_gb": 64
+   },
+   "network": {
+    "public_network_access": "Enabled"
+   },
+   "high_availability": {
+    "mode": "Disabled"
+   },
+   "backup": {
+    "backup_retention_days": 7
+   }
+  }
+ ],
+ "mysql": [],
+ "db_firewall": {
+  "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/orders-pg": [
+   {
+    "name": "AllowAll",
+    "start_ip_address": "0.0.0.0",
+    "end_ip_address": "255.255.255.255"
+   }
+  ]
+ },
+ "storage_accounts": [
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Storage/storageAccounts/shopassets",
+   "name": "shopassets",
+   "location": "swedencentral",
+   "allow_blob_public_access": true
+  }
+ ],
+ "dns_zones": [
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/dnszones/shop.example.com",
+   "name": "shop.example.com"
+  }
+ ],
+ "dns_records": {
+  "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/dnszones/shop.example.com": [
+   {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Network/dnszones/shop.example.com/A/www",
+    "name": "www",
+    "type": "Microsoft.Network/dnszones/A",
+    "ttl": 300,
+    "a_records": [
+     {
+      "ipv4_address": "20.0.0.10"
+     }
+    ]
+   }
+  ]
+ },
+ "other": [
+  {
+   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/shop-rg/providers/Microsoft.Web/sites/make-thumbnails",
+   "name": "make-thumbnails",
+   "location": "swedencentral",
+   "type": "Microsoft.Web/sites",
+   "kind": "functionapp"
+  }
+ ]
+}

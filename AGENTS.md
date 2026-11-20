@@ -23,7 +23,7 @@ Built for a 5-hour hackathon build. Scope and priorities are in `PLAN.md`.
 ## Layout
 ```
 sovereign_shift/
-  scanner/      # read-only scans -> inventory (aws.py boto3, cloudflare.py)
+  scanner/      # read-only scans -> inventory (aws.py boto3, cloudflare.py, azure.py sample-tested only)
   assess/       # security posture, risk, performance, scaling (rules, no AI) -> assessment.json
   graph/        # relationships from IDs (networkx) + security checks
   translator/   # rules from mappings/, then AI for unmappable resources

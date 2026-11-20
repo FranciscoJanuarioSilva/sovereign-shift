@@ -77,6 +77,9 @@ def entry(resource: dict[str, Any], ctx: Context, **fields: Any) -> MappingEntry
 
 # ---------- instance sizing ----------
 
+# azure vm sizes like Standard_D2s_v5, Standard_E4ds_v5, Standard_D2ps_v5 (p = arm), Standard_NC6s_v3
+AZURE_SIZE_RE = re.compile(r"^Standard_([A-Z]+)(\d+)([a-z]*)(?:_v\d+)?$")
+AZURE_SERIES = {"D": "m", "A": "m", "E": "r", "M": "r", "L": "r", "F": "c", "B": "t", "N": "g"}
 AWS_TYPE_RE = re.compile(r"^(?:db\.)?([a-z]+)(\d+)([a-z-]*)\.(\w+)$")
 
 
@@ -162,6 +165,11 @@ def size_instance(
     memory = memory or spec_mem
     match = AWS_TYPE_RE.match(instance_type)
     aws_family, suffix, size = (match.group(1), match.group(3), match.group(4)) if match else ("m", "", "")
+    azure = AZURE_SIZE_RE.match(instance_type)
+    if azure:
+        # same family hints as aws: general, memory, compute, burstable, gpu; "p" in the features means arm
+        aws_family = AZURE_SERIES.get(azure.group(1)[0], "m")
+        suffix, size = ("g" if "p" in azure.group(3) else ""), ""
     if vcpu is None or memory is None:
         notes.append(f"vcpu/ram of {instance_type} unknown, assumed 2 vcpu / 4 GiB")
         vcpu, memory = vcpu or 2, memory or 4
@@ -380,7 +388,7 @@ def db_instance(r: dict[str, Any], ctx: Context) -> MappingEntry:
             monthly_cost_eur=Cost(aws=aws_eur, aws_estimated=not aws_real),
         )
     # a database wants replicated central storage when some fitting type offers it
-    sized = size_instance(db_class, None, None, region, prefer_central=True)
+    sized = size_instance(db_class, p.get("vcpu"), p.get("memory_gib"), region, prefer_central=True)
     lsw = sized["type"]
     disk_kind, disk_notes = storage_for(lsw, region)
     storage = int(first(p, "storage_gib", "allocated_storage", "allocated_storage_gib", default=20))

@@ -137,16 +137,21 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
         ],
     }
     source_cloud = inventory.get("source", "aws")
-    source_label = "Cloudflare" if source_cloud == "cloudflare" else "AWS"
+    source_label = {"cloudflare": "Cloudflare", "azure": "Azure"}.get(source_cloud, "AWS")
+    if source_cloud == "azure":
+        # the price notes are written for aws, name the right cloud and price api
+        cost["assumptions"] = [a.replace("AWS Pricing API", "Azure Retail Prices API").replace("AWS:", "Azure:").replace("tiny AWS", "tiny Azure")
+                               for a in cost["assumptions"]]
     if source_cloud == "cloudflare":
         cost["assumptions"] = ["Cloudflare usage and billing were not scanned. Migration costs are unpriced."]
     for provider in (source_cloud, "leaseweb"):
         # totals only count rows priced on both sides, or the comparison isn't like for like
         both = [c for c in costs if c.get("aws") is not None and c.get("leaseweb") is not None]
-        values = [c.get(provider) for c in (both if source_cloud != "cloudflare" else costs)]
+        # the translator stores any source cloud's price in the "aws" field
+        values = [c.get("aws" if provider == source_cloud else provider) for c in (both if source_cloud != "cloudflare" else costs)]
         cost[provider + "_priced_subtotal_eur"] = round(sum(v for v in values if v is not None), 2)
         cost[provider + "_monthly_eur"] = (
-            round(sum(values), 2) if None not in values and (values or source_cloud == "aws") else None
+            round(sum(values), 2) if None not in values and (values or source_cloud in ("aws", "azure")) else None
         )
     account = inventory.get("account_id", "")
     counts = Counter(e["status"] for e in entries.values())
