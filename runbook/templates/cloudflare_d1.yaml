@@ -1,0 +1,17 @@
+resource_type: cloudflare_d1
+engine: null
+steps:
+- id: export-d1
+  title: Export schema and data with authorised D1 access during a write freeze
+  command: 'wrangler d1 export "{database_name_or_binding}" --remote --output="{new_dump_path}"'
+  verify: 'test -s "{new_dump_path}"'
+  inputs:
+    database_name_or_binding: {source: customer}
+    new_dump_path: {source: customer}
+- id: restore-d1-sqlite
+  title: On the destination host, restore the transferred dump into a new SQLite file
+  command: 'test ! -e "{new_database_path}" && sqlite3 -bail "{new_database_path}" < "{transferred_dump_path}"'
+  verify: 'sqlite3 -readonly "{new_database_path}" "PRAGMA integrity_check;"'
+  inputs:
+    new_database_path: {source: customer}
+    transferred_dump_path: {source: customer}

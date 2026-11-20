@@ -726,6 +726,11 @@ def elastic_ip(r: dict[str, Any], ctx: Context) -> MappingEntry:
     )
 
 
+def cloudflare_d1(r: dict[str, Any], ctx: Context) -> MappingEntry:
+    return entry(r, ctx, status="partial", via="runbook", target=None,
+                 justification="The runbook exports D1 and restores a SQLite database. Configure the host and port the application's D1 binding before cutover.")
+
+
 def cloudflare_dns_record(r: dict[str, Any], ctx: Context) -> MappingEntry:
     if props(r).get("manual_review") or props(r).get("record_type") not in {"A", "AAAA", "CNAME"}:
         result = unsupported(r, ctx)
@@ -758,6 +763,7 @@ RULES: dict[str, Callable[[dict[str, Any], Context], MappingEntry]] = {
     "lb_listener": lb_listener,
     "target_group": target_group,
     "s3_bucket": s3_bucket,
+    "cloudflare_d1": cloudflare_d1,
     "cloudflare_r2_bucket": s3_bucket,
     "cloudflare_dns_zone": route53_zone,
     "cloudflare_dns_record": cloudflare_dns_record,

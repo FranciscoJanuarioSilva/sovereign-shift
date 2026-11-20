@@ -198,6 +198,8 @@ function Dependencies({ edges, names }) {
 export default function Report({ report, label, onReset }) {
   const names = useMemo(() => new Map(report.graph.nodes.map((n) => [n.id, n.name])), [report]);
   const s = report.summary;
+  const workers = report.graph.nodes.filter((node) => node.type === "cloudflare_worker").length;
+  const related = s.resources - workers;
   return (
     <div className="report">
       <nav className="side" aria-label="Report sections">
@@ -210,7 +212,9 @@ export default function Report({ report, label, onReset }) {
           <div className="head-band">
             <p className="label">{label}</p>
             <Route report={report} />
-            <h1>{s.auto} of {s.resources} resources migrate automatically.</h1>
+            <h1>{report.source.cloud === "cloudflare" && workers > 0
+              ? `${workers} ${workers === 1 ? "Worker" : "Workers"} assessed · ${related} other ${related === 1 ? "resource" : "resources"}.`
+              : `${s.auto} of ${s.resources} resources migrate automatically.`}</h1>
             <Kpis report={report} />
           </div>
           <Readiness summary={s} />
