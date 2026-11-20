@@ -1,0 +1,90 @@
+name: Run migration assessment
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Inventory source
+        type: choice
+        options:
+          - demo
+          - aws
+        default: demo
+      use_ai:
+        description: Enable configured OpenRouter suggestions
+        type: boolean
+        default: false
+      publish_live_results:
+        description: Share AWS assessment files with everyone who can read this repository
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  assess:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e .
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+          terraform_wrapper: false
+      - name: Load synthetic inventory
+        if: inputs.source == 'demo'
+        run: |
+          mkdir -p out
+          cp testdata/clickops_inventory.json out/inventory.json
+      - name: Scan AWS
+        if: inputs.source == 'aws'
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_READONLY_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_READONLY_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_READONLY_SESSION_TOKEN }}
+          AWS_EC2_METADATA_DISABLED: 'true'
+        run: |
+          : "${AWS_REGION:?Set AWS_REGION}" "${AWS_ACCESS_KEY_ID:?Set read-only credentials}" "${AWS_SECRET_ACCESS_KEY:?Set read-only credentials}"
+          sovereign-shift scan --region "$AWS_REGION" --out out
+      - name: Build assessment
+        env:
+          USE_AI: ${{ inputs.use_ai }}
+          SOVEREIGN_AI_BASE_URL: ${{ vars.SOVEREIGN_AI_BASE_URL }}
+          SOVEREIGN_AI_MODEL: ${{ vars.SOVEREIGN_AI_MODEL }}
+          SOVEREIGN_AI_API_KEY: ${{ inputs.use_ai && secrets.SOVEREIGN_AI_API_KEY || '' }}
+        run: |
+          ai=(--no-ai)
+          if [[ "$USE_AI" == true ]]; then
+            : "${SOVEREIGN_AI_API_KEY:?Set OpenRouter secret}" "${SOVEREIGN_AI_MODEL:?Set AI model}" "${SOVEREIGN_AI_BASE_URL:?Set AI endpoint}"
+            ai=()
+          fi
+          sovereign-shift graph out/inventory.json --out out
+          sovereign-shift translate out/inventory.json --graph out/graph.json --out out "${ai[@]}"
+          sovereign-shift generate --out out
+          sovereign-shift runbook --out out "${ai[@]}"
+          sovereign-shift report --out out
+      - name: Validate generated Terraform
+        run: |
+          terraform -chdir=out/terraform init -backend=false -input=false
+          terraform -chdir=out/terraform validate
+      - uses: actions/upload-artifact@v4
+        if: inputs.source == 'demo' || inputs.publish_live_results
+        with:
+          name: migration-assessment-${{ github.run_id }}
+          retention-days: 3
+          if-no-files-found: error
+          path: |
+            out/graph.json
+            out/graph.html
+            out/findings.json
+            out/mapping.json
+            out/runbook.json
+            out/finalize.json
+            out/report.json
+            out/report.md
+            out/terraform/*.tf

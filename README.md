@@ -102,3 +102,17 @@ take precedence. For scans, explicit `--region` options take precedence over
 `AWS_REGION`; when both are absent the scanner discovers enabled regions.
 The manual GitHub Actions workflow “Verify environment configuration” checks
 the repository secret and four variables without printing their values.
+
+### Run in GitHub Actions
+
+Open **Actions → Run migration assessment → Run workflow**. The default demo
+uses a synthetic inventory, runs the real translator offline, validates the
+generated Terraform, and publishes the assessment as a downloadable artifact.
+Enable AI to use the configured OpenRouter settings.
+
+For a live scan, select **aws**, set the repository variable `AWS_REGION`
+and configure Actions secrets `AWS_READONLY_ACCESS_KEY_ID` and
+`AWS_READONLY_SECRET_ACCESS_KEY` for the scanner role or user. For temporary
+credentials also set `AWS_READONLY_SESSION_TOKEN`. Enable publication of
+live results only when repository readers may access the infrastructure details.
+Deployment and post-apply finalization are separate from the assessment.
