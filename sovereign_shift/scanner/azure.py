@@ -6,6 +6,7 @@ records (testdata/azure_sdk_sample.json). The live part only collects those reco
 
 import ipaddress
 import os
+import re
 from datetime import datetime, timezone
 from typing import Any
 
@@ -16,6 +17,28 @@ DB_PORTS = {"postgres": 5432, "mysql": 3306}
 
 class ScanError(Exception):
     pass
+
+
+_CAMEL = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
+
+
+def normalize(value: Any) -> Any:
+    """Any Azure record shape -> the flat snake_case one the mapper reads.
+
+    Current SDKs return the REST shape from as_dict() (camelCase, fields nested under "properties"),
+    older ones return flat snake_case. Both end up identical here.
+    """
+    if isinstance(value, list):
+        return [normalize(v) for v in value]
+    if not isinstance(value, dict):
+        return value
+    out: Item = {}
+    for key, item in value.items():
+        if key == "properties" and isinstance(item, dict):
+            out.update(normalize(item))
+        else:
+            out[_CAMEL.sub("_", key).lower()] = normalize(item)
+    return out
 
 
 def name_of(arm_id: str | None) -> str:
@@ -94,7 +117,10 @@ def firewall_cidrs(rules: list[Item]) -> list[str]:
 
 
 def build_inventory(raw: Item) -> Item:
-    """Turn collected Azure records (SDK as_dict() shape) into inventory.json."""
+    """Turn collected Azure records (SDK as_dict() shape, either generation) into inventory.json."""
+    # these maps are keyed by arm id or location, so only their records are normalized, never the keys
+    keyed = ("vm_sizes", "db_firewall", "dns_records")
+    raw = {k: ({kk: normalize(vv) for kk, vv in v.items()} if k in keyed else normalize(v)) for k, v in raw.items()}
     out: list[Item] = []
     sizes = {loc: {s["name"]: s for s in items} for loc, items in raw.get("vm_sizes", {}).items()}
     disks = {d["id"]: d for d in raw.get("disks", [])}
@@ -280,7 +306,10 @@ def collect(subscription_id: str) -> Item:  # pragma: no cover - needs a live su
         from azure.mgmt.network import NetworkManagementClient
         from azure.mgmt.rdbms.mysql_flexibleservers import MySQLManagementClient
         from azure.mgmt.rdbms.postgresql_flexibleservers import PostgreSQLManagementClient
-        from azure.mgmt.resource import ResourceManagementClient
+        try:
+            from azure.mgmt.resource.resources import ResourceManagementClient  # azure-mgmt-resource 24 and newer
+        except ImportError:
+            from azure.mgmt.resource import ResourceManagementClient  # older releases
         from azure.mgmt.storage import StorageManagementClient
         from azure.mgmt.dns import DnsManagementClient
     except ImportError as exc:

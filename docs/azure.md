@@ -1,6 +1,11 @@
 # Azure as a source
 
-Status, 2026-11-20: **the Azure scanner is not verified against a live subscription.** We had no Azure account. The mapping is tested with a hand-built sample of what the Azure SDK returns (`testdata/azure_sdk_sample.json`, made up, not real data) and the full pipeline runs on its output (`testdata/azure_inventory.json`). Say this whenever Azure comes up.
+Status, 2026-11-20: **the Azure scanner is not verified against a live subscription.** What *is* checked, without an account:
+- Current Azure SDKs return the REST shape from `as_dict()` (camelCase, nested under `properties`), older ones a flat snake_case shape. `normalize()` accepts both, and a test pushes the sample through the installed SDK's own model classes (VM, disk, NSG, public IP, VNet, load balancer, NIC) and requires the same inventory. This caught a real bug: the mapper only understood the old shape.
+- Every SDK operation `collect()` calls exists in the installed SDK, and the resource client import works on azure-mgmt-resource 24+ (it didn't before).
+- Not checked: the exact field values a real subscription returns, paging, and permission errors. Those need a live Reader run, or an export from someone with access (`az vm list`, `az network nsg list`, ...).
+
+We had no Azure account. The mapping is tested with a hand-built sample of what the Azure SDK returns (`testdata/azure_sdk_sample.json`, made up, not real data) and the full pipeline runs on its output (`testdata/azure_inventory.json`). Say this whenever Azure comes up.
 
 ## How it works
 - `sovereign_shift/scanner/azure.py` has two parts. `collect()` reads the records with the Azure SDK (Reader role only, `DefaultAzureCredential`). `build_inventory()` maps them to the same neutral inventory the AWS scanner writes. The tests cover `build_inventory()`.

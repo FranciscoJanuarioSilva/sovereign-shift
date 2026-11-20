@@ -104,3 +104,96 @@ def test_live_scan_needs_a_subscription(monkeypatch):
     monkeypatch.delenv("AZURE_SUBSCRIPTION_ID", raising=False)
     with pytest.raises(azure.ScanError):
         azure.scan()
+
+
+# ---- current azure sdks return the REST shape from as_dict(), older ones a flat snake_case shape ----
+
+def to_rest(value, nest=("hardware_profile", "storage_profile", "os_profile", "network_profile")):
+    """The flat sample re-written the way a current SDK's as_dict() would give it (camelCase under properties)."""
+    import re
+
+    def camel(key):
+        head, *rest = key.split("_")
+        special = {"ip": "IP", "gb": "GB", "mb": "MB"}
+        return head + "".join(special.get(p, p.capitalize()) for p in rest)
+
+    if isinstance(value, list):
+        return [to_rest(v) for v in value]
+    if not isinstance(value, dict):
+        return value
+    top = ("id", "name", "location", "tags", "type", "sku", "kind", "etag", "zones")
+    out, props = {}, {}
+    for k, v in value.items():
+        (out if k in top else props)[camel(k) if k in top else camel(k)] = to_rest(v)
+    return {**out, **({"properties": props} if props else {})}
+
+
+def rest_sample():
+    keyed = ("vm_sizes", "db_firewall", "dns_records")
+    raw = {}
+    for k, v in SAMPLE.items():
+        if k in keyed:
+            raw[k] = {kk: to_rest(vv) for kk, vv in v.items()}
+        elif isinstance(v, list):
+            raw[k] = [to_rest(x) for x in v]
+        else:
+            raw[k] = v
+    return raw
+
+
+def test_rest_shape_gives_the_same_inventory():
+    assert azure.build_inventory(rest_sample()) == azure.build_inventory(SAMPLE)
+
+
+def test_real_sdk_models_round_trip_to_the_same_inventory():
+    # push the REST records through the installed sdk's own model classes, like a live as_dict() would
+    pytest.importorskip("azure.mgmt.compute")
+    from azure.mgmt.compute import models as cm
+    from azure.mgmt.network import models as nm
+
+    rest = rest_sample()
+    through = dict(rest)
+    through["virtual_machines"] = [cm.VirtualMachine(v).as_dict() for v in rest["virtual_machines"]]
+    through["disks"] = [cm.Disk(v).as_dict() for v in rest["disks"]]
+    through["network_security_groups"] = [nm.NetworkSecurityGroup(v).as_dict() for v in rest["network_security_groups"]]
+    through["public_ips"] = [nm.PublicIPAddress(v).as_dict() for v in rest["public_ips"]]
+    through["virtual_networks"] = [nm.VirtualNetwork(v).as_dict() for v in rest["virtual_networks"]]
+    through["load_balancers"] = [nm.LoadBalancer(v).as_dict() for v in rest["load_balancers"]]
+    through["network_interfaces"] = [nm.NetworkInterface(v).as_dict() for v in rest["network_interfaces"]]
+    assert azure.build_inventory(through) == azure.build_inventory(SAMPLE)
+
+
+def test_every_sdk_call_collect_makes_exists():
+    # collect() has never run against azure, so at least prove the client operations it calls are real
+    pytest.importorskip("azure.mgmt.compute")
+    import importlib
+
+    class NoToken:
+        def get_token(self, *a, **k):
+            raise RuntimeError("no network in tests")
+
+    calls = {
+        ("azure.mgmt.compute", "ComputeManagementClient"): ["virtual_machines.list_all", "disks.list", "virtual_machine_sizes.list"],
+        ("azure.mgmt.network", "NetworkManagementClient"): [
+            "network_interfaces.list_all", "public_ip_addresses.list_all", "network_security_groups.list_all",
+            "virtual_networks.list_all", "load_balancers.list_all"],
+        ("azure.mgmt.rdbms.postgresql_flexibleservers", "PostgreSQLManagementClient"): ["servers.list", "firewall_rules.list_by_server"],
+        ("azure.mgmt.rdbms.mysql_flexibleservers", "MySQLManagementClient"): ["servers.list", "firewall_rules.list_by_server"],
+        ("azure.mgmt.storage", "StorageManagementClient"): ["storage_accounts.list"],
+        ("azure.mgmt.dns", "DnsManagementClient"): ["zones.list", "record_sets.list_all_by_dns_zone"],
+        ("azure.mgmt.resource.resources", "ResourceManagementClient"): ["resources.list"],
+    }
+    for (module, name), paths in calls.items():
+        client = getattr(importlib.import_module(module), name)(NoToken(), "00000000-0000-0000-0000-000000000000")
+        for path in paths:
+            obj = client
+            for part in path.split("."):
+                obj = getattr(obj, part)
+            assert callable(obj), f"{name}.{path}"
+
+
+def test_normalize_keeps_ids_and_handles_both_shapes():
+    assert azure.normalize({"properties": {"hardwareProfile": {"vmSize": "X"}}, "id": "/A/b"}) == {"hardware_profile": {"vm_size": "X"}, "id": "/A/b"}
+    assert azure.normalize({"hardware_profile": {"vm_size": "X"}}) == {"hardware_profile": {"vm_size": "X"}}
+    assert azure.normalize({"frontendIPConfigurations": [{"publicIPAddress": {"id": "i"}}], "memoryInMB": 1, "diskSizeGB": 2}) == {
+        "frontend_ip_configurations": [{"public_ip_address": {"id": "i"}}], "memory_in_mb": 1, "disk_size_gb": 2}
