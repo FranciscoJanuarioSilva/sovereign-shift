@@ -8,6 +8,7 @@ on:
         options:
           - demo
           - aws
+          - azure
           - cloudflare
         default: demo
       use_ai:
@@ -52,6 +53,18 @@ jobs:
         run: |
           : "${AWS_REGION:?Set AWS_REGION}" "${AWS_ACCESS_KEY_ID:?Set read-only credentials}" "${AWS_SECRET_ACCESS_KEY:?Set read-only credentials}"
           sovereign-shift scan --region "$AWS_REGION" --out out
+      - name: Scan Azure
+        if: inputs.source == 'azure'
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_READER_CLIENT_SECRET }}
+        run: |
+          : "${AZURE_SUBSCRIPTION_ID:?Set AZURE_SUBSCRIPTION_ID}" "${AZURE_TENANT_ID:?Set AZURE_TENANT_ID}" "${AZURE_CLIENT_ID:?Set AZURE_CLIENT_ID}" "${AZURE_CLIENT_SECRET:?Set the Reader service principal secret}"
+          # the azure sdk is an optional extra, only this source needs it
+          python -m pip install -e '.[azure]'
+          sovereign-shift scan --source azure --out out
       - name: Read Cloudflare Worker inventory
         if: inputs.source == 'cloudflare'
         env:
