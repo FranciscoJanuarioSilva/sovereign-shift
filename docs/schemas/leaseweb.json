@@ -1,0 +1,2584 @@
+{
+ "data_source_schemas": {
+  "leaseweb_dedicated_server": {
+   "block": {
+    "attributes": {
+     "asset_id": {
+      "computed": true,
+      "description": "The Asset ID of the server.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "contract_id": {
+      "computed": true,
+      "description": "The unique identifier of the contract.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "cpu_quantity": {
+      "computed": true,
+      "description": "The quantity of the cpu.",
+      "description_kind": "plain",
+      "type": "number"
+     },
+     "cpu_type": {
+      "computed": true,
+      "description": "The type of the cpu.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "id": {
+      "description": "The unique identifier of the server.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "internal_gateway": {
+      "computed": true,
+      "description": "Internal gateway.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "internal_ip": {
+      "computed": true,
+      "description": "Internal ip address.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "internal_mac": {
+      "computed": true,
+      "description": "Internal mac address.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "is_automation_feature_available": {
+      "computed": true,
+      "description": "To check if automation feature is available for the server.",
+      "description_kind": "plain",
+      "type": "bool"
+     },
+     "is_ipmi_reboot_feature_available": {
+      "computed": true,
+      "description": "To check if ipmi_reboot feature is available for the server.",
+      "description_kind": "plain",
+      "type": "bool"
+     },
+     "is_power_cycle_feature_available": {
+      "computed": true,
+      "description": "To check if power_cycle feature is available for the server.",
+      "description_kind": "plain",
+      "type": "bool"
+     },
+     "is_private_network_feature_available": {
+      "computed": true,
+      "description": "To check if private network feature is available for the server.",
+      "description_kind": "plain",
+      "type": "bool"
+     },
+     "is_remote_management_feature_available": {
+      "computed": true,
+      "description": "To check if remote management feature is available for the server.",
+      "description_kind": "plain",
+      "type": "bool"
+     },
+     "location_rack": {
+      "computed": true,
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "location_site": {
+      "computed": true,
+      "description": "The site of the location.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "location_suite": {
+      "computed": true,
+      "description": "The suite of the location.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "location_unit": {
+      "computed": true,
+      "description": "The unit of the location.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "public_gateway": {
+      "computed": true,
+      "description": "Public gateway.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "public_ip": {
+      "computed": true,
+      "description": "Public ip address.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "public_mac": {
+      "computed": true,
+      "description": "Public mac address.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "rack_capacity": {
+      "computed": true,
+      "description": "The capacity of the rack.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "rack_id": {
+      "computed": true,
+      "description": "The ID of the rack.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "rack_type": {
+      "computed": true,
+      "description": "The type of the rack.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "ram_size": {
+      "computed": true,
+      "description": "The size of the ram.",
+      "description_kind": "plain",
+      "type": "number"
+     },
+     "ram_unit": {
+      "computed": true,
+      "description": "The unit of the ram.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "remote_gateway": {
+      "computed": true,
+      "description": "Remote gateway.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "remote_ip": {
+      "computed": true,
+      "description": "Remote ip address.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "remote_mac": {
+      "computed": true,
+      "description": "Remote mac address.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "serial_number": {
+      "computed": true,
+      "description": "Serial number of server.",
+      "description_kind": "plain",
+      "type": "string"
+     }
+    },
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_dedicated_server_control_panels": {
+   "block": {
+    "attributes": {
+     "control_panels": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "id": {
+         "computed": true,
+         "description": "ID of the control panel.",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "name": {
+         "computed": true,
+         "description": "Name of the control panel.",
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "list"
+      }
+     },
+     "operating_system_id": {
+      "description": "Filter control panels by operating system id.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     }
+    },
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_dedicated_server_credential": {
+   "block": {
+    "attributes": {
+     "dedicated_server_id": {
+      "description": "The ID of a server",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "password": {
+      "computed": true,
+      "description": "The password for the credentials",
+      "description_kind": "plain",
+      "sensitive": true,
+      "type": "string"
+     },
+     "type": {
+      "description": "The type of the credential. Valid options are \n  - *OPERATING_SYSTEM*\n  - *RESCUE_MODE*\n  - *REMOTE_MANAGEMENT*\n  - *CONTROL_PANEL*\n  - *SWITCH*\n  - *PDU*\n  - *FIREWALL*\n  - *LOAD_BALANCER*\n  - *VNC*\n  - *TEMPORARY_OPERATING_SYSTEM*\n  - *VPN_USER*\n  - *COMBINATION_LOCK*\n  - *DATABASE*\n",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "username": {
+      "description": "The username for the credentials",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     }
+    },
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_dedicated_server_operating_systems": {
+   "block": {
+    "attributes": {
+     "control_panel_id": {
+      "description": "Filter operating systems by control panel id.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "operating_systems": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "id": {
+         "computed": true,
+         "description": "ID of the operating system.",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "name": {
+         "computed": true,
+         "description": "ID of the operating system.",
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "list"
+      }
+     }
+    },
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_dedicated_servers": {
+   "block": {
+    "attributes": {
+     "ids": {
+      "computed": true,
+      "description": "List of the dedicated server IDs available to the account.",
+      "description_kind": "plain",
+      "type": [
+       "list",
+       "string"
+      ]
+     },
+     "ip": {
+      "description": "Filter the list of servers by ip address.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "mac_address": {
+      "description": "Filter the list of servers by mac address.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "private_network_capable": {
+      "description": "Filter the list for private network capable servers.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "private_network_enabled": {
+      "description": "Filter the list for private network enabled servers.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "private_rack_id": {
+      "description": "Filter the list of servers by dedicated rack id.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "reference": {
+      "description": "Filter the list of servers by reference.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "site": {
+      "description": "Filter the list of servers by site (location).",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     }
+    },
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_dns_resource_record_sets": {
+   "block": {
+    "attributes": {
+     "domain_name": {
+      "description": "Domain Name",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "info_message": {
+      "computed": true,
+      "description": "Optional additional information",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "resource_record_sets": {
+      "computed": true,
+      "description": "Array of resource record sets",
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "content": {
+         "computed": true,
+         "description": "Array of resource record set Content entries",
+         "description_kind": "plain",
+         "type": [
+          "list",
+          "string"
+         ]
+        },
+        "name": {
+         "computed": true,
+         "description": "Name of the resource record set",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "ttl": {
+         "computed": true,
+         "description": "Time to live of the resource record set",
+         "description_kind": "plain",
+         "type": "number"
+        },
+        "type": {
+         "computed": true,
+         "description": "Type of the resource record set",
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "list"
+      }
+     }
+    },
+    "description": "List resource record sets",
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_ipmgmt_ips": {
+   "block": {
+    "attributes": {
+     "assigned_contract_ids": {
+      "description": "Return only IPs assigned to contracts with these IDs",
+      "description_kind": "plain",
+      "optional": true,
+      "type": [
+       "list",
+       "string"
+      ]
+     },
+     "equipment_ids": {
+      "description": "Return only IPs assigned to equipment items",
+      "description_kind": "plain",
+      "optional": true,
+      "type": [
+       "list",
+       "string"
+      ]
+     },
+     "filtered_ips": {
+      "description": "Return only these IPs",
+      "description_kind": "plain",
+      "optional": true,
+      "type": [
+       "list",
+       "string"
+      ]
+     },
+     "from_ip": {
+      "description": "Return only IPs greater or equal to the specified address",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "ips": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "assigned_contract": {
+         "computed": true,
+         "description_kind": "plain",
+         "nested_type": {
+          "attributes": {
+           "id": {
+            "computed": true,
+            "description": "ID of the contract connected to the IP",
+            "description_kind": "plain",
+            "type": "string"
+           }
+          },
+          "nesting_mode": "single"
+         }
+        },
+        "equipment_id": {
+         "computed": true,
+         "description": "ID of the equipment using the IP",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "ip": {
+         "computed": true,
+         "description": "IP address",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "null_level": {
+         "computed": true,
+         "description": "Null route level",
+         "description_kind": "plain",
+         "type": "number"
+        },
+        "null_routed": {
+         "computed": true,
+         "description": "Boolean to indicate if the IP is null-routed",
+         "description_kind": "plain",
+         "type": "bool"
+        },
+        "prefix_length": {
+         "computed": true,
+         "description": "Prefix length of the IP range represented by the record. Note: this is not the same as `subnet.prefixLength`",
+         "description_kind": "plain",
+         "type": "number"
+        },
+        "primary": {
+         "computed": true,
+         "description": "Boolean indicating if this is the primary IP of the assigned equipment",
+         "description_kind": "plain",
+         "type": "bool"
+        },
+        "reverse_lookup": {
+         "computed": true,
+         "description": "Reverse lookup set for the IP. This only applies to IPv4",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "subnet": {
+         "computed": true,
+         "description_kind": "plain",
+         "nested_type": {
+          "attributes": {
+           "gateway": {
+            "computed": true,
+            "description": "The gateway IP to be used in network settings",
+            "description_kind": "plain",
+            "type": "string"
+           },
+           "id": {
+            "computed": true,
+            "description": "Subnet identifier consisting of network IP and prefix length separated by underscore (e.g. 192.0.2.0_24)",
+            "description_kind": "plain",
+            "type": "string"
+           },
+           "network_ip": {
+            "computed": true,
+            "description": "Network IP of the subnet",
+            "description_kind": "plain",
+            "type": "string"
+           },
+           "prefix_length": {
+            "computed": true,
+            "description": "Address prefix length",
+            "description_kind": "plain",
+            "type": "number"
+           }
+          },
+          "nesting_mode": "single"
+         }
+        },
+        "type": {
+         "computed": true,
+         "description": "IP type",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "unnulling_allowed": {
+         "computed": true,
+         "description": "Boolean indicating if the null route can be removed",
+         "description_kind": "plain",
+         "type": "bool"
+        },
+        "version": {
+         "computed": true,
+         "description": "Protocol version",
+         "description_kind": "plain",
+         "type": "number"
+        }
+       },
+       "nesting_mode": "list"
+      }
+     },
+     "null_routed": {
+      "description": "Filter by whether the IP has an active null route",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "bool"
+     },
+     "primary": {
+      "description": "Filter by whether or not the IP is primary",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "bool"
+     },
+     "reverse_lookup": {
+      "description": "Filter by reverse lookup",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "sort": {
+      "description": "Sort field names. Prepend the field name with '-' for descending order. E.g. `ip,-nullrouted`. Sortable field names are `ip`, `nullRouted`, `reverseLookup`",
+      "description_kind": "plain",
+      "optional": true,
+      "type": [
+       "list",
+       "string"
+      ]
+     },
+     "subnet_id": {
+      "description": "Filter by subnet",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "to_ip": {
+      "description": "Return only IPs lower or equal to the specified address",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "type": {
+      "description": "Filter by IP type. Valid options are \n  - *NORMAL_IP*\n  - *NETWORK*\n  - *BROADCAST*\n  - *GATEWAY*\n  - *ROUTER1*\n  - *ROUTER2*\n  - *IPMI*\n",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "version": {
+      "description": "Filter by protocol version. Valid options are \n  - *4*\n  - *6*\n",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "number"
+     }
+    },
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_ipmgmt_null_route_history": {
+   "block": {
+    "attributes": {
+     "contract_id": {
+      "description": "Filter by ID of the contract assigned to the IP at the time of null route creation",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "equipment_id": {
+      "description": "Filter by ID of the contract assigned to the IP at the time of null route creation",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "from_date": {
+      "description": "Filter by ID of the server assigned to the IP at the time of null route creation",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "from_ip": {
+      "description": "Return only IPs greater or equal to the specified address",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "nulled_by": {
+      "description": "Filter by the email address of the user who created the null route",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "nullroutes": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "assigned_contract": {
+         "computed": true,
+         "description": "An explanation about the purpose of this instance",
+         "description_kind": "plain",
+         "nested_type": {
+          "attributes": {
+           "id": {
+            "computed": true,
+            "description": "ID of the contract connected to the IP",
+            "description_kind": "plain",
+            "type": "string"
+           }
+          },
+          "nesting_mode": "single"
+         }
+        },
+        "automatic_unnulling_at": {
+         "computed": true,
+         "description": "The date and time when the null route is to be automatically removed",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "comment": {
+         "computed": true,
+         "description": "Comment stored with the null route",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "equipment_id": {
+         "computed": true,
+         "description": "ID of the equipment which was assigned to the IP at the time of null route creation",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "id": {
+         "description": "Null route ID",
+         "description_kind": "plain",
+         "optional": true,
+         "type": "string"
+        },
+        "ip": {
+         "computed": true,
+         "description": "IP address",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "null_level": {
+         "computed": true,
+         "description": "Null route permission level. If greater than 1 then the null route can only be removed by LeaseWeb",
+         "description_kind": "plain",
+         "type": "number"
+        },
+        "nulled_at": {
+         "computed": true,
+         "description": "Null route date",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "nulled_by": {
+         "computed": true,
+         "description": "Email address of the user who created the null route or 'LeaseWeb' if null route was created by LeaseWeb",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "ticket_id": {
+         "computed": true,
+         "description": "Reference stored with the null route",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "unnulled_at": {
+         "computed": true,
+         "description": "The date and time when the null route has been removed. If null then the null route is still active",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "unnulled_by": {
+         "computed": true,
+         "description": "Email address of the user who removed the null route or 'LeaseWeb' if null route was removed by LeaseWeb",
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "list"
+      }
+     },
+     "sort": {
+      "description": "Sort field names. Prepend the field name with '-' for descending order. E.g. `ip,-nullrouted`. Sortable field names are `ip`, `nullRouted`, `reverseLookup`",
+      "description_kind": "plain",
+      "optional": true,
+      "type": [
+       "list",
+       "string"
+      ]
+     },
+     "ticket_id": {
+      "description": "Filter by the reference stored with the null route",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "to_date": {
+      "description": "Return only null routes active before the specified date and time",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "to_ip": {
+      "description": "Return only IPs lower or equal to the specified address",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "unnulled_by": {
+      "description": "Filter by the email address of the user who removed the null route",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     }
+    },
+    "description": "Inspect null route history",
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_credential": {
+   "block": {
+    "attributes": {
+     "instance_id": {
+      "description": "The ID of the instance.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "password": {
+      "computed": true,
+      "description": "The password for the credentials",
+      "description_kind": "plain",
+      "sensitive": true,
+      "type": "string"
+     },
+     "type": {
+      "description": "The type of the credential. Valid options are \n  - *OPERATING_SYSTEM*\n  - *CONTROL_PANEL*\n",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "username": {
+      "description": "The username for the credentials",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     }
+    },
+    "description": "Get public cloud credential",
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_images": {
+   "block": {
+    "attributes": {
+     "images": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "custom": {
+         "computed": true,
+         "description": "Standard or Custom image",
+         "description_kind": "plain",
+         "type": "bool"
+        },
+        "flavour": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "id": {
+         "computed": true,
+         "description": "Can be either an Operating System or a UUID in case of a Custom Image",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "market_apps": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": [
+          "list",
+          "string"
+         ]
+        },
+        "name": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "region": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "state": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "storage_types": {
+         "computed": true,
+         "description": "The supported storage types for the instance type",
+         "description_kind": "plain",
+         "type": [
+          "list",
+          "string"
+         ]
+        }
+       },
+       "nesting_mode": "list"
+      }
+     }
+    },
+    "description": "List all public cloud images",
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_instances": {
+   "block": {
+    "attributes": {
+     "instances": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "contract": {
+         "computed": true,
+         "description_kind": "plain",
+         "nested_type": {
+          "attributes": {
+           "billing_frequency": {
+            "computed": true,
+            "description": "The billing frequency (in months). Valid options are \n  - *0*\n  - *1*\n  - *3*\n  - *6*\n  - *12*\n",
+            "description_kind": "plain",
+            "type": "number"
+           },
+           "ends_at": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+           },
+           "state": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+           },
+           "term": {
+            "computed": true,
+            "description": "Contract term (in months). Used only when type is *MONTHLY*. Valid options are \n  - *0*\n  - *1*\n  - *3*\n  - *6*\n  - *12*\n  - *24*\n  - *36*\n",
+            "description_kind": "plain",
+            "type": "number"
+           },
+           "type": {
+            "computed": true,
+            "description": "Select *HOURLY* for billing based on hourly usage, else *MONTHLY* for billing per month usage",
+            "description_kind": "plain",
+            "type": "string"
+           }
+          },
+          "nesting_mode": "single"
+         }
+        },
+        "has_private_network": {
+         "computed": true,
+         "description": "Indicates whether the instance is connected to a private network",
+         "description_kind": "plain",
+         "type": "bool"
+        },
+        "id": {
+         "computed": true,
+         "description": "The instance unique identifier",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "image": {
+         "computed": true,
+         "description_kind": "plain",
+         "nested_type": {
+          "attributes": {
+           "custom": {
+            "computed": true,
+            "description": "Standard or Custom image",
+            "description_kind": "plain",
+            "type": "bool"
+           },
+           "flavour": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+           },
+           "id": {
+            "computed": true,
+            "description": "Can be either an Operating System or a UUID in case of a Custom Image",
+            "description_kind": "plain",
+            "type": "string"
+           },
+           "market_apps": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": [
+             "list",
+             "string"
+            ]
+           },
+           "name": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+           },
+           "region": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+           },
+           "state": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+           },
+           "storage_types": {
+            "computed": true,
+            "description": "The supported storage types for the instance type",
+            "description_kind": "plain",
+            "type": [
+             "list",
+             "string"
+            ]
+           }
+          },
+          "nesting_mode": "single"
+         }
+        },
+        "ips": {
+         "computed": true,
+         "description_kind": "plain",
+         "nested_type": {
+          "attributes": {
+           "ip": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+           }
+          },
+          "nesting_mode": "list"
+         }
+        },
+        "iso": {
+         "computed": true,
+         "description_kind": "plain",
+         "nested_type": {
+          "attributes": {
+           "id": {
+            "computed": true,
+            "description": "The ISO ID.",
+            "description_kind": "plain",
+            "type": "string"
+           },
+           "name": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+           }
+          },
+          "nesting_mode": "single"
+         }
+        },
+        "market_app_id": {
+         "computed": true,
+         "description": "Market App ID",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "reference": {
+         "computed": true,
+         "description": "The identifying name set to the instance",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "region": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "root_disk_size": {
+         "computed": true,
+         "description": "The root disk's size in GB. Must be at least 5 GB for Linux and FreeBSD instances and 50 GB for Windows instances",
+         "description_kind": "plain",
+         "type": "number"
+        },
+        "root_disk_storage_type": {
+         "computed": true,
+         "description": "The root disk's storage type",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "state": {
+         "computed": true,
+         "description": "The instance's current state",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "type": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "list"
+      }
+     }
+    },
+    "description": "List all public cloud instances",
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_isos": {
+   "block": {
+    "attributes": {
+     "isos": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "id": {
+         "computed": true,
+         "description": "ISO ID",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "name": {
+         "computed": true,
+         "description": "The name of ISO",
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "list"
+      }
+     }
+    },
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_load_balancer_listeners": {
+   "block": {
+    "attributes": {
+     "listeners": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "id": {
+         "computed": true,
+         "description": "The listener unique identifier",
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "list"
+      }
+     },
+     "load_balancer_id": {
+      "description": "Load balancer ID",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     }
+    },
+    "description": "List public cloud load balancer listeners that belong to the load balancer",
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_load_balancers": {
+   "block": {
+    "attributes": {
+     "load_balancers": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "contract": {
+         "computed": true,
+         "description_kind": "plain",
+         "nested_type": {
+          "attributes": {
+           "billing_frequency": {
+            "computed": true,
+            "description": "The billing frequency (in months)",
+            "description_kind": "plain",
+            "type": "number"
+           },
+           "ends_at": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+           },
+           "state": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+           },
+           "term": {
+            "computed": true,
+            "description": "Contract term (in months)",
+            "description_kind": "plain",
+            "type": "number"
+           },
+           "type": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+           }
+          },
+          "nesting_mode": "single"
+         }
+        },
+        "id": {
+         "computed": true,
+         "description": "The load balancer unique identifier",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "ips": {
+         "computed": true,
+         "description_kind": "plain",
+         "nested_type": {
+          "attributes": {
+           "ip": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+           }
+          },
+          "nesting_mode": "list"
+         }
+        },
+        "reference": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "region": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "state": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "type": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "list"
+      }
+     }
+    },
+    "description": "List all public cloud load balancers",
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_target_groups": {
+   "block": {
+    "attributes": {
+     "id": {
+      "description": "Target group ID",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "name": {
+      "description": "The name of the target group",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "port": {
+      "description": "The port of the target group",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "number"
+     },
+     "protocol": {
+      "description": "Valid options are \n  - *HTTP*\n  - *HTTPS*\n  - *TCP*\n",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "region": {
+      "description": "Region name. Valid options are \n  - *eu-west-3*\n  - *us-east-1*\n  - *eu-central-1*\n  - *ap-southeast-1*\n  - *us-west-1*\n  - *eu-west-2*\n  - *ca-central-1*\n  - *ap-northeast-1*\n",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "target_groups": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "id": {
+         "computed": true,
+         "description": "Target group ID",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "name": {
+         "computed": true,
+         "description": "The name of the target group",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "port": {
+         "computed": true,
+         "description": "The port of the target group",
+         "description_kind": "plain",
+         "type": "number"
+        },
+        "protocol": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "region": {
+         "computed": true,
+         "description": "Region name",
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "list"
+      }
+     }
+    },
+    "description": "List all public cloud target groups",
+    "description_kind": "plain"
+   },
+   "version": 0
+  }
+ },
+ "provider": {
+  "block": {
+   "attributes": {
+    "host": {
+     "description": "Host for Leaseweb API, defaults to \"api.leaseweb.com\". May also be provided via LEASEWEB_HOST environment variable if present.",
+     "description_kind": "plain",
+     "optional": true,
+     "type": "string"
+    },
+    "scheme": {
+     "description": "Scheme for Leaseweb API, defaults to \"https\". May also be provided via LEASEWEB_SCHEME environment variable if present.",
+     "description_kind": "plain",
+     "optional": true,
+     "type": "string"
+    },
+    "token": {
+     "description": "The API token to use. By default it takes the value from the LEASEWEB_TOKEN environment variable if present.",
+     "description_kind": "plain",
+     "optional": true,
+     "sensitive": true,
+     "type": "string"
+    }
+   },
+   "description_kind": "plain"
+  },
+  "version": 0
+ },
+ "resource_schemas": {
+  "leaseweb_dedicated_server": {
+   "block": {
+    "attributes": {
+     "dhcp_lease": {
+      "computed": true,
+      "description": "The URL of PXE boot the dedicated server is booting from.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "id": {
+      "computed": true,
+      "description": "The unique identifier of the server.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "internal_mac": {
+      "computed": true,
+      "description": "The MAC address of the interface connected to internal private network.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "location": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "rack": {
+         "computed": true,
+         "description": "the location rack",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "site": {
+         "computed": true,
+         "description": "the location site",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "suite": {
+         "computed": true,
+         "description": "the location suite",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "unit": {
+         "computed": true,
+         "description": "the location unit",
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "single"
+      }
+     },
+     "powered_on": {
+      "computed": true,
+      "description": "Whether the dedicated server is powered on or not.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "bool"
+     },
+     "public_ip": {
+      "computed": true,
+      "description": "The public IP of the dedicated server.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "public_ip_null_routed": {
+      "computed": true,
+      "description": "Whether the public IP of the dedicated server is null routed or not.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "bool"
+     },
+     "public_network_interface_opened": {
+      "computed": true,
+      "description": "Whether the public network interface of the dedicated server is opened or not.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "bool"
+     },
+     "reference": {
+      "computed": true,
+      "description": "Reference of server.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "remote_management_ip": {
+      "computed": true,
+      "description": "The remote management IP of the dedicated server.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "reverse_lookup": {
+      "computed": true,
+      "description": "The reverse lookup associated with the dedicated server public IP.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     }
+    },
+    "description": "**Note:**\n- This resource cannot be created, only imported.\n- Once imported, this resource cannot be deleted.",
+    "description_kind": "markdown"
+   },
+   "version": 0
+  },
+  "leaseweb_dedicated_server_credential": {
+   "block": {
+    "attributes": {
+     "dedicated_server_id": {
+      "description": "The ID of the dedicated server.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "password": {
+      "description": "The password for the credentials",
+      "description_kind": "plain",
+      "required": true,
+      "sensitive": true,
+      "type": "string"
+     },
+     "type": {
+      "description": "The type of the credential. Valid options are: \"OPERATING_SYSTEM\", \"CONTROL_PANEL\", \"REMOTE_MANAGEMENT\", \"RESCUE_MODE\", \"SWITCH\", \"PDU\", \"FIREWALL\", \"LOAD_BALANCER\"",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "username": {
+      "description": "The username for the credentials",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     }
+    },
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_dedicated_server_installation": {
+   "block": {
+    "attributes": {
+     "callback_url": {
+      "description": "Url which will receive callbacks when the installation is finished or failed",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "control_panel_id": {
+      "description": "Control panel identifier",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "dedicated_server_id": {
+      "description": "The ID of a server",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "device": {
+      "computed": true,
+      "description": "Block devices in a disk set in which the partitions will be installed. Supported values are any disk set id, `SATA_SAS` or `NVME`.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "hostname": {
+      "computed": true,
+      "description": "Hostname to be used in your installation",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "id": {
+      "computed": true,
+      "description": "Unique identifier of the installation job",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "operating_system_id": {
+      "description": "Operating system identifier",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "partitions": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "filesystem": {
+         "computed": true,
+         "description": "File system in which partition would be mounted",
+         "description_kind": "plain",
+         "optional": true,
+         "type": "string"
+        },
+        "mountpoint": {
+         "computed": true,
+         "description": "The partition mount point (eg /home). Mandatory for the root partition (/) and not intended to be used in swap partition",
+         "description_kind": "plain",
+         "optional": true,
+         "type": "string"
+        },
+        "size": {
+         "computed": true,
+         "description": "Size of the partition (Normally in MB, but this is OS-specific)",
+         "description_kind": "plain",
+         "optional": true,
+         "type": "string"
+        }
+       },
+       "nesting_mode": "list"
+      },
+      "optional": true
+     },
+     "password": {
+      "description": "Server root password. If not provided, it would be automatically generated",
+      "description_kind": "plain",
+      "optional": true,
+      "sensitive": true,
+      "type": "string"
+     },
+     "post_install_script": {
+      "description": "A valid bash script to run right after the installation.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "power_cycle": {
+      "computed": true,
+      "description": "If true, allows system reboots to happen automatically within the process. Otherwise, you should do them manually",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "bool"
+     },
+     "raid": {
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "level": {
+         "description": "RAID level to apply to your installation, this value is only required if you specify a type HW or SW. Valid options are \n  - *0*\n  - *1*\n  - *5*\n  - *10*\n",
+         "description_kind": "plain",
+         "optional": true,
+         "type": "number"
+        },
+        "number_of_disks": {
+         "description": "The number of disks you want to apply RAID on. If not specified all disks are used",
+         "description_kind": "plain",
+         "optional": true,
+         "type": "number"
+        },
+        "type": {
+         "description": "RAID type to apply to your installation. NONE is the equivalent of pass-through mode on HW RAID equipped servers. Valid options are \n  - *HW*\n  - *SW*\n  - *NONE*\n",
+         "description_kind": "plain",
+         "optional": true,
+         "type": "string"
+        }
+       },
+       "nesting_mode": "single"
+      },
+      "optional": true
+     },
+     "ssh_keys": {
+      "description": "List of public sshKeys to be setup in your installation",
+      "description_kind": "plain",
+      "optional": true,
+      "type": [
+       "set",
+       "string"
+      ]
+     },
+     "timezone": {
+      "computed": true,
+      "description": "Timezone represented as Geographical_Area/City",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     }
+    },
+    "description": "**Note:**\n- Once created, this resource cannot be read.\n- Once created, this resource cannot be updated.\n- Once created, this resource cannot be deleted.",
+    "description_kind": "markdown"
+   },
+   "version": 0
+  },
+  "leaseweb_dedicated_server_notification_setting_bandwidth": {
+   "block": {
+    "attributes": {
+     "dedicated_server_id": {
+      "description": "The server unique identifier",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "frequency": {
+      "description": "The notification frequency. Valid options can be *DAILY* or *WEEKLY* or *MONTHLY*.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "id": {
+      "computed": true,
+      "description": "The notification setting bandwidth unique identifier",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "threshold": {
+      "description": "Threshold Value. Value can be a number greater than 0.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "unit": {
+      "description": "The notification unit. Valid options can be *Mbps* or *Gbps*.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     }
+    },
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_dedicated_server_notification_setting_datatraffic": {
+   "block": {
+    "attributes": {
+     "dedicated_server_id": {
+      "description": "The ID of the dedicated server.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "frequency": {
+      "description": "The frequency of the notification. Can be either \"DAILY\", \"WEEKLY\" or \"MONTHLY\".",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "id": {
+      "computed": true,
+      "description": "The ID of the notification setting.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "threshold": {
+      "description": "The threshold of the notification.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "unit": {
+      "description": "The unit of the notification. Can be either \"MB\", \"GB\" or \"TB\".",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     }
+    },
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_dns_resource_record_set": {
+   "block": {
+    "attributes": {
+     "content": {
+      "description": "Array of resource record set Content entries",
+      "description_kind": "plain",
+      "required": true,
+      "type": [
+       "list",
+       "string"
+      ]
+     },
+     "domain_name": {
+      "description": "Domain Name",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "name": {
+      "description": "Name of the resource record set. **WARNING!** Changing this value once running will cause this record to be destroyed and a new one to be created.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "ttl": {
+      "description": "Time to live of the resource record set. Valid options are \n  - *60*\n  - *300*\n  - *1800*\n  - *3600*\n  - *14400*\n  - *28800*\n  - *43200*\n  - *86400*\n",
+      "description_kind": "plain",
+      "required": true,
+      "type": "number"
+     },
+     "type": {
+      "description": "Type of the resource record set. Valid options are \n  - *A*\n  - *AAAA*\n  - *CAA*\n  - *CNAME*\n  - *MX*\n  - *NS*\n  - *SRV*\n  - *TXT*\n  - *SOA*\n  - *DS*\n  - *TLSA*\n",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     }
+    },
+    "description": "Manage a DNS record",
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_ipmgmt_ip": {
+   "block": {
+    "attributes": {
+     "assigned_contract": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "id": {
+         "computed": true,
+         "description": "ID of the contract connected to the IP",
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "single"
+      }
+     },
+     "equipment_id": {
+      "computed": true,
+      "description": "ID of the equipment using the IP",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "ip": {
+      "description": "IP address. Changing this value updates the resource state with data related to the new IP address.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "null_level": {
+      "computed": true,
+      "description": "Null route level",
+      "description_kind": "plain",
+      "type": "number"
+     },
+     "null_routed": {
+      "computed": true,
+      "description": "Boolean to indicate if the IP is null-routed",
+      "description_kind": "plain",
+      "type": "bool"
+     },
+     "prefix_length": {
+      "computed": true,
+      "description": "Prefix length of the IP range represented by the record. Note: this is not the same as `subnet.prefixLength`",
+      "description_kind": "plain",
+      "type": "number"
+     },
+     "primary": {
+      "computed": true,
+      "description": "Boolean indicating if this is the primary IP of the assigned equipment",
+      "description_kind": "plain",
+      "type": "bool"
+     },
+     "reverse_lookup": {
+      "computed": true,
+      "description": "Set reverse lookup for the IP",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "subnet": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "gateway": {
+         "computed": true,
+         "description": "The gateway IP to be used in network settings",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "id": {
+         "computed": true,
+         "description": "Subnet identifier consisting of network IP and prefix length separated by underscore (e.g. 192.0.2.0_24)",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "network_ip": {
+         "computed": true,
+         "description": "Network IP of the subnet",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "prefix_length": {
+         "computed": true,
+         "description": "Address prefix length",
+         "description_kind": "plain",
+         "type": "number"
+        }
+       },
+       "nesting_mode": "single"
+      }
+     },
+     "type": {
+      "computed": true,
+      "description": "IP type",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "unnulling_allowed": {
+      "computed": true,
+      "description": "Boolean indicating if the null route can be removed",
+      "description_kind": "plain",
+      "type": "bool"
+     },
+     "version": {
+      "computed": true,
+      "description": "Protocol version",
+      "description_kind": "plain",
+      "type": "number"
+     }
+    },
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_ipmgmt_null_route": {
+   "block": {
+    "attributes": {
+     "assigned_contract": {
+      "computed": true,
+      "description": "An explanation about the purpose of this instance",
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "id": {
+         "computed": true,
+         "description": "ID of the contract connected to the IP",
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "single"
+      }
+     },
+     "automatic_unnulling_at": {
+      "computed": true,
+      "description": "The date and time when the null route is to be deactivated. The date and time should be specified using the `2019-09-08 00:00:00 +0000 UTC` format. If this field is not present then the null route will not be automatically removed",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "comment": {
+      "computed": true,
+      "description": "A comment to be stored with the null route (e.g. null route reason)",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "equipment_id": {
+      "computed": true,
+      "description": "ID of the equipment which was assigned to the IP at the time of null route creation",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "id": {
+      "computed": true,
+      "description": "Null route ID",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "ip": {
+      "computed": true,
+      "description": "IP address",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "null_level": {
+      "computed": true,
+      "description": "Null route permission level. If greater than 1 then the null route can only be removed by LeaseWeb",
+      "description_kind": "plain",
+      "type": "number"
+     },
+     "nulled_at": {
+      "computed": true,
+      "description": "Null route date",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "nulled_by": {
+      "computed": true,
+      "description": "Email address of the user who created the null route or 'LeaseWeb' if null route was created by LeaseWeb",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "ticket_id": {
+      "computed": true,
+      "description": "A reference to be stored with the null route",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "unnulled_at": {
+      "computed": true,
+      "description": "The date and time when the null route has been removed. If null then the null route is still active",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "unnulled_by": {
+      "computed": true,
+      "description": "Email address of the user who removed the null route or 'LeaseWeb' if null route was removed by LeaseWeb",
+      "description_kind": "plain",
+      "type": "string"
+     }
+    },
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_credential": {
+   "block": {
+    "attributes": {
+     "instance_id": {
+      "description": "The ID of the instance.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "password": {
+      "description": "The password for the credentials",
+      "description_kind": "plain",
+      "required": true,
+      "sensitive": true,
+      "type": "string"
+     },
+     "type": {
+      "description": "The type of the credential. Valid options are \n  - *OPERATING_SYSTEM*\n  - *CONTROL_PANEL*\n",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "username": {
+      "description": "The username for the credentials",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     }
+    },
+    "description": "Manage public cloud credential",
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_image": {
+   "block": {
+    "attributes": {
+     "custom": {
+      "computed": true,
+      "description": "Standard or Custom image",
+      "description_kind": "plain",
+      "type": "bool"
+     },
+     "flavour": {
+      "computed": true,
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "id": {
+      "computed": true,
+      "description": "Can be either an Operating System or a UUID in case of a Custom Image",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "instance_id": {
+      "description": "\nThe id of the instance which the custom image is based on. The following rules apply:\n  - instance exists for instanceId\n  - instance has state *STOPPED*\n  - instance has a maximum rootDiskSize of 100 GB\n  - instance OS must not be *windows*",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "market_apps": {
+      "computed": true,
+      "description_kind": "plain",
+      "type": [
+       "list",
+       "string"
+      ]
+     },
+     "name": {
+      "description": "Custom image name",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "region": {
+      "computed": true,
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "state": {
+      "computed": true,
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "storage_types": {
+      "computed": true,
+      "description": "The supported storage types for the instance type",
+      "description_kind": "plain",
+      "type": [
+       "list",
+       "string"
+      ]
+     }
+    },
+    "description": "**Note:**\n- Once created, this resource cannot be deleted.",
+    "description_kind": "markdown"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_instance": {
+   "block": {
+    "attributes": {
+     "contract": {
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "billing_frequency": {
+         "description": "The billing frequency (in months). Valid options are \n  - *0*\n  - *1*\n  - *3*\n  - *6*\n  - *12*\n",
+         "description_kind": "plain",
+         "required": true,
+         "type": "number"
+        },
+        "ends_at": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "state": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "term": {
+         "description": "Contract term (in months). Used only when type is *MONTHLY*. Valid options are \n  - *0*\n  - *1*\n  - *3*\n  - *6*\n  - *12*\n  - *24*\n  - *36*\n",
+         "description_kind": "plain",
+         "required": true,
+         "type": "number"
+        },
+        "type": {
+         "description": "Select *HOURLY* for billing based on hourly usage, else *MONTHLY* for billing per month usage",
+         "description_kind": "plain",
+         "required": true,
+         "type": "string"
+        }
+       },
+       "nesting_mode": "single"
+      },
+      "required": true
+     },
+     "has_private_network": {
+      "computed": true,
+      "description": "Indicates whether the instance is connected to a private network",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "bool"
+     },
+     "id": {
+      "computed": true,
+      "description": "The instance unique identifier",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "image": {
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "custom": {
+         "computed": true,
+         "description": "Standard or Custom image",
+         "description_kind": "plain",
+         "type": "bool"
+        },
+        "flavour": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "id": {
+         "description": "Can be either an Operating System or a UUID in case of a Custom Image ID. **WARNING!** Changing this value once running will cause this instance to be destroyed and a new one to be created.",
+         "description_kind": "plain",
+         "required": true,
+         "type": "string"
+        },
+        "instance_id": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "market_apps": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": [
+          "list",
+          "string"
+         ]
+        },
+        "name": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "region": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "state": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "storage_types": {
+         "computed": true,
+         "description": "The supported storage types for the instance type",
+         "description_kind": "plain",
+         "type": [
+          "list",
+          "string"
+         ]
+        }
+       },
+       "nesting_mode": "single"
+      },
+      "required": true
+     },
+     "ips": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "instance_id": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "ip": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "reverse_lookup": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "list"
+      }
+     },
+     "iso": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "id": {
+         "computed": true,
+         "description": "The ISO ID.",
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "name": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "single"
+      }
+     },
+     "market_app_id": {
+      "computed": true,
+      "description": "Market App ID that must be installed into the instance. **WARNING!** Changing this value once running will cause this instance to be destroyed and a new one to be created.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "reference": {
+      "computed": true,
+      "description": "The identifying name set to the instance",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "region": {
+      "description": "**WARNING!** Changing this value once running will cause this instance to be destroyed and a new one to be created. Valid options are \n  - *eu-west-3*\n  - *us-east-1*\n  - *eu-central-1*\n  - *ap-southeast-1*\n  - *us-west-1*\n  - *eu-west-2*\n  - *ca-central-1*\n  - *ap-northeast-1*\n",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "root_disk_size": {
+      "description": "The root disk's size in GB. Must be at least 5 GB for Linux and FreeBSD instances and 50 GB for Windows instances. The maximum size is 1000 GB",
+      "description_kind": "plain",
+      "required": true,
+      "type": "number"
+     },
+     "root_disk_storage_type": {
+      "description": "The root disk's storage type. Can be *LOCAL* or *CENTRAL*. **WARNING!** Changing this value once running will cause this instance to be destroyed and a new one to be created.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "ssh_key": {
+      "description": "Public SSH key to be installed into the instance. Cannot be used if user_data is provided.",
+      "description_kind": "plain",
+      "optional": true,
+      "sensitive": true,
+      "type": "string"
+     },
+     "state": {
+      "computed": true,
+      "description": "The instance's current state",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "type": {
+      "description": "**WARNING!** Changing this value once running will cause this instance to be destroyed and a new one to be created. Valid options are \n  - *lsw.m3.large*\n  - *lsw.m3.xlarge*\n  - *lsw.m3.2xlarge*\n  - *lsw.m4.large*\n  - *lsw.m4.xlarge*\n  - *lsw.m4.2xlarge*\n  - *lsw.m4.4xlarge*\n  - *lsw.m5.large*\n  - *lsw.m5.xlarge*\n  - *lsw.m5.2xlarge*\n  - *lsw.m5.4xlarge*\n  - *lsw.m5a.large*\n  - *lsw.m5a.xlarge*\n  - *lsw.m5a.2xlarge*\n  - *lsw.m5a.4xlarge*\n  - *lsw.m5a.8xlarge*\n  - *lsw.m5a.12xlarge*\n  - *lsw.m6a.large*\n  - *lsw.m6a.xlarge*\n  - *lsw.m6a.2xlarge*\n  - *lsw.m6a.4xlarge*\n  - *lsw.m6a.8xlarge*\n  - *lsw.m6a.12xlarge*\n  - *lsw.m6a.16xlarge*\n  - *lsw.m6a.24xlarge*\n  - *lsw.c3.large*\n  - *lsw.c3.xlarge*\n  - *lsw.c3.2xlarge*\n  - *lsw.c3.4xlarge*\n  - *lsw.c4.large*\n  - *lsw.c4.xlarge*\n  - *lsw.c4.2xlarge*\n  - *lsw.c4.4xlarge*\n  - *lsw.c5.large*\n  - *lsw.c5.xlarge*\n  - *lsw.c5.2xlarge*\n  - *lsw.c5.4xlarge*\n  - *lsw.c5a.large*\n  - *lsw.c5a.xlarge*\n  - *lsw.c5a.2xlarge*\n  - *lsw.c5a.4xlarge*\n  - *lsw.c5a.9xlarge*\n  - *lsw.c5a.12xlarge*\n  - *lsw.c6a.large*\n  - *lsw.c6a.xlarge*\n  - *lsw.c6a.2xlarge*\n  - *lsw.c6a.4xlarge*\n  - *lsw.c6a.8xlarge*\n  - *lsw.c6a.12xlarge*\n  - *lsw.c6a.16xlarge*\n  - *lsw.c6a.24xlarge*\n  - *lsw.r3.large*\n  - *lsw.r3.xlarge*\n  - *lsw.r3.2xlarge*\n  - *lsw.r4.large*\n  - *lsw.r4.xlarge*\n  - *lsw.r4.2xlarge*\n  - *lsw.r5.large*\n  - *lsw.r5.xlarge*\n  - *lsw.r5.2xlarge*\n  - *lsw.r5a.large*\n  - *lsw.r5a.xlarge*\n  - *lsw.r5a.2xlarge*\n  - *lsw.r5a.4xlarge*\n  - *lsw.r5a.8xlarge*\n  - *lsw.r5a.12xlarge*\n  - *lsw.r6a.large*\n  - *lsw.r6a.xlarge*\n  - *lsw.r6a.2xlarge*\n  - *lsw.r6a.4xlarge*\n  - *lsw.r6a.8xlarge*\n  - *lsw.r6a.12xlarge*\n  - *lsw.r6a.16xlarge*\n  - *lsw.r6a.24xlarge*\n  - *lsw.g6.xlarge*\n  - *lsw.g6.2xlarge*\n  - *lsw.g6.4xlarge*\n  - *lsw.g6.8xlarge*\n  - *lsw.g6.12xlarge*\n  - *lsw.g6.16xlarge*\n  - *lsw.g6.18xlarge*\n  - *lsw.g6.24xlarge*\n  - *lsw.gr6.4xlarge*\n  - *lsw.gr6.8xlarge*\n",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "user_data": {
+      "description": "User data to be installed into the instance. Cannot be used if ssh_key is provided.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     }
+    },
+    "description": "Manage public cloud instance",
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_instance_iso": {
+   "block": {
+    "attributes": {
+     "desired_id": {
+      "description": "The desired ISO ID. Removing this will detach the current ISO from the instance. Changing it will cause the current ISO to be detached and a new one to be attached to the instance.",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "id": {
+      "computed": true,
+      "description": "The ISO ID. Detaching/attaching ids is an asynchronous operation. This attribute shows the current id while `desired_id` has the desired id state.",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "instance_id": {
+      "description": "Instance's ID. **WARNING!** Changing instance_id will cause the current ISO to be detached.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "name": {
+      "computed": true,
+      "description_kind": "plain",
+      "type": "string"
+     }
+    },
+    "description": "Creating this resource attaches the ISO to the instance, deleting it detaches the ISO from the instance.",
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_ip": {
+   "block": {
+    "attributes": {
+     "instance_id": {
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "ip": {
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "reverse_lookup": {
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     }
+    },
+    "description": "**Note:**\n- This resource cannot be created, only imported.\n- Once imported, this resource cannot be deleted.",
+    "description_kind": "markdown"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_load_balancer": {
+   "block": {
+    "attributes": {
+     "contract": {
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "billing_frequency": {
+         "description": "The billing frequency (in months). Valid options are \n  - *0*\n  - *1*\n  - *3*\n  - *6*\n  - *12*\n",
+         "description_kind": "plain",
+         "required": true,
+         "type": "number"
+        },
+        "ends_at": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "state": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "term": {
+         "description": "Contract term (in months). Used only when type is *MONTHLY*. Valid options are \n  - *0*\n  - *1*\n  - *3*\n  - *6*\n  - *12*\n  - *24*\n  - *36*\n",
+         "description_kind": "plain",
+         "required": true,
+         "type": "number"
+        },
+        "type": {
+         "description": "Select *HOURLY* for billing based on hourly usage, else *MONTHLY* for billing per month usage",
+         "description_kind": "plain",
+         "required": true,
+         "type": "string"
+        }
+       },
+       "nesting_mode": "single"
+      },
+      "required": true
+     },
+     "id": {
+      "computed": true,
+      "description": "The load balancer unique identifier",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "ips": {
+      "computed": true,
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "ip": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "load_balancer_id": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        },
+        "reverse_lookup": {
+         "computed": true,
+         "description_kind": "plain",
+         "type": "string"
+        }
+       },
+       "nesting_mode": "list"
+      }
+     },
+     "reference": {
+      "computed": true,
+      "description": "An identifying name you can refer to the load balancer",
+      "description_kind": "plain",
+      "optional": true,
+      "type": "string"
+     },
+     "region": {
+      "description": "**WARNING!** Changing this value once running will cause this loadbalancer to be destroyed and a new one to be created. Valid options are \n  - *eu-west-3*\n  - *us-east-1*\n  - *eu-central-1*\n  - *ap-southeast-1*\n  - *us-west-1*\n  - *eu-west-2*\n  - *ca-central-1*\n  - *ap-northeast-1*\n",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "type": {
+      "description": "**WARNING!** Changing this value once running will cause this loadbalancer to be destroyed and a new one to be created. Valid options are \n  - *lsw.m3.large*\n  - *lsw.m3.xlarge*\n  - *lsw.m3.2xlarge*\n  - *lsw.m4.large*\n  - *lsw.m4.xlarge*\n  - *lsw.m4.2xlarge*\n  - *lsw.m4.4xlarge*\n  - *lsw.m5.large*\n  - *lsw.m5.xlarge*\n  - *lsw.m5.2xlarge*\n  - *lsw.m5.4xlarge*\n  - *lsw.m5a.large*\n  - *lsw.m5a.xlarge*\n  - *lsw.m5a.2xlarge*\n  - *lsw.m5a.4xlarge*\n  - *lsw.m5a.8xlarge*\n  - *lsw.m5a.12xlarge*\n  - *lsw.m6a.large*\n  - *lsw.m6a.xlarge*\n  - *lsw.m6a.2xlarge*\n  - *lsw.m6a.4xlarge*\n  - *lsw.m6a.8xlarge*\n  - *lsw.m6a.12xlarge*\n  - *lsw.m6a.16xlarge*\n  - *lsw.m6a.24xlarge*\n  - *lsw.c3.large*\n  - *lsw.c3.xlarge*\n  - *lsw.c3.2xlarge*\n  - *lsw.c3.4xlarge*\n  - *lsw.c4.large*\n  - *lsw.c4.xlarge*\n  - *lsw.c4.2xlarge*\n  - *lsw.c4.4xlarge*\n  - *lsw.c5.large*\n  - *lsw.c5.xlarge*\n  - *lsw.c5.2xlarge*\n  - *lsw.c5.4xlarge*\n  - *lsw.c5a.large*\n  - *lsw.c5a.xlarge*\n  - *lsw.c5a.2xlarge*\n  - *lsw.c5a.4xlarge*\n  - *lsw.c5a.9xlarge*\n  - *lsw.c5a.12xlarge*\n  - *lsw.c6a.large*\n  - *lsw.c6a.xlarge*\n  - *lsw.c6a.2xlarge*\n  - *lsw.c6a.4xlarge*\n  - *lsw.c6a.8xlarge*\n  - *lsw.c6a.12xlarge*\n  - *lsw.c6a.16xlarge*\n  - *lsw.c6a.24xlarge*\n  - *lsw.r3.large*\n  - *lsw.r3.xlarge*\n  - *lsw.r3.2xlarge*\n  - *lsw.r4.large*\n  - *lsw.r4.xlarge*\n  - *lsw.r4.2xlarge*\n  - *lsw.r5.large*\n  - *lsw.r5.xlarge*\n  - *lsw.r5.2xlarge*\n  - *lsw.r5a.large*\n  - *lsw.r5a.xlarge*\n  - *lsw.r5a.2xlarge*\n  - *lsw.r5a.4xlarge*\n  - *lsw.r5a.8xlarge*\n  - *lsw.r5a.12xlarge*\n  - *lsw.r6a.large*\n  - *lsw.r6a.xlarge*\n  - *lsw.r6a.2xlarge*\n  - *lsw.r6a.4xlarge*\n  - *lsw.r6a.8xlarge*\n  - *lsw.r6a.12xlarge*\n  - *lsw.r6a.16xlarge*\n  - *lsw.r6a.24xlarge*\n  - *lsw.g6.xlarge*\n  - *lsw.g6.2xlarge*\n  - *lsw.g6.4xlarge*\n  - *lsw.g6.8xlarge*\n  - *lsw.g6.12xlarge*\n  - *lsw.g6.16xlarge*\n  - *lsw.g6.18xlarge*\n  - *lsw.g6.24xlarge*\n  - *lsw.gr6.4xlarge*\n  - *lsw.gr6.8xlarge*\n",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     }
+    },
+    "description": "Manage public cloud load balancer",
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_load_balancer_listener": {
+   "block": {
+    "attributes": {
+     "certificate": {
+      "description": "Required only if protocol is HTTPS",
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "certificate": {
+         "description": "Client Certificate. Required only if protocol is `HTTPS`",
+         "description_kind": "plain",
+         "optional": true,
+         "sensitive": true,
+         "type": "string"
+        },
+        "chain": {
+         "description": "CA certificate. Not required, but can be added if protocol is `HTTPS`",
+         "description_kind": "plain",
+         "optional": true,
+         "sensitive": true,
+         "type": "string"
+        },
+        "private_key": {
+         "description": "Client Private Key. Required only if protocol is `HTTPS`",
+         "description_kind": "plain",
+         "optional": true,
+         "sensitive": true,
+         "type": "string"
+        }
+       },
+       "nesting_mode": "single"
+      },
+      "optional": true
+     },
+     "default_rule": {
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "target_group_id": {
+         "description": "Client Private Key. Required only if protocol is `HTTPS`",
+         "description_kind": "plain",
+         "optional": true,
+         "type": "string"
+        }
+       },
+       "nesting_mode": "single"
+      },
+      "required": true
+     },
+     "listener_id": {
+      "computed": true,
+      "description": "Listener ID",
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "load_balancer_id": {
+      "description": "Load balancer ID",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "port": {
+      "description": "Port that the listener listens to",
+      "description_kind": "plain",
+      "required": true,
+      "type": "number"
+     },
+     "protocol": {
+      "description": "Valid options are \n  - *HTTP*\n  - *HTTPS*\n  - *TCP*\n",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     }
+    },
+    "description": "Manage public cloud load balancer listener",
+    "description_kind": "plain"
+   },
+   "version": 0
+  },
+  "leaseweb_public_cloud_target_group": {
+   "block": {
+    "attributes": {
+     "health_check": {
+      "description": "**WARNING!** Removing health_check once running will cause this target group to be destroyed and a new one to be created.",
+      "description_kind": "plain",
+      "nested_type": {
+       "attributes": {
+        "host": {
+         "description": "Host for the health check if any",
+         "description_kind": "plain",
+         "optional": true,
+         "type": "string"
+        },
+        "method": {
+         "description": "Required if `protocol` is `HTTP` or `HTTPS`. Valid options are \n  - *GET*\n  - *HEAD*\n  - *POST*\n  - *OPTIONS*\n",
+         "description_kind": "plain",
+         "optional": true,
+         "type": "string"
+        },
+        "port": {
+         "description": "Port number",
+         "description_kind": "plain",
+         "required": true,
+         "type": "number"
+        },
+        "protocol": {
+         "description": "Valid options are \n  - *HTTP*\n  - *HTTPS*\n  - *TCP*\n",
+         "description_kind": "plain",
+         "required": true,
+         "type": "string"
+        },
+        "uri": {
+         "description": "URI to check in the target instances",
+         "description_kind": "plain",
+         "required": true,
+         "type": "string"
+        }
+       },
+       "nesting_mode": "single"
+      },
+      "optional": true
+     },
+     "id": {
+      "computed": true,
+      "description_kind": "plain",
+      "type": "string"
+     },
+     "name": {
+      "description": "The Name of the target group",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "port": {
+      "description": "The port of the target group",
+      "description_kind": "plain",
+      "required": true,
+      "type": "number"
+     },
+     "protocol": {
+      "description": "Valid options are \n  - *HTTP*\n  - *HTTPS*\n  - *TCP*\n\n**WARNING!** Changing this value once running will cause this target group to be destroyed and a new one to be created.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     },
+     "region": {
+      "description": "Valid options are \n  - *eu-west-3*\n  - *us-east-1*\n  - *eu-central-1*\n  - *ap-southeast-1*\n  - *us-west-1*\n  - *eu-west-2*\n  - *ca-central-1*\n  - *ap-northeast-1*\n\n**WARNING!** Changing this value once running will cause this target group to be destroyed and a new one to be created.",
+      "description_kind": "plain",
+      "required": true,
+      "type": "string"
+     }
+    },
+    "description": "Manage public cloud target group",
+    "description_kind": "plain"
+   },
+   "version": 0
+  }
+ }
+}

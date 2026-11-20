@@ -1,0 +1,8 @@
+corpus/
+.terraform/
+*.tfstate*
+*.tfvars
+.env
+__pycache__/
+.venv/
+raw.json
