@@ -33,15 +33,17 @@ never retrieved. Route 53 TXT and other free-form record values are marked with
 Keep the inventory local, as it contains infrastructure metadata including AWS
 account IDs and resource tags.
 
-## Dependency graph
-
-The dependency graph stage is implemented. Install Python 3.11+ and run:
+## Downstream pipeline
+Install Python 3.11+ and run the downstream stages with scanner and translator artifacts in the same output directory.
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e '.[test]'
-sovereign-shift graph path/to/inventory.json --out out/
+sovereign-shift graph out/inventory.json --out out/
+sovereign-shift generate --out out/
+sovereign-shift runbook --out out/ --no-ai
+sovereign-shift report --out out/
 pytest
 ```
 
@@ -56,7 +58,29 @@ still need verification.
 Security group properties accept `ingress` rules with `protocol`, `from_port`,
 `to_port`, and `source_groups` (a list of group IDs), or boto3 `IpPermissions`.
 Database properties use `port` or `endpoint.port` / `endpoint.Port`, with engine
-defaults for PostgreSQL and MySQL-compatible engines. Security findings beyond
-unresolved dependencies belong to subsequent implementation work.
+defaults for PostgreSQL and MySQL-compatible engines.
+The graph command also writes deterministic security checks to `findings.json`.
+
+Generate reads the inventory, graph and mapping. Instance targets supply
+`instance_type`, `image_id` and `root_disk_size`. Load balancers supply
+`instance_type`, listeners and target groups supply `protocol` and `port`.
+Listener edges point to a load balancer and target group. Target group edges
+point to backend instances. DNS targets supply `domain_name`, `name`, `type`,
+`ttl` and `content` or a relation to the new address owner.
+
+After applying Terraform, preview the finalization requests:
+
+```bash
+terraform -chdir=out/terraform output -json > out/outputs.json
+sovereign-shift finalize --out out/ --outputs out/outputs.json --dry-run
+```
+
+For live finalization, set `LEASEWEB_TOKEN`, omit `--dry-run` and supply
+`--admin-cidr` when referenced. Check the effective default security group after
+attachment. Review manual items in the report before deployment.
+
+Runbook defaults are offline. For optional AI notes, omit `--no-ai` and set
+`SOVEREIGN_AI_API_KEY`, `SOVEREIGN_AI_MODEL` and optionally `SOVEREIGN_AI_BASE_URL`.
+
 
 License: [Apache-2.0](LICENSE).

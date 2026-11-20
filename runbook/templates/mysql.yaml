@@ -1,0 +1,21 @@
+resource_type: db_instance
+engine: mysql
+steps:
+- id: mysql-dump
+  title: Export transactional tables
+  command: mysqldump --single-transaction -h "{source_host}" "{database}" > migration.sql
+  verify: test -s migration.sql
+  inputs:
+    source_host:
+      source: customer
+    database:
+      source: customer
+- id: mysql-restore
+  title: Load the dump into an empty database
+  command: mysql -h "{target_host}" "{database}" < migration.sql
+  verify: mysql -h "{target_host}" "{database}" -e "SHOW TABLES"
+  inputs:
+    target_host:
+      source: customer
+    database:
+      source: customer

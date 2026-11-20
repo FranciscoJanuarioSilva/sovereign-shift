@@ -32,7 +32,7 @@ def test_database_inference(raw):
     ]}
     graph = build_graph(inventory)
     inferred = [edge for edge in graph["edges"] if edge.get("inferred")]
-    assert inferred == [{"from": "web", "to": "db", "type": "connects_to", "inferred": True}]
+    assert inferred == [{"from": "web", "to": "db", "type": "talks_to", "inferred": True, "evidence": "db-sg allows web-sg on TCP/5432"}]
     rule["IpProtocol" if raw else "protocol"] = "udp"
     assert not any(edge.get("inferred") for edge in build_graph(inventory)["edges"])
 

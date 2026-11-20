@@ -64,7 +64,7 @@ def build_graph(inventory: dict[str, Any]) -> dict[str, Any]:
                     "id": "GRAPH-001", "resource": target, "severity": "warning",
                     "message": "Referenced resource was absent from the inventory.",
                 })
-            graph.add_edge(resource_id, target, key=kind, type=kind)
+            graph.add_edge(resource_id, target, key=kind, type=kind, inferred=False)
 
     security_groups = {
         resource_id: {
@@ -91,18 +91,20 @@ def build_graph(inventory: dict[str, Any]) -> dict[str, Any]:
                     "aurora-mysql": 3306}.get(engine)
         if not isinstance(port, int):
             continue
-        allowed: set[str] = set()
-        for group_id in security_groups[database_id]:
+        allowed: dict[str, str] = {}
+        for group_id in sorted(security_groups[database_id]):
             for rule in _rules(by_id.get(group_id, {})):
                 if _allows_port(rule, port):
-                    allowed.update(_source_groups(rule))
+                    for source in _source_groups(rule):
+                        allowed[source] = f"{group_id} allows {source} on TCP/{port}"
         for instance_id in instances:
-            if security_groups[instance_id] & allowed:
+            matches = sorted(security_groups[instance_id].intersection(allowed))
+            if matches:
                 # an explicit relationship takes precedence over an inference
-                if not graph.has_edge(instance_id, database_id, "connects_to"):
+                if not graph.has_edge(instance_id, database_id, "talks_to"):
                     graph.add_edge(
-                        instance_id, database_id, key="connects_to",
-                        type="connects_to", inferred=True,
+                        instance_id, database_id, key="talks_to",
+                        type="talks_to", inferred=True, evidence=allowed[matches[0]],
                     )
 
     return {

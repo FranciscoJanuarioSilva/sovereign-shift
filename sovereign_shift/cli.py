@@ -1,6 +1,7 @@
 """CLI entry points for the migration pipeline."""
 
 import json
+import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Annotated
@@ -9,8 +10,15 @@ import boto3
 import typer
 from botocore.exceptions import BotoCoreError, ClientError
 
+from sovereign_shift.artifacts import read, save
+from sovereign_shift.finalize.apply import finalize
+from sovereign_shift.generator.build import generate
 from sovereign_shift.graph import build_graph, render_html
 from sovereign_shift.scanner.aws import scan
+from sovereign_shift.graph.security import findings
+from sovereign_shift.models import Inventory
+from sovereign_shift.report.build import report
+from sovereign_shift.runbook.build import runbook
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -62,14 +70,62 @@ def graph_command(
 ) -> None:
     """Build graph.json and graph.html from an inventory snapshot."""
     try:
-        graph = build_graph(json.loads(inventory.read_text()))
+        snapshot = json.loads(inventory.read_text())
+        Inventory.model_validate(snapshot)
+        graph = build_graph(snapshot)
+        security = findings(snapshot, graph)
         html = render_html(graph)
     except (ValueError, KeyError, TypeError, AttributeError) as error:
         raise typer.BadParameter(f"Invalid inventory: {error}") from error
     out.mkdir(parents=True, exist_ok=True)
+    save(out, "findings", {"findings": security})
     (out / "graph.json").write_text(json.dumps(graph, indent=2) + "\n")
     (out / "graph.html").write_text(html)
-    typer.echo(f"Wrote {out / 'graph.json'} and {out / 'graph.html'}")
+    typer.echo(
+        f"Wrote {out / 'graph.json'} and {out / 'graph.html'} and {out / 'findings.json'}"
+    )
+
+
+@app.command("generate")
+def generate_command(out: Path = typer.Option(Path("out"), "--out")) -> None:
+    """Render Terraform and the post-apply plan from the pipeline artifacts."""
+    generate(out, read(out, "inventory"), read(out, "graph"), read(out, "mapping"))
+
+
+@app.command("finalize")
+def finalize_command(
+    outputs: Path = typer.Option(
+        ..., "--outputs", help="File from terraform output -json"
+    ),
+    out: Path = typer.Option(Path("out"), "--out"),
+    dry_run: bool = typer.Option(False, "--dry-run"),
+    admin_cidr: str | None = typer.Option(None, "--admin-cidr"),
+) -> None:
+    """Resolve deployed IDs and configure Leaseweb groups and targets."""
+    token = None if dry_run else os.getenv("LEASEWEB_TOKEN")
+    calls = finalize(
+        read(out, "finalize"), json.loads(outputs.read_text()), admin_cidr, token
+    )
+    typer.echo(json.dumps(calls, indent=2))
+
+
+@app.command("runbook")
+def runbook_command(
+    out: Path = typer.Option(Path("out"), "--out"),
+    no_ai: bool = typer.Option(False, "--no-ai"),
+) -> None:
+    """Render migration steps from the validated template library."""
+    save(
+        out,
+        "runbook",
+        runbook(out, read(out, "inventory"), read(out, "mapping"), no_ai),
+    )
+
+
+@app.command("report")
+def report_command(out: Path = typer.Option(Path("out"), "--out")) -> None:
+    """Write the Markdown and JSON migration assessment."""
+    report(out, read(out, "inventory"), read(out, "mapping"))
 
 
 if __name__ == "__main__":

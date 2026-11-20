@@ -1,0 +1,18 @@
+terraform {
+  required_providers {
+    leaseweb = {
+      source = "leaseweb/leaseweb"
+      version = "= 1.32.1"
+    }
+  }
+}
+provider "leaseweb" {}
+{% for item in resources %}
+resource "{{ item.provider_type }}" "{{ item.label }}" {
+{% for key, value in item.attributes.items() %}  {{ key }} = {{ value }}
+{% endfor %}}
+{% if item.export %}
+output "{{ item.label }}" {
+  value = {{ item.provider_type }}.{{ item.label }}.id
+}
+{% endif %}{% endfor %}

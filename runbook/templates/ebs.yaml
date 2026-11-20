@@ -1,0 +1,12 @@
+resource_type: ebs_volume
+engine: null
+steps:
+- id: volume-copy
+  title: Copy files from a mounted snapshot
+  command: rsync -aHAX --numeric-ids -- "{mounted_source}/" "{mounted_target}/"
+  verify: rsync -aHAXnic -- "{mounted_source}/" "{mounted_target}/"
+  inputs:
+    mounted_source:
+      source: customer
+    mounted_target:
+      source: customer

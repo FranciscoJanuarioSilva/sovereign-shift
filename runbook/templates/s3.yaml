@@ -1,0 +1,13 @@
+resource_type: s3_bucket
+engine: null
+steps:
+- id: bucket-copy
+  title: Copy objects to the configured Leaseweb remote
+  command: rclone copy "aws:{bucket}" "leaseweb:{target_bucket}"
+  verify: rclone check --one-way "aws:{bucket}" "leaseweb:{target_bucket}"
+  inputs:
+    bucket:
+      source: inventory
+      field: name
+    target_bucket:
+      source: customer

@@ -1,0 +1,12 @@
+resource_type: ec2_instance
+engine: null
+steps:
+- id: app-copy
+  title: Copy quiesced application data
+  command: rsync -a -- "{source_path}" "{target_path}"
+  verify: rsync -anic -- "{source_path}" "{target_path}"
+  inputs:
+    source_path:
+      source: customer
+    target_path:
+      source: customer

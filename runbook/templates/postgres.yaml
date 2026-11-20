@@ -1,0 +1,21 @@
+resource_type: db_instance
+engine: postgres
+steps:
+- id: pg-dump-source
+  title: Export a consistent database snapshot
+  command: pg_dump -Fc -h "{source_host}" -d "{database}" -f migration.dump
+  verify: pg_restore --list migration.dump
+  inputs:
+    source_host:
+      source: customer
+    database:
+      source: customer
+- id: pg-restore-target
+  title: Restore into an empty destination database
+  command: pg_restore --exit-on-error -h "{target_host}" -d "{database}" migration.dump
+  verify: psql -h "{target_host}" -d "{database}" -c "\dt"
+  inputs:
+    target_host:
+      source: customer
+    database:
+      source: customer

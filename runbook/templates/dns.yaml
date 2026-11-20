@@ -1,0 +1,25 @@
+resource_type: route53_record
+engine: null
+steps:
+- id: dns-ttl
+  title: Inspect the current TTL before lowering it at the DNS host
+  command: dig +noall +answer "{record}" "{record_type}"
+  verify: dig @"{authoritative_server}" +noall +answer "{record}" "{record_type}"
+  inputs:
+    record:
+      source: customer
+    record_type:
+      source: customer
+    authoritative_server:
+      source: customer
+- id: dns-cutover
+  title: Verify after switching the record at the DNS host
+  command: dig @"{authoritative_server}" +short "{record}" "{record_type}"
+  verify: dig +short "{record}" "{record_type}"
+  inputs:
+    authoritative_server:
+      source: customer
+    record:
+      source: customer
+    record_type:
+      source: customer
