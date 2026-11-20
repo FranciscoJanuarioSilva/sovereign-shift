@@ -14,6 +14,7 @@ Start with `../../PLAN.md` for the product, and `../contracts.md` for the data s
 | [service-equivalence.md](service-equivalence.md) | AWS -> Leaseweb table, instance/AMI/RDS mapping rules |
 | [regions-and-locations.md](regions-and-locations.md) | region codes (watch the eu-west-3 trap), recommended location per AWS region |
 | [security-rules.md](security-rules.md) | checks for the report |
+| [environment.md](environment.md) | our AWS demo account (read-only, eu-north-1 only), the AI setup that works, the team VM |
 | [ai-providers.md](ai-providers.md) | provider options, client design, the four agents, caching and redaction |
 
 ## Machine-readable

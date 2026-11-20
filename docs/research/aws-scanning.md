@@ -7,6 +7,7 @@ Step 1 of the pipeline: get a full inventory with read-only credentials.
 - Better for real customers: a cross-account role with an `ExternalId` and `sts:AssumeRole`, so no long-lived keys are shared.
 - Never store keys, never log them, never send them to an LLM. Short-lived STS creds only in memory.
 - Click-ops users often forget resources in other regions, so offer `--all-regions` (see below).
+- Expect `UnauthorizedOperation` / `AccessDenied` from SCPs (our demo account only allows `eu-north-1`, see `environment.md`). Record the region or service as denied and continue.
 
 ## Not used: Former2 and other AWS-to-Terraform tools
 Decision: we write our own boto3 scanner. Former2, aws2tf, Terraformer and terracognita all output AWS-provider Terraform, which is not what we need, and each has a blocker (Terraformer archived Mar 2026, terracognita pinned to AWS provider 4.9.0, Former2 browser-first with an "experimental" CLI on the end-of-support JS SDK v2, aws2tf needs Terraform 1.12 + AWS CLI v2 + jq and emits HCL, not an inventory).
@@ -17,7 +18,7 @@ Read-only calls per service. All are paginated, so use `get_paginator`.
 
 | Service | Calls | Gives us |
 |---|---|---|
-| EC2 | `describe_instances`, `describe_images` (for the AMI OS), `describe_volumes`, `describe_addresses`, `describe_key_pairs`, `describe_instance_types` (vCPU/RAM) | VMs, disks, EIPs |
+| EC2 | `describe_instances`, `describe_images` (for the AMI OS), `describe_volumes`, `describe_addresses` (skip entries with `ServiceManaged`, those belong to ALBs/RDS), `describe_key_pairs`, `describe_instance_types` (vCPU/RAM) | VMs, disks, EIPs |
 | VPC | `describe_vpcs`, `describe_subnets`, `describe_route_tables`, `describe_internet_gateways`, `describe_nat_gateways`, `describe_security_groups`, `describe_security_group_rules`, `describe_network_interfaces` | network graph, firewall rules |
 | ELBv2 | `describe_load_balancers`, `describe_listeners`, `describe_target_groups`, `describe_target_health`, `describe_rules` | LB -> TG -> instance edges |
 | RDS | `describe_db_instances`, `describe_db_subnet_groups`, `describe_db_clusters` | DBs, their SGs and subnets |

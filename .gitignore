@@ -1,12 +1,29 @@
-corpus/
-.terraform/
-*.tfstate*
-*.tfvars
+# secrets, never commit
 .env
-__pycache__/
-.venv/
-raw.json
+.env.*
+!.env.example
+*.pem
+*.key
+*.tfvars
+credentials
+.aws/
+
+# terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate*
+
+# generated output and real scan data
+scripts/demo-account/state*.json
 out/
 inventory.json
+raw.json
+
+# reference repos
+corpus/
+
+# python
+__pycache__/
+.venv/
 *.egg-info/
 .pytest_cache/

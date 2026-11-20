@@ -16,6 +16,7 @@ Built for a 5-hour hackathon build. Scope and priorities are in `PLAN.md`.
 - `PLAN.md`: scope, pipeline, runbook design, AI use, timeline.
 - `docs/contracts.md`: JSON shapes for every file between steps. Keep them stable.
 - `docs/research/README.md`: index of facts about AWS and Leaseweb. Check it before guessing.
+- `docs/research/environment.md`: our AWS account, AI setup and team VM.
 - `docs/schemas/*.json`: exact provider schemas. Never emit an attribute that isn't in them.
 
 ## Layout
@@ -48,7 +49,7 @@ Python 3.11+, boto3, pydantic, networkx, typer, jinja2, openai SDK (custom `base
 ```bash
 ./scripts/fetch-corpus.sh                       # reference repos (optional)
 pytest
-sovereign-shift scan --profile readonly --region eu-west-1
+sovereign-shift scan --profile sovereign-readonly --region eu-north-1
 sovereign-shift all --from-snapshot examples/sample_inventory.json --no-ai --out out/
 sovereign-shift finalize --out out/ --dry-run      # after terraform apply; drop --dry-run to call the API
 ```
@@ -63,13 +64,15 @@ Terraform isn't installed on this machine. Run it through the container:
 - **Every AI output is marked** `ai-suggested` in the generated files and report, with its justification.
 - **Everything generated must pass `terraform validate`.** Nothing is silently dropped. Anything unmapped goes into the report.
 - **`--no-ai` must always work**, offline, from a snapshot.
-- **AWS access is read-only.** Never write to the customer's account. Never store or log credentials.
+- **AWS access is read-only.** Never write to the customer's account. Never store or log credentials. The demo account's SCP only allows `eu-north-1`: treat `UnauthorizedOperation`/`AccessDenied` per region or service as "denied", record it and continue.
+- **Product code only uses the `sovereign-readonly` profile.** The write profile `sovereign-admin` is only for `scripts/demo-account/`, which builds and tears down our test fixture account.
+- **Secrets stay out of the repo.** Keys only in `~/.aws/` and `.env`. Install the hook: `ln -sf ../../scripts/check-secrets.sh .git/hooks/pre-commit`. Never paste credentials into docs, tests, fixtures or commit messages.
 - **No secrets to the LLM.** Redact keys, passwords, tokens, `user_data` contents, account IDs and host IPs before every call. Keep CIDRs in security group rules (the reviewer needs `0.0.0.0/0`). Runbooks show `<CUSTOMER: ...>` placeholders, never values.
-- **AI endpoint:** OpenAI-compatible, base URL, key and model from env vars. The team picks the provider.
+- **AI endpoint:** OpenAI-compatible, base URL, key and model from env vars (`.env`, see `.env.example`). Default is OpenRouter global with provider routing pinned to Mistral (`only: ["mistral"]`, `allow_fallbacks: false`, `data_collection: "deny"`). `eu.openrouter.ai` returns 403 on our plan.
 - **Region trap:** Leaseweb `eu-west-3` is Amsterdam, AWS `eu-west-3` is Paris. Always map through `mappings/regions.yaml`.
 - **Elastic IPs are manual.** `leaseweb_public_cloud_ip` doesn't reserve addresses.
 - **Security groups and LB targets go through finalize**, never Terraform (the provider has no resources for them). Leaseweb firewall rules only take CIDRs, so SG-to-SG rules become /32 rules on the source instances' private IPs, resolved after apply. See `docs/research/leaseweb-api.md`.
-- **`user_data` is plain text**, not base64. It always brings up `eth1` (private network) with DHCP and carries the SSH key, since `ssh_key` and `user_data` can't both be set.
+- **`user_data` is plain text**, not base64. It always brings up the private network interface with DHCP, matched by "not the primary interface", never by name (`eth1` on the old platform, `enp3s0` on the new one) and carries the SSH key, since `ssh_key` and `user_data` can't both be set.
 - **LB backends need `has_private_network = true`**, or they can't be registered as targets.
 - **Facts in docs need a source URL and a date.** Mark unverified things "verify".
 

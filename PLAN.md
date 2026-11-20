@@ -56,7 +56,7 @@ Fallback if finalize can't run (no token, API problem): the security groups go i
 Traps:
 - Leaseweb `eu-west-3` is Amsterdam, AWS `eu-west-3` is Paris. Map regions through `mappings/regions.yaml`, never copy the string.
 - `user_data` goes as plain text, not base64.
-- The private network is `eth1` and isn't up by default. The cloud-init brings it up with DHCP.
+- The private network interface isn't up by default. The KB calls it `eth1` (old platform), but our team VM on the new platform has `enp3s0`. The cloud-init brings up every non-primary interface with DHCP, by match, never by a hard-coded name.
 - Every Leaseweb instance gets a public IPv4. A DB that was in a private AWS subnet must be closed by its security group.
 - The default Leaseweb security group allows everything. Finalize attaches ours.
 
@@ -86,7 +86,7 @@ The LLM never writes HCL, firewall rules or commands. Its output is JSON, valida
 
 Demo moment for the AI: show the validator rejecting a bad AI answer (an unknown step id, or a suggestion for a resource with no template). This shows "AI with guardrails", which is also the security angle.
 
-Backend: OpenAI-compatible client with configurable base URL. Which provider and key is the team's call (see `docs/research/ai-providers.md`).
+Backend: OpenAI-compatible client with configurable base URL. Default: OpenRouter global host with `provider: {only: ["mistral"], allow_fallbacks: false, data_collection: "deny"}`, models `mistral-small-2603` (translator, explainer) and `mistral-medium-3-5` (runbook, reviewer). See `docs/research/environment.md`.
 
 Redaction before every call: no keys, passwords, tokens, `user_data` contents, account IDs or host IP addresses. CIDRs in security group rules are kept, because the reviewer needs them (`0.0.0.0/0` is the point).
 
@@ -139,12 +139,14 @@ Priority if time runs short, in order: EC2 + SGs (finalize) > report with cost a
 - Demo dry run, twice, before 15:00.
 
 ## Open questions
-- AI provider and key: the team decides.
+- Leaseweb API token: still missing (the VM login isn't one).
 - Can the default Leaseweb security group be detached from an instance? Test with the token.
 - Leaseweb region codes other than `eu-west-3` and `eu-central-1`: verify with `GET /regions`.
 - Load balancer prices: from the token's catalog if the API has them, otherwise ask Leaseweb.
 
 ## Resolved
+- AI: OpenRouter global host pinned to Mistral (`eu.openrouter.ai` needs a Business plan). Details in `docs/research/environment.md`.
+- AWS demo account: read-only key confirmed, only `eu-north-1` is allowed, account empty so far (build list in `docs/research/environment.md`).
 - License: Apache-2.0.
 - Terraform (not OpenTofu).
 - Target: the `leaseweb/leaseweb` provider plus the Public Cloud REST API. The provider has no OpenStack code. The OpenStack-based new platform is roadmap.

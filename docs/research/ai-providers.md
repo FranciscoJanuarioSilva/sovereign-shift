@@ -9,8 +9,8 @@ Four jobs. Everything else is deterministic.
 
 `--no-ai` produces the full output with template defaults, and the report lists the gaps as manual work.
 
-## Provider choice
-The team picks the provider and key. Notes below are on the options we looked at.
+## Provider choice (decided)
+OpenRouter global host, pinned to Mistral. The EU host refuses completions on our plan (403, Business plan needed). Tested setup and models are in `environment.md`. Notes below are on the options we looked at.
 
 ## OpenRouter, with EU in-region routing
 Sources: https://openrouter.ai/docs/guides/features/in-region-routing, https://openrouter.ai/docs/guides/features/sovereign-ai, https://openrouter.ai/blog/announcements/us-in-region-routing (checked 2026-11-20)
