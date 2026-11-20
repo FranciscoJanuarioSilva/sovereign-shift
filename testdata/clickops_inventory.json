@@ -1,0 +1,93 @@
+{
+  "source": "aws",
+  "account_id": "123456789012",
+  "scanned_at": "2026-11-20T10:00:00Z",
+  "regions": ["eu-north-1"],
+  "resources": [
+    {"id": "vpc-1", "type": "vpc", "region": "eu-north-1", "name": "default", "properties": {"cidr": "172.31.0.0/16", "is_default": true}, "tags": {}, "relations": []},
+    {"id": "subnet-1", "type": "subnet", "region": "eu-north-1", "name": "public-a", "properties": {"cidr": "172.31.0.0/20"}, "tags": {}, "relations": [{"type": "in_vpc", "target": "vpc-1"}]},
+    {"id": "key-1", "type": "key_pair", "region": "eu-north-1", "name": "ops-key", "properties": {"public_key": "ssh-ed25519 AAAAC3Nza... ops@laptop"}, "tags": {}, "relations": []},
+    {
+      "id": "sg-web", "type": "security_group", "region": "eu-north-1", "name": "web-sg",
+      "properties": {
+        "ingress": [
+          {"protocol": "tcp", "from_port": 22, "to_port": 22, "cidrs": ["0.0.0.0/0"], "source_groups": []},
+          {"protocol": "tcp", "from_port": 80, "to_port": 80, "cidrs": [], "source_groups": ["sg-lb"]}
+        ],
+        "egress": [{"protocol": "-1", "from_port": null, "to_port": null, "cidrs": ["0.0.0.0/0"], "source_groups": []}]
+      },
+      "tags": {}, "relations": [{"type": "in_vpc", "target": "vpc-1"}]
+    },
+    {
+      "id": "sg-db", "type": "security_group", "region": "eu-north-1", "name": "db-sg",
+      "properties": {
+        "ingress": [
+          {"protocol": "tcp", "from_port": 5432, "to_port": 5432, "cidrs": [], "source_groups": ["sg-web"]},
+          {"protocol": "tcp", "from_port": 5432, "to_port": 5432, "cidrs": ["0.0.0.0/0"], "source_groups": []}
+        ],
+        "egress": []
+      },
+      "tags": {}, "relations": [{"type": "in_vpc", "target": "vpc-1"}]
+    },
+    {
+      "id": "sg-lb", "type": "security_group", "region": "eu-north-1", "name": "lb-sg",
+      "properties": {"ingress": [{"protocol": "tcp", "from_port": 443, "to_port": 443, "cidrs": ["0.0.0.0/0"], "source_groups": []}], "egress": []},
+      "tags": {}, "relations": []
+    },
+    {"id": "sg-old", "type": "security_group", "region": "eu-north-1", "name": "launch-wizard-3", "properties": {"ingress": [], "egress": []}, "tags": {}, "relations": []},
+    {
+      "id": "i-web1", "type": "ec2_instance", "region": "eu-north-1", "name": "web-1",
+      "properties": {
+        "instance_type": "t3.large", "vcpu": 2, "memory_gib": 8, "os": "ubuntu-22.04",
+        "volumes": [{"id": "vol-root1", "size_gib": 30, "encrypted": false, "root": true}, {"id": "vol-data1", "size_gib": 100, "encrypted": false, "root": false}],
+        "key_name": "ops-key", "public_ip": true
+      },
+      "tags": {"env": "prod"},
+      "relations": [{"type": "in_subnet", "target": "subnet-1"}, {"type": "uses_security_group", "target": "sg-web"}]
+    },
+    {
+      "id": "i-web2", "type": "ec2_instance", "region": "eu-north-1", "name": "web-2",
+      "properties": {
+        "instance_type": "m6g.large", "os": "amazon-linux-2023",
+        "volumes": [{"id": "vol-root2", "size_gib": 20, "encrypted": true, "root": true}],
+        "key_name": "ops-key", "public_ip": true
+      },
+      "tags": {"env": "prod"},
+      "relations": [{"type": "in_subnet", "target": "subnet-1"}, {"type": "uses_security_group", "target": "sg-web"}]
+    },
+    {"id": "vol-data1", "type": "ebs_volume", "region": "eu-north-1", "name": "web-data", "properties": {"size_gib": 100, "encrypted": false}, "tags": {}, "relations": []},
+    {"id": "eip-1", "type": "elastic_ip", "region": "eu-north-1", "name": "web-ip", "properties": {}, "tags": {}, "relations": [{"type": "attached_to", "target": "i-web1"}]},
+    {
+      "id": "db-orders", "type": "db_instance", "region": "eu-north-1", "name": "orders",
+      "properties": {"engine": "postgres", "engine_version": "16.4", "instance_class": "db.t3.medium", "allocated_storage": 50, "multi_az": false, "publicly_accessible": true, "storage_encrypted": false, "port": 5432},
+      "tags": {}, "relations": [{"type": "uses_security_group", "target": "sg-db"}]
+    },
+    {
+      "id": "lb-1", "type": "lb", "region": "eu-north-1", "name": "web-alb",
+      "properties": {"type": "application", "scheme": "internet-facing"},
+      "tags": {}, "relations": [{"type": "uses_security_group", "target": "sg-lb"}, {"type": "in_subnet", "target": "subnet-1"}]
+    },
+    {
+      "id": "tg-1", "type": "target_group", "region": "eu-north-1", "name": "web-tg",
+      "properties": {"protocol": "HTTP", "port": 80, "health_check": {"protocol": "HTTP", "path": "/health", "port": "traffic-port"}, "targets": [{"id": "i-web1", "port": 80}, {"id": "i-web2", "port": 80}]},
+      "tags": {}, "relations": [{"type": "associated_with", "target": "lb-1"}, {"type": "targets", "target": "i-web1"}, {"type": "targets", "target": "i-web2"}]
+    },
+    {
+      "id": "lsn-1", "type": "lb_listener", "region": "eu-north-1", "name": "https-443",
+      "properties": {"protocol": "HTTPS", "port": 443},
+      "tags": {}, "relations": [{"type": "belongs_to", "target": "lb-1"}, {"type": "forwards_to", "target": "tg-1"}]
+    },
+    {"id": "bucket-assets", "type": "s3_bucket", "region": "eu-north-1", "name": "shop-assets", "properties": {"public": true, "versioning": "Enabled"}, "tags": {}, "relations": []},
+    {"id": "zone-1", "type": "route53_zone", "region": "global", "name": "shop.example.com.", "properties": {"private": false}, "tags": {}, "relations": []},
+    {
+      "id": "rec-www", "type": "route53_record", "region": "global", "name": "www.shop.example.com",
+      "properties": {"type": "A", "ttl": 120, "alias": {"dns_name": "web-alb-123.eu-north-1.elb.amazonaws.com"}},
+      "tags": {}, "relations": [{"type": "in_zone", "target": "zone-1"}, {"type": "points_to", "target": "lb-1"}]
+    },
+    {
+      "id": "fn-thumbs", "type": "other", "region": "eu-north-1", "name": "make-thumbnails",
+      "properties": {"aws_type": "AWS::Lambda::Function", "runtime": "python3.12", "memory_mb": 512, "trigger": "s3:ObjectCreated on shop-assets", "environment": {"DB_PASSWORD": "hunter2"}},
+      "tags": {}, "relations": [{"type": "reads_from", "target": "bucket-assets"}]
+    }
+  ]
+}

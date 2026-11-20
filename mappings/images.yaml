@@ -1,0 +1,17 @@
+# inventory os string -> leaseweb image id, regexes are searched anywhere in the lowercased string, first match wins
+# the scanner puts the ami name here, e.g. "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-20240801" or "al2023-ami-2023.6..."
+# verified: true means the id shows up in the provider docs or examples
+images:
+  - {match: 'ubuntu.*(24\.04|noble)|^ubuntu[-_ ]?24', id: UBUNTU_24_04_64BIT, verified: true}
+  - {match: 'ubuntu.*(22\.04|jammy)|^ubuntu[-_ ]?22', id: UBUNTU_22_04_64BIT, verified: true}
+  - {match: 'ubuntu.*(20\.04|focal)|^ubuntu[-_ ]?20', id: UBUNTU_20_04_64BIT, verified: true}
+  - {match: 'ubuntu', id: UBUNTU_24_04_64BIT, verified: true, note: "unknown ubuntu release, defaulted to 24.04"}
+  - {match: 'windows', id: WINDOWS_SERVER_2022_STANDARD_64BIT, verified: false, windows: true}
+  - {match: 'alma.*8', id: ALMALINUX_8_64BIT, verified: true}
+  - {match: 'alma', id: ALMALINUX_9_64BIT, verified: false}
+  - {match: 'rocky', id: ROCKYLINUX_9_64BIT, verified: false}
+  - {match: 'rhel|red ?hat|centos', id: ALMALINUX_9_64BIT, verified: false, note: "rhel-family, mapped to almalinux 9"}
+  - {match: 'debian.*(12|bookworm)', id: DEBIAN_12_64BIT, verified: false}
+  - {match: 'debian', id: DEBIAN_12_64BIT, verified: false, note: "unknown debian release, defaulted to 12"}
+  - {match: 'al2023|amzn|amazon|^al2', id: ALMALINUX_9_64BIT, verified: false, note: "amazon linux has no leaseweb image, almalinux 9 is the closest rhel-like os, check packages"}
+fallback: {id: UBUNTU_24_04_64BIT, note: "os not detected, defaulted to ubuntu 24.04"}

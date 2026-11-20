@@ -122,9 +122,36 @@ Check ids and severities are in `docs/research/security-rules.md`.
 ```
 - `status`: `auto | partial | manual | unsupported`.
 - `via`: `terraform | finalize | runbook | report`.
-- `target.kind` values: `public_cloud_instance`, `security_group`, `load_balancer`, `lb_listener`, `target_group`, `dns_record`, `object_storage_bucket`, `self_hosted_db`, or null for `manual`.
+- `target.kind` values: `public_cloud_instance`, `security_group`, `load_balancer`, `lb_listener`, `target_group`, `dns_record`, `object_storage_bucket`, `self_hosted_db`, `ssh_key`, `merged_into_instance`, or `target: null` when nothing is created.
 - When `ai_suggested` is true, `alternative` and `justification` come from the translator agent, and `status` is `manual`.
 - Resources that have no target of their own (VPC, subnet, key pair) still get an entry, with a note on where they went (for example "key in web-1 cloud-init").
+
+### As implemented (`sovereign_shift/models.py`, `sovereign_shift/translator/`)
+Top level also has `generated_at`, `catalog_source` (`catalog:api:<date>` or `fallback:provider-schema+estimated-prices`) and `ai` (`{used, base_url, model, asked, answered, disabled_reason}`).
+
+Every entry also has:
+- `source_name`: the AWS name.
+- `tf_name`: terraform-safe, unique name. Use it as the resource name in `.tf` and in `finalize.json` (`private_ip_of`, `attach_to`, `members` all use it).
+- `monthly_cost_eur`: `{aws, leaseweb, aws_estimated, leaseweb_estimated}`. Without a Leaseweb token, prices are estimates except `lsw.c6a.large`.
+- `alternative` (only when `ai_suggested`): `{name, effort: low|medium|high, manual_steps[], confidence}`.
+
+`target` per kind (fields the generator needs):
+| kind | fields |
+|---|---|
+| `public_cloud_instance` | `region, instance_type, image_id, root_disk_size, root_disk_storage_type, has_private_network, contract{type, billing_frequency, term}, ssh_key_name` |
+| `self_hosted_db` | same as instance, plus `engine` (postgres/mysql/mariadb), `engine_version`, `port`. `via: runbook`, but the generator may create the VM |
+| `security_group` | `name, rules[{protocol TCP/UDP/ICMP, start_port, end_port, source}], attach_to[tf_name]`. `source` is `{"cidr": "1.2.3.0/24"}`, `{"cidr": "var:admin_cidr"}`, `{"cidr": "var:private_network_cidr"}` or `{"private_ip_of": tf_name}` |
+| `load_balancer` | `region, type, reference, contract` |
+| `lb_listener` | `protocol HTTP/HTTPS/TCP, port, load_balancer, default_target_group` (tf_names), `certificate` (`var:tls_certificate` or null) |
+| `target_group` | `name, protocol, port, region, health_check{protocol, port, uri, method}, members[tf_name]` (members go to finalize) |
+| `dns_record` | `domain_name, name (trailing dot), type, ttl (allowed value), content[], alias_of` (tf_name whose IP fills `content` after apply) |
+| `object_storage_bucket` | `bucket, endpoint` |
+| `ssh_key` | `public_key_from` (`inventory` or `var:ssh_public_key`) |
+| `merged_into_instance` | `instance` (tf_name) |
+
+Security fixes the translator already applies: 22/3389 from the internet become `var:admin_cidr` (SG-001). DB ports from the internet become the private IPs of the instances that use the DB, or `var:admin_cidr` if none are known (SG-002). SG-to-SG rules become `private_ip_of` rules. Groups only used by an LB, or unused, aren't recreated.
+
+Translator inputs: `inventory.json` (required), `graph.json` (optional, rebuilt if missing), `data/leaseweb_catalog.json` (optional, real prices), `data/aws_instance_types.json`, `mappings/regions.yaml`, `mappings/images.yaml`.
 
 ## finalize.json (generate)
 API calls Terraform can't make, in order. Ids that only exist after `terraform apply` are references into `terraform output -json`. Private IPs are looked up with `GET /instances/{id}/ips`.

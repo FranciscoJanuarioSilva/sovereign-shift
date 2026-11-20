@@ -1,0 +1,40 @@
+# aws region -> leaseweb public cloud region
+# leaseweb reuses aws-style codes but they are different places, never copy the string
+# only eu-west-3 (amsterdam) and eu-central-1 (frankfurt) are confirmed, verify the rest with GET /regions
+aws_to_leaseweb:
+  eu-west-1: eu-west-3       # dublin -> amsterdam
+  eu-west-2: eu-west-3       # london -> amsterdam (uk isn't eu, override with --target-region eu-west-2)
+  eu-west-3: eu-west-3       # paris -> amsterdam, no paris dc
+  eu-central-1: eu-central-1 # frankfurt -> frankfurt
+  eu-central-2: eu-central-1 # zurich -> frankfurt
+  eu-north-1: eu-west-3      # stockholm -> amsterdam
+  eu-south-1: eu-central-1   # milan -> frankfurt
+  eu-south-2: eu-central-1   # spain -> frankfurt
+  us-east-1: us-east-1
+  us-east-2: us-east-1
+  us-west-1: us-west-1
+  us-west-2: us-west-1
+  ca-central-1: ca-central-1
+  ap-southeast-1: ap-southeast-1
+  ap-northeast-1: ap-northeast-1
+default: eu-west-3
+
+leaseweb_codes:
+  eu-west-3: {location: Amsterdam, country: nl, verified: true}
+  eu-central-1: {location: Frankfurt, country: de, verified: true}
+  eu-west-2: {location: London, country: uk, verified: false}
+  us-east-1: {location: Washington DC, country: us, verified: false}
+  us-west-1: {location: San Francisco, country: us, verified: false}
+  ca-central-1: {location: Montreal, country: ca, verified: false}
+  ap-southeast-1: {location: Singapore, country: sg, verified: false}
+  ap-northeast-1: {location: Tokyo, country: jp, verified: false}
+
+# s3-compatible object storage endpoint per country
+# source: kb.leaseweb.com object storage getting started, 2026-11-20
+object_storage_endpoints:
+  nl: https://nl.object-storage.io
+  de: https://de.object-storage.io
+  uk: https://uk.object-storage.io
+  us: https://us.object-storage.io
+  ca: https://ca.object-storage.io
+  sg: https://sg.object-storage.io

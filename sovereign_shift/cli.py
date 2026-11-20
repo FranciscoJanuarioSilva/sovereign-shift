@@ -153,5 +153,26 @@ def all_command(
     typer.echo(f"Assessment ready at {out / 'report.md'}")
 
 
+@app.command("translate")
+def translate_command(
+    inventory: Path = typer.Argument(..., exists=True, dir_okay=False, readable=True),
+    graph: Path | None = typer.Option(None, "--graph", help="graph.json, rebuilt from the inventory if missing."),
+    out: Path = typer.Option(Path("out"), "--out", help="Output directory."),
+    target_region: str | None = typer.Option(None, "--target-region", help="Force one Leaseweb region, e.g. eu-west-3."),
+    no_ai: bool = typer.Option(False, "--no-ai", help="Rules only, no LLM calls."),
+) -> None:
+    """Map every inventory resource to a Leaseweb target and write mapping.json."""
+    from sovereign_shift.translator import main_files, summary
+
+    if graph is None and (out / "graph.json").exists():
+        graph = out / "graph.json"
+    try:
+        mapping = main_files(inventory, graph, out, target_region, use_ai=not no_ai)
+    except (ValueError, KeyError, TypeError) as error:
+        raise typer.BadParameter(f"Invalid input: {error}") from error
+    typer.echo(summary(mapping))
+    typer.echo(f"Wrote {out / 'mapping.json'}")
+
+
 if __name__ == "__main__":
     app()
