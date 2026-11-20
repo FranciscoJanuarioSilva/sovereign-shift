@@ -27,3 +27,6 @@ __pycache__/
 .venv/
 *.egg-info/
 .pytest_cache/
+
+# frontend build tooling (the build itself, frontend/dist, is committed)
+node_modules/

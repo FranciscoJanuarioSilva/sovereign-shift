@@ -5,7 +5,7 @@ description: Root skill for the sovereign-shift repo, which scans a ClickOps AWS
 
 # sovereign-shift
 
-Children: scan-aws, scan-azure, scan-gcp, translate-leaseweb, assess-security-posture, assess-risk, assess-performance, assess-scaling, assess-cost, generate-terraform, finalize-leaseweb, runbook, report.
+Children: scan-aws, scan-azure, scan-gcp, translate-leaseweb, assess-security-posture, assess-risk, assess-performance, assess-scaling, assess-cost, generate-terraform, finalize-leaseweb, runbook, report, frontend-design.
 
 ## Pipeline
 `scan -> graph (+ findings) -> translate -> generate -> assess -> runbook -> report -> publish`, each step reads the previous step's JSON in the output folder. `sovereign-shift all` runs them in order. Contracts: `docs/contracts.md`.

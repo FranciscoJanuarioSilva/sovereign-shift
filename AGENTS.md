@@ -79,6 +79,9 @@ Terraform isn't installed on this machine. Run it through the container:
 - **LB backends need `has_private_network = true`**, or they can't be registered as targets.
 - **Facts in docs need a source URL and a date.** Mark unverified things "verify".
 
+## UI work
+The web app is React in `frontend/web/`, built into `frontend/dist/` (commit the build). Before changing its look, read `skills/frontend-design/SKILL.md` (Anthropic's frontend-design skill, Apache-2.0) and keep the existing tokens in `src/styles.css`: one accent (the amber route), Archivo for text, JetBrains Mono only for code.
+
 ## Code style
 - Type hints, small functions, no agent-orchestration framework.
 - Comments: short and casual, lowercase is fine, one sentence per line, never split a sentence across lines. No markdown emphasis in comments.

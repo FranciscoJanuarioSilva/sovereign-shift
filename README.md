@@ -45,11 +45,15 @@ sovereign-shift all --from-snapshot examples/aws_demo_inventory.json --no-ai --o
 terraform -chdir=out/demo/terraform init && terraform -chdir=out/demo/terraform validate
 ```
 
-Open `out/demo/report.md` and `out/demo/graph.html`, or browse the same assessment in the local dashboard:
+Open `out/demo/report.md` and `out/demo/graph.html`.
+
+### The web app
 
 ```bash
-.venv/bin/python frontend/serve.py --port 8001   # then open http://127.0.0.1:8001
+.venv/bin/python frontend/serve.py --port 8001
 ```
+
+Open <http://127.0.0.1:8001>, paste a **read-only** AWS key (or a Cloudflare token) and press **Generate report**. Or open <http://127.0.0.1:8001/#demo> for the demo shop. The keys are used inside the local server for read-only calls only: they are never saved, logged or sent to the AI, and keys that can change the account are refused.
 
 On a real account, use read-only credentials ([IAM policy](docs/iam-policy.json)) and copy `.env.example` to `.env` for the AI settings:
 
@@ -71,7 +75,7 @@ Share only `out/live/public/`, where the account id is masked. Every command and
 | `sovereign_shift/runbook/`, `runbook/templates/` | data migration steps and their allowed commands |
 | `sovereign_shift/report/` | report and AI summary |
 | `sovereign_shift/ai/`, `sovereign_shift/prompts/` | LLM client, redaction, prompts |
-| `frontend/` | local dashboard: upload an inventory or report, browse and validate the Terraform |
+| `frontend/` | the web app: `web/` is the React source, `dist/` the build, `serve.py` the local server |
 | `data/`, `mappings/` | Leaseweb catalog and prices, AWS instance types, region and image maps |
 | `examples/`, `testdata/` | demo account inventory, Cloudflare demo, synthetic fixtures |
 | `docs/` | [usage](docs/usage.md), [contracts](docs/contracts.md), [research](docs/research/README.md) with sources, [plan](PLAN.md) |
