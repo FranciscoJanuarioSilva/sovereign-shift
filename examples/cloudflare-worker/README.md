@@ -12,7 +12,7 @@ npm run seed
 npm run dev
 ```
 
-Set `DEMO_PASSWORD` in a local, ignored `.dev.vars` file before starting the Worker. Open `http://localhost:8787/` and sign in as `demo` using that password. To exercise the daily audit immediately in the local simulator, run
+Set `STOCKROOM_ACCESS_KEY` in a local, ignored `.dev.vars` file before starting the Worker. Open `http://localhost:8787/` and sign in as `demo` using that password. To exercise the daily audit immediately in the local simulator, run
 
 ```sh
 curl -fsS -u demo http://localhost:8787/api/catalog
@@ -39,7 +39,7 @@ Cloudflare plan references checked 2026-11-20. [Workers and storage pricing](htt
 
 ## Host a protected demo
 
-Replace the synthetic D1 and KV IDs with your demo resource IDs and provision the named Queue and a private R2 bucket. Seed the hosted stores with the files in `data/`. Set `DEMO_PASSWORD` as a Worker secret in Cloudflare or run `npx wrangler secret put DEMO_PASSWORD` and enter a generated ASCII password when prompted. The Worker requires it for the page and API. Use HTTPS and share the password separately from the URL. Keep API tokens, object-store keys and real customer data outside the demo.
+Replace the synthetic D1 and KV IDs with your demo resource IDs and provision the named Queue and a private R2 bucket. Seed the hosted stores with the files in `data/`. Set `STOCKROOM_ACCESS_KEY` as a Worker secret in Cloudflare or run `npx wrangler secret put STOCKROOM_ACCESS_KEY` and enter a generated ASCII password when prompted. The Worker requires it for the page and API. Use HTTPS and share the password separately from the URL. Keep API tokens, object-store keys and real customer data outside the demo.
 
 A protected `workers.dev` URL works. For a custom hostname, set up the Worker custom domain and disable `workers_dev`. Preview URLs are disabled in the demo config. Use a separate read-only Cloudflare API token for migration inventory and separate scoped credentials for any authorized data transfer.
 

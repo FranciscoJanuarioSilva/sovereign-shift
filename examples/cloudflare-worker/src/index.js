@@ -35,7 +35,7 @@ async function authorized(request, password) {
 export default {
   async fetch(request, env) {
     const headers = { "Cache-Control": "private, no-store" };
-    if (!await authorized(request, env.DEMO_PASSWORD)) {
+    if (!await authorized(request, env.STOCKROOM_ACCESS_KEY)) {
       return new Response("Authentication required", {
         status: 401,
         headers: { ...headers, "WWW-Authenticate": 'Basic realm="Stockroom demo"' }
@@ -51,7 +51,9 @@ export default {
     const [stock, settings, guide, bins, audits] = await Promise.all([
       env.DB.prepare("SELECT * FROM stock ORDER BY sku").all(),
       env.SETTINGS.get("catalog", "json"),
-      env.FILES.get("guide.txt"),
+      env.FILES
+        ? env.FILES.get("guide.txt")
+        : env.ASSETS.fetch(new URL("/guide.txt", request.url)),
       depot.bin(),
       env.DB.prepare("SELECT * FROM audits ORDER BY id DESC LIMIT 5").all()
     ]);
