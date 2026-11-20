@@ -3,8 +3,9 @@ import { AWS_REGIONS } from "./format.js";
 
 const PROVIDERS = [
   { id: "aws", label: "AWS" },
+  { id: "gcp", label: "Google Cloud" },
   { id: "cloudflare", label: "Cloudflare" },
-  { id: "file", label: "From a file" },
+  { id: "file", label: "File" },
 ];
 
 export default function Connect({ busy, error, onScan, onFile, onDemo }) {
@@ -53,6 +54,12 @@ export default function Connect({ busy, error, onScan, onFile, onDemo }) {
                     {Object.entries(AWS_REGIONS).map(([code, city]) => <option key={code} value={code}>{city} ({code})</option>)}
                   </select>
                 </label>
+              </>
+            ) : provider === "gcp" ? (
+              <>
+                <label>Project ID<input name="project_id" required spellCheck="false" pattern="[a-z][a-z0-9\-]{4,28}[a-z0-9]" placeholder="my-shop-prod" /></label>
+                <label><span>Access token <span className="optional">from a Viewer account</span></span><input name="access_token" type="password" required spellCheck="false" /></label>
+                <p className="hint">Get one with <code>gcloud auth print-access-token --impersonate-service-account=VIEWER_SA</code>. It expires after an hour.</p>
               </>
             ) : (
               <>

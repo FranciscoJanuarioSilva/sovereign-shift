@@ -6,6 +6,10 @@ export const AWS_REGIONS = {
   "eu-central-1": "Frankfurt", "eu-central-2": "Zurich", "eu-south-1": "Milan", "eu-south-2": "Spain",
   "us-east-1": "N. Virginia", "us-east-2": "Ohio", "us-west-1": "N. California", "us-west-2": "Oregon",
   "ca-central-1": "Canada", "ap-southeast-1": "Singapore", "ap-northeast-1": "Tokyo",
+  // google cloud regions, same lookup for the route strip
+  "us-central1": "Iowa", "us-east1": "South Carolina", "us-east4": "N. Virginia", "us-west1": "Oregon",
+  "europe-west1": "Belgium", "europe-west2": "London", "europe-west3": "Frankfurt", "europe-west4": "Netherlands",
+  "europe-north1": "Finland", "asia-southeast1": "Singapore",
 };
 
 // leaseweb reuses aws-style codes for different cities (docs/research/regions-and-locations.md)
@@ -23,4 +27,4 @@ export const STATUS = {
 
 export const SEVERITY = ["critical", "high", "medium", "low", "info"];
 
-export const cloudName = (cloud) => ({ aws: "AWS", cloudflare: "Cloudflare", leaseweb: "Leaseweb" })[cloud] ?? cloud ?? "Source";
+export const cloudName = (cloud) => ({ aws: "AWS", gcp: "Google Cloud", azure: "Azure", cloudflare: "Cloudflare", leaseweb: "Leaseweb" })[cloud] ?? cloud ?? "Source";

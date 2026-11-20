@@ -53,7 +53,7 @@ Open `out/demo/report.md` and `out/demo/graph.html`.
 .venv/bin/python frontend/serve.py --port 8001
 ```
 
-Open <http://127.0.0.1:8001>, paste a **read-only** AWS key (or a Cloudflare token) and press **Generate report**. Or open <http://127.0.0.1:8001/#demo> for the demo shop. The keys are used inside the local server for read-only calls only: they are never saved, logged or sent to the AI, and keys that can change the account are refused.
+Open <http://127.0.0.1:8001>, paste a **read-only** AWS key (or a Google Cloud viewer token, or a Cloudflare token) and press **Generate report**. Or open <http://127.0.0.1:8001/#demo> for the demo shop. The keys are used inside the local server for read-only calls only: they are never saved, logged or sent to the AI, and keys that can change the account are refused.
 
 On a real account, use read-only credentials ([IAM policy](docs/iam-policy.json)) and copy `.env.example` to `.env` for the AI settings:
 

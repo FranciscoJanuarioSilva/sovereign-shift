@@ -26,6 +26,7 @@ import httpx
 
 from sovereign_shift.scanner import aws as aws_scanner
 from sovereign_shift.scanner import cloudflare as cloudflare_scanner
+from sovereign_shift.scanner import gcp as gcp_scanner
 
 ROOT = Path(__file__).resolve().parent
 DIST = ROOT / "dist"
@@ -91,6 +92,49 @@ def scan_aws(request: dict) -> dict:
         raise ScanProblem(f"AWS refused {error.operation_name} ({code}). Attach the ReadOnlyAccess policy to this key.") from None
     except botocore.exceptions.BotoCoreError:
         raise ScanProblem("Could not reach AWS. Check the network connection and try again.") from None
+
+
+GCP_PROJECT = re.compile(r"^[a-z][a-z0-9-]{4,28}[a-z0-9]$")
+GCP_READ_ONLY_SCOPES = {"https://www.googleapis.com/auth/cloud-platform.read-only", "https://www.googleapis.com/auth/compute.readonly",
+                        "https://www.googleapis.com/auth/devstorage.read_only", "https://www.googleapis.com/auth/ndev.clouddns.readonly",
+                        "openid", "https://www.googleapis.com/auth/userinfo.email"}
+# a viewer can't do any of these, an editor or owner can
+GCP_WRITE_PERMISSIONS = ["compute.instances.create", "compute.firewalls.create", "storage.buckets.create", "cloudsql.instances.create"]
+
+
+def gcp_can_write(project: str, token: str, client: httpx.Client) -> bool:
+    # 1) a token limited to read-only scopes can't write, whatever the role
+    info = client.get("https://oauth2.googleapis.com/tokeninfo", params={"access_token": token})
+    if info.status_code != 200:
+        raise ScanProblem("Google rejected this access token. Create a fresh one with gcloud auth print-access-token.")
+    scopes = set(str(info.json().get("scope", "")).split())
+    if scopes and scopes <= GCP_READ_ONLY_SCOPES:
+        return False
+    # 2) otherwise ask which write permissions the caller holds on the project (testIamPermissions changes nothing)
+    answer = client.post(f"https://cloudresourcemanager.googleapis.com/v1/projects/{project}:testIamPermissions",
+                         json={"permissions": GCP_WRITE_PERMISSIONS})
+    if answer.status_code != 200:
+        raise ScanProblem("Could not check this token's permissions on the project. Use a viewer service account token.")
+    return bool(answer.json().get("permissions"))
+
+
+def scan_gcp(request: dict, transport: httpx.BaseTransport | None = None) -> dict:
+    project = str(request.get("project_id", "")).strip()
+    token = str(request.get("access_token", "")).strip()
+    if not GCP_PROJECT.match(project) or len(token) < 20:
+        raise ScanProblem("Enter the Google Cloud project ID and an access token from a viewer account.")
+    with httpx.Client(timeout=30, headers={"Authorization": f"Bearer {token}"}, transport=transport) as client:
+        try:
+            if gcp_can_write(project, token, client):
+                raise ScanProblem("This token can change resources in the project. Use a service account with the "
+                                  "Viewer role, or a token with the cloud-platform.read-only scope.")
+            return gcp_scanner.build_inventory(gcp_scanner.collect(project, client))
+        except gcp_scanner.ScanError as error:
+            raise ScanProblem(str(error)) from None
+        except httpx.HTTPError:
+            raise ScanProblem("Could not reach Google Cloud. Check the network connection and try again.") from None
+        except (KeyError, TypeError, ValueError):
+            raise ScanProblem("Google Cloud answered in an unexpected shape. Check the project ID.") from None
 
 
 def scan_cloudflare(request: dict) -> dict:
@@ -238,8 +282,8 @@ def serve(port: int, terraform: str | None = None) -> None:
                     self.problem(400, "Choose Amsterdam, Frankfurt or the region closest to the source.")
                     return
                 try:
-                    inventory = scan_aws(request) if request.get("provider") == "aws" else (
-                        scan_cloudflare(request) if request.get("provider") == "cloudflare" else None)
+                    scanner = {"aws": scan_aws, "gcp": scan_gcp, "cloudflare": scan_cloudflare}.get(request.get("provider"))
+                    inventory = scanner(request) if scanner else None
                 except ScanProblem as error:
                     self.problem(422, str(error))
                     return
@@ -247,7 +291,7 @@ def serve(port: int, terraform: str | None = None) -> None:
                     # drop the secrets as soon as the scan is done
                     request.clear()
                 if inventory is None:
-                    self.problem(400, "Choose AWS or Cloudflare.")
+                    self.problem(400, "Choose AWS, Google Cloud or Cloudflare.")
                     return
                 body = json.dumps(inventory).encode()
             try:

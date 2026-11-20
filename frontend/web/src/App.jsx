@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Landing from "./Landing.jsx";
 import Report from "./Report.jsx";
 import { ApiError, analyse, demo, isReport, scan } from "./api.js";
+import { cloudName } from "./format.js";
 
 function withWorkspace(result) {
   const report = { ...result.report };
@@ -25,7 +26,7 @@ export default function App() {
   }
 
   const onScan = (form) => load(async () => withWorkspace(await scan(form)),
-    `${form.provider === "aws" ? "AWS" : "Cloudflare"} account, read ${new Date().toLocaleString("en-GB")}`);
+    `${cloudName(form.provider)} account, read ${new Date().toLocaleString("en-GB")}`);
   const onDemo = () => load(async () => withWorkspace(await demo()), "Demo shop, synthetic data");
   const onFile = (file) => load(async () => {
     let data;

@@ -56,3 +56,80 @@ def test_write_check_reads_the_dry_run_answer() -> None:
 
     assert serve.can_write(Session("DryRunOperation"), "eu-north-1") is True
     assert serve.can_write(Session("UnauthorizedOperation"), "eu-north-1") is False
+
+
+# google cloud: no live project, so these run against a mock transport (like tests for the gcp scanner)
+READ_ONLY = "https://www.googleapis.com/auth/cloud-platform.read-only"
+FULL = "https://www.googleapis.com/auth/cloud-platform"
+FAKE_TOKEN = "ya29." + "x" * 40
+
+
+def google(scope: str, granted: list[str], tokeninfo_status: int = 200):
+    import httpx
+
+    calls = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        calls.append((request.method, request.url.host, request.url.path))
+        if request.url.host == "oauth2.googleapis.com":
+            return httpx.Response(tokeninfo_status, json={"scope": scope})
+        if request.url.path.endswith(":testIamPermissions"):
+            return httpx.Response(200, json={"permissions": granted} if granted else {})
+        return httpx.Response(404, json={})
+
+    return httpx.MockTransport(handle), calls
+
+
+@pytest.fixture
+def fake_collect(monkeypatch):
+    monkeypatch.setattr(serve.gcp_scanner, "collect", lambda project, client: {"project": project})
+    monkeypatch.setattr(serve.gcp_scanner, "build_inventory", lambda raw: {"source": "gcp", "resources": [], "project": raw["project"]})
+
+
+def test_gcp_read_only_scope_is_scanned_without_asking_iam(fake_collect) -> None:
+    transport, calls = google(READ_ONLY, [])
+    inventory = serve.scan_gcp({"project_id": "shop-prod-123", "access_token": FAKE_TOKEN}, transport)
+    assert inventory["source"] == "gcp" and inventory["project"] == "shop-prod-123"
+    assert not any(path.endswith(":testIamPermissions") for _, _, path in calls)
+
+
+def test_gcp_viewer_with_full_scope_is_allowed(fake_collect) -> None:
+    transport, _ = google(FULL, [])
+    assert serve.scan_gcp({"project_id": "shop-prod-123", "access_token": FAKE_TOKEN}, transport)["source"] == "gcp"
+
+
+def test_gcp_editor_token_is_refused(fake_collect) -> None:
+    transport, _ = google(FULL, ["compute.instances.create"])
+    with pytest.raises(serve.ScanProblem, match="can change resources"):
+        serve.scan_gcp({"project_id": "shop-prod-123", "access_token": FAKE_TOKEN}, transport)
+
+
+def test_gcp_rejected_token(fake_collect) -> None:
+    transport, _ = google(READ_ONLY, [], tokeninfo_status=400)
+    with pytest.raises(serve.ScanProblem, match="rejected this access token"):
+        serve.scan_gcp({"project_id": "shop-prod-123", "access_token": FAKE_TOKEN}, transport)
+
+
+def test_gcp_form_is_checked_before_any_call() -> None:
+    with pytest.raises(serve.ScanProblem, match="project ID"):
+        serve.scan_gcp({"project_id": "Bad_Project", "access_token": FAKE_TOKEN})
+
+
+def test_gcp_full_path_with_recorded_responses() -> None:
+    # same recorded REST responses as tests/test_gcp.py, behind the server's token check
+    import json
+
+    import httpx
+
+    from tests.test_gcp import FIXTURE, GOLDEN, fake_api
+
+    recorded = fake_api([])
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "oauth2.googleapis.com":
+            return httpx.Response(200, json={"scope": READ_ONLY})
+        return recorded(request)
+
+    inventory = serve.scan_gcp({"project_id": FIXTURE["project"], "access_token": FAKE_TOKEN}, httpx.MockTransport(handle))
+    golden = json.loads(GOLDEN.read_text())
+    assert sorted(r["id"] for r in inventory["resources"]) == sorted(r["id"] for r in golden["resources"])
