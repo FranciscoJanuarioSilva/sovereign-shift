@@ -110,3 +110,17 @@ def test_offline_commands(tmp_path: Path):
     assert report["runbook"]["entries"][1]["not_capable"]
     assert "rclone copy" in (tmp_path / "report.md").read_text()
     assert "123456789012" not in json.dumps(report)
+
+
+def test_offline_demo(tmp_path: Path):
+    examples = Path(__file__).resolve().parents[1] / "examples"
+    result = CliRunner().invoke(app, [
+        "all", "--from-snapshot", str(examples / "sample_inventory.json"),
+        "--mapping", str(examples / "sample_mapping.json"), "--no-ai", "--out", str(tmp_path),
+    ])
+    assert result.exit_code == 0, result.exception
+    assessment = json.loads((tmp_path / "report.json").read_text())
+    assert any(e["type"] == "talks_to" and e["inferred"] for e in assessment["graph"]["edges"])
+    assert any(f["id"] == "SG-001" for f in assessment["findings"])
+    assert assessment["finalize"]["target_registrations"]
+    assert assessment["runbook"]["generated_by"] == "template-default"

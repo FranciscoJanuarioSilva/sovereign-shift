@@ -1,0 +1,188 @@
+{
+  "target_region": "eu-west-3",
+  "entries": [
+    {
+      "source_id": "vm",
+      "source_type": "ec2_instance",
+      "target": {
+        "kind": "public_cloud_instance",
+        "instance_type": "lsw.m6a.large",
+        "image_id": "UBUNTU_22_04_64BIT",
+        "root_disk_size": 30
+      },
+      "status": "auto",
+      "via": "terraform",
+      "ai_suggested": false,
+      "alternative": null,
+      "justification": "Example mapping for the offline rehearsal.",
+      "notes": [
+        "Illustrative demo costs."
+      ],
+      "monthly_cost_eur": {
+        "aws": 30,
+        "leaseweb": 34
+      }
+    },
+    {
+      "source_id": "tg",
+      "source_type": "target_group",
+      "target": {
+        "kind": "target_group",
+        "port": 80,
+        "protocol": "HTTP"
+      },
+      "status": "auto",
+      "via": "terraform",
+      "ai_suggested": false,
+      "alternative": null,
+      "justification": "Example mapping for the offline rehearsal.",
+      "notes": [
+        "Illustrative demo costs."
+      ],
+      "monthly_cost_eur": {
+        "aws": null,
+        "leaseweb": null
+      }
+    },
+    {
+      "source_id": "lb",
+      "source_type": "lb",
+      "target": {
+        "kind": "load_balancer",
+        "type": "lsw.m6a.large"
+      },
+      "status": "auto",
+      "via": "terraform",
+      "ai_suggested": false,
+      "alternative": null,
+      "justification": "Example mapping for the offline rehearsal.",
+      "notes": [
+        "Illustrative demo costs."
+      ],
+      "monthly_cost_eur": {
+        "aws": null,
+        "leaseweb": null
+      }
+    },
+    {
+      "source_id": "listener",
+      "source_type": "lb_listener",
+      "target": {
+        "kind": "lb_listener",
+        "protocol": "HTTP",
+        "port": 80
+      },
+      "status": "auto",
+      "via": "terraform",
+      "ai_suggested": false,
+      "alternative": null,
+      "justification": "Example mapping for the offline rehearsal.",
+      "notes": [
+        "Illustrative demo costs."
+      ],
+      "monthly_cost_eur": {
+        "aws": null,
+        "leaseweb": null
+      }
+    },
+    {
+      "source_id": "dns",
+      "source_type": "route53_record",
+      "target": {
+        "kind": "dns_record",
+        "domain_name": "example.org",
+        "name": "web.example.org.",
+        "ttl": 300,
+        "type": "A"
+      },
+      "status": "auto",
+      "via": "terraform",
+      "ai_suggested": false,
+      "alternative": null,
+      "justification": "Example mapping for the offline rehearsal.",
+      "notes": [
+        "Illustrative demo costs."
+      ],
+      "monthly_cost_eur": {
+        "aws": null,
+        "leaseweb": null
+      }
+    },
+    {
+      "source_id": "sg",
+      "source_type": "security_group",
+      "target": {
+        "kind": "security_group"
+      },
+      "status": "auto",
+      "via": "finalize",
+      "ai_suggested": false,
+      "alternative": null,
+      "justification": "Example mapping for the offline rehearsal.",
+      "notes": [
+        "Illustrative demo costs."
+      ],
+      "monthly_cost_eur": {
+        "aws": null,
+        "leaseweb": null
+      }
+    },
+    {
+      "source_id": "db",
+      "source_type": "db_instance",
+      "target": {
+        "kind": "self_hosted_db"
+      },
+      "status": "manual",
+      "via": "runbook",
+      "ai_suggested": false,
+      "alternative": null,
+      "justification": "Self-host PostgreSQL and restore the dump.",
+      "notes": [
+        "Illustrative demo costs."
+      ],
+      "monthly_cost_eur": {
+        "aws": null,
+        "leaseweb": null
+      }
+    },
+    {
+      "source_id": "db-sg",
+      "source_type": "security_group",
+      "target": {
+        "kind": "security_group"
+      },
+      "status": "partial",
+      "via": "finalize",
+      "ai_suggested": false,
+      "alternative": null,
+      "justification": "Example mapping for the offline rehearsal.",
+      "notes": [
+        "Illustrative demo costs."
+      ],
+      "monthly_cost_eur": {
+        "aws": null,
+        "leaseweb": null
+      }
+    },
+    {
+      "source_id": "demo-assets",
+      "source_type": "s3_bucket",
+      "target": {
+        "kind": "object_storage_bucket"
+      },
+      "status": "partial",
+      "via": "runbook",
+      "ai_suggested": false,
+      "alternative": null,
+      "justification": "Copy objects to Leaseweb Object Storage.",
+      "notes": [
+        "Illustrative demo costs."
+      ],
+      "monthly_cost_eur": {
+        "aws": null,
+        "leaseweb": null
+      }
+    }
+  ]
+}

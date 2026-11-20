@@ -147,6 +147,7 @@ Priority if time runs short, in order: EC2 + SGs (finalize) > report with cost a
 ## Resolved
 - AI: OpenRouter global host pinned to Mistral (`eu.openrouter.ai` needs a Business plan). Details in `docs/research/environment.md`.
 - AWS demo account: read-only key confirmed, only `eu-north-1` is allowed, account empty so far (build list in `docs/research/environment.md`).
+- AWS demo setup (team chat, 2026-11-20): the team reported an empty AWS account and created the IAM user `sovereign-shift-agents` to provision demo resources. Effective permissions and account contents still need verification. The scanner uses its read-only profile.
 - License: Apache-2.0.
 - Terraform (not OpenTofu).
 - Target: the `leaseweb/leaseweb` provider plus the Public Cloud REST API. The provider has no OpenStack code. The OpenStack-based new platform is roadmap.

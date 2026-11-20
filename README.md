@@ -84,3 +84,15 @@ Runbook defaults are offline. For optional AI notes, omit `--no-ai` and set
 
 
 License: [Apache-2.0](LICENSE).
+
+## Offline demo
+
+Run the assessment with the synthetic AWS snapshot and prepared example mapping:
+
+```bash
+sovereign-shift all --from-snapshot examples/sample_inventory.json --mapping examples/sample_mapping.json --no-ai --out out/demo
+```
+
+Open `out/demo/report.md`. Follow the inferred connection from the VM to PostgreSQL,
+the public SSH finding, and the database and bucket migration steps. Prices in the
+example are illustrative. Use a dedicated output directory for each assessment.

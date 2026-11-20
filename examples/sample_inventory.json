@@ -1,0 +1,166 @@
+{
+  "account_id": "123456789012",
+  "resources": [
+    {
+      "id": "vm",
+      "type": "ec2_instance",
+      "name": "vm",
+      "properties": {},
+      "relations": [
+        {
+          "type": "uses_security_group",
+          "target": "sg"
+        }
+      ],
+      "region": "eu-west-1",
+      "tags": {
+        "env": "demo"
+      }
+    },
+    {
+      "id": "tg",
+      "type": "target_group",
+      "name": "tg",
+      "properties": {},
+      "relations": [
+        {
+          "type": "references",
+          "target": "vm"
+        }
+      ],
+      "region": "eu-west-1",
+      "tags": {
+        "env": "demo"
+      }
+    },
+    {
+      "id": "lb",
+      "type": "lb",
+      "name": "lb",
+      "properties": {},
+      "relations": [],
+      "region": "eu-west-1",
+      "tags": {
+        "env": "demo"
+      }
+    },
+    {
+      "id": "listener",
+      "type": "lb_listener",
+      "name": "listener",
+      "properties": {},
+      "relations": [
+        {
+          "type": "references",
+          "target": "tg"
+        },
+        {
+          "type": "references",
+          "target": "lb"
+        }
+      ],
+      "region": "eu-west-1",
+      "tags": {
+        "env": "demo"
+      }
+    },
+    {
+      "id": "dns",
+      "type": "route53_record",
+      "name": "dns",
+      "properties": {},
+      "relations": [
+        {
+          "type": "alias",
+          "target": "lb"
+        }
+      ],
+      "region": "eu-west-1",
+      "tags": {
+        "env": "demo"
+      }
+    },
+    {
+      "id": "sg",
+      "type": "security_group",
+      "name": "sg",
+      "properties": {
+        "ingress": [
+          {
+            "protocol": "tcp",
+            "from_port": 22,
+            "to_port": 22,
+            "cidrs": [
+              "0.0.0.0/0"
+            ],
+            "source_groups": []
+          }
+        ]
+      },
+      "relations": [],
+      "region": "eu-west-1",
+      "tags": {
+        "env": "demo"
+      }
+    },
+    {
+      "id": "db",
+      "type": "db_instance",
+      "name": "db",
+      "properties": {
+        "engine": "postgres"
+      },
+      "relations": [
+        {
+          "type": "uses_security_group",
+          "target": "db-sg"
+        }
+      ],
+      "region": "eu-west-1",
+      "tags": {
+        "env": "demo"
+      }
+    },
+    {
+      "id": "db-sg",
+      "type": "security_group",
+      "name": "database",
+      "relations": [],
+      "properties": {
+        "ingress": [
+          {
+            "protocol": "tcp",
+            "from_port": 5432,
+            "to_port": 5432,
+            "cidrs": [],
+            "source_groups": [
+              "sg"
+            ]
+          }
+        ]
+      },
+      "region": "eu-west-1",
+      "tags": {
+        "env": "demo"
+      }
+    },
+    {
+      "id": "demo-assets",
+      "type": "s3_bucket",
+      "name": "demo-assets",
+      "relations": [],
+      "properties": {
+        "versioning": false
+      },
+      "region": "eu-west-1",
+      "tags": {
+        "env": "demo"
+      }
+    }
+  ],
+  "source": "aws",
+  "regions": [
+    "eu-west-1"
+  ],
+  "scanned_at": "2026-11-20T09:00:00Z"
+}

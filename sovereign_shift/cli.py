@@ -128,5 +128,30 @@ def report_command(out: Path = typer.Option(Path("out"), "--out")) -> None:
     report(out, read(out, "inventory"), read(out, "mapping"))
 
 
+@app.command("all")
+def all_command(
+    from_snapshot: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    mapping: Annotated[Path, typer.Option(exists=True, dir_okay=False, help="Prepared translator output.")],
+    out: Annotated[Path, typer.Option()] = Path("out"),
+    no_ai: Annotated[bool, typer.Option()] = False,
+) -> None:
+    """Run the assessment using a snapshot and a prepared mapping."""
+    from sovereign_shift.artifacts import indexed
+    from sovereign_shift.models import Mapping
+
+    snapshot = json.loads(from_snapshot.read_text())
+    prepared = json.loads(mapping.read_text())
+    Inventory.model_validate(snapshot)
+    Mapping.model_validate(prepared)
+    indexed(snapshot, prepared)
+    save(out, "inventory", snapshot)
+    save(out, "mapping", prepared)
+    graph_command(out / "inventory.json", out)
+    generate_command(out)
+    runbook_command(out, no_ai)
+    report_command(out)
+    typer.echo(f"Assessment ready at {out / 'report.md'}")
+
+
 if __name__ == "__main__":
     app()
