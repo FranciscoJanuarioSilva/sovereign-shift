@@ -12,6 +12,7 @@ def finalize(
     admin_cidr: str | None,
     token: str | None,
     client: httpx.Client | None = None,
+    *, private_network_cidr: str | None = None,
 ) -> list[dict]:
     if plan["api"] != API:
         raise ValueError("Unexpected Leaseweb API origin")
@@ -67,24 +68,22 @@ def finalize(
                     cidr = str(address) + "/32"
             else:
                 value = source["cidr"]
-                if value == "var:admin_cidr" and not admin_cidr:
+                variables = {"var:admin_cidr": admin_cidr, "var:private_network_cidr": private_network_cidr}
+                if value in variables and not variables[value]:
+                    option = value.removeprefix("var:").replace("_", "-")
                     if token:
-                        raise ValueError(
-                            "Supply --admin-cidr for administrative access"
-                        )
-                    cidr = "<admin CIDR>"
+                        raise ValueError(f"Supply --{option} for this firewall rule")
+                    cidr = f"<{option}>"
                 else:
-                    cidr = str(
-                        ip_network(admin_cidr if value == "var:admin_cidr" else value)
-                    )
-            rules.append(
-                dict(
-                    protocol=rule["protocol"],
-                    startPort=rule["start_port"],
-                    endPort=rule["end_port"],
-                    source=cidr,
-                )
-            )
+                    network = ip_network(variables.get(value, value))
+                    if value in variables and network.prefixlen == 0:
+                        raise ValueError("A restricted source cannot be the entire internet")
+                    cidr = str(network)
+            body = {"protocol": rule["protocol"], "source": cidr}
+            if rule["protocol"] != "ICMP":
+                body.update(startPort=rule["start_port"], endPort=rule["end_port"])
+            if body not in rules:
+                rules.append(body)
         prepared.append(
             (group["name"], rules, [identifier(i) for i in group["attach_to"]])
         )

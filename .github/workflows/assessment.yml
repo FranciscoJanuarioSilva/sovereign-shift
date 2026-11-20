@@ -63,11 +63,7 @@ jobs:
             : "${SOVEREIGN_AI_API_KEY:?Set OpenRouter secret}" "${SOVEREIGN_AI_MODEL:?Set AI model}" "${SOVEREIGN_AI_BASE_URL:?Set AI endpoint}"
             ai=()
           fi
-          sovereign-shift graph out/inventory.json --out out
-          sovereign-shift translate out/inventory.json --graph out/graph.json --out out "${ai[@]}"
-          sovereign-shift generate --out out
-          sovereign-shift runbook --out out "${ai[@]}"
-          sovereign-shift report --out out
+          sovereign-shift all --from-snapshot out/inventory.json --out out "${ai[@]}"
       - name: Validate generated Terraform
         run: |
           terraform -chdir=out/terraform init -backend=false -input=false

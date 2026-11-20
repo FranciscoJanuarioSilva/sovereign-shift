@@ -8,6 +8,7 @@ import yaml
 from openai import OpenAI, OpenAIError
 from pydantic import BaseModel, ConfigDict
 
+from sovereign_shift.ai.client import AIClient
 from sovereign_shift.artifacts import indexed, write
 
 
@@ -60,7 +61,9 @@ def runbook(out: Path, inventory: dict, mapping: dict, no_ai: bool) -> dict:
     model = os.getenv("SOVEREIGN_AI_MODEL")
     key = os.getenv("SOVEREIGN_AI_API_KEY")
     client = None
+    routing = None
     if not no_ai and key and model:
+        routing = AIClient(out, "runbook").routing()
         client = OpenAI(
             api_key=key,
             base_url=os.getenv(
@@ -126,13 +129,28 @@ def runbook(out: Path, inventory: dict, mapping: dict, no_ai: bool) -> dict:
                 else:
                     response = client.chat.completions.create(
                         model=model,
+                        max_tokens=1024,
+                        extra_body=routing,
                         response_format={"type": "json_object"},
                         messages=[
                             {
                                 "role": "system",
                                 "content": "Return JSON with steps (copy supplied IDs and input provenance in dependency order), justification (engine-specific migration or resource-type migration), and notes keyed by step ID. Select applicable notes from: Schedule a maintenance window. Verify destination capacity. Confirm the application is quiesced.",
                             },
-                            {"role": "user", "content": payload},
+                            {
+                                "role": "user",
+                                "content": payload
+                                + "\nFill this exact JSON response, retaining all steps and input provenance; choose appropriate approved notes: "
+                                + json.dumps(
+                                    {
+                                        "steps": json.loads(payload)["steps"],
+                                        "justification": "engine-specific migration"
+                                        if engine
+                                        else "resource-type migration",
+                                        "notes": {step["id"]: [] for step in steps},
+                                    }
+                                ),
+                            },
                         ],
                     )
                     choice = Selection.model_validate_json(

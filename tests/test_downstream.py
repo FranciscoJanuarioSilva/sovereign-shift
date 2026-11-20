@@ -101,7 +101,7 @@ def test_offline_commands(tmp_path: Path):
         ["graph", str(tmp_path / "inventory.json")],
         ["generate"],
         ["runbook", "--no-ai"],
-        ["report"],
+        ["report", "--no-ai"],
     ]:
         result = runner.invoke(app, [*args, "--out", str(tmp_path)])
         assert result.exit_code == 0, result.exception
@@ -124,3 +124,43 @@ def test_offline_demo(tmp_path: Path):
     assert any(f["id"] == "SG-001" for f in assessment["findings"])
     assert assessment["finalize"]["target_registrations"]
     assert assessment["runbook"]["generated_by"] == "template-default"
+
+
+def test_all_translates_and_finalizes_snapshot(tmp_path):
+    snapshot = Path(__file__).resolve().parents[1] / "testdata/clickops_inventory.json"
+    runner = CliRunner()
+    run = runner.invoke(app, ["all", "--from-snapshot", str(snapshot), "--no-ai", "--out", str(tmp_path)])
+    assert run.exit_code == 0, run.exception
+    data = json.loads((tmp_path / "report.json").read_text())
+    assert data["summary"]["resources"] == 19
+    assert data["cost"]["aws_priced_subtotal_eur"] > 0
+    plan = data["finalize"]
+    registration = plan["target_registrations"][0]
+    outputs = {label: {"value": str(i + 1)} for i, label in enumerate([registration["target_group"], *registration["instances"]])}
+    calls = finalize(plan, outputs, "192.0.2.0/24", None, private_network_cidr="10.0.0.0/27")
+    assert any(rule["source"] == "10.0.0.0/27" for c in calls if "authorizeFirewallRules" in c["path"] for rule in c["body"]["rules"])
+    assert any("manual provisioning" in m["what"] for m in plan["manual"])
+
+
+def test_report_ai_uses_aggregate_data_and_marks_suggestions(monkeypatch):
+    from sovereign_shift.report.insights import Commentary, insights
+
+    class FakeClient:
+        enabled = True
+
+        def __init__(self, out, agent):
+            self.agent = agent
+
+        def complete(self, instruction, payload, model):
+            assert "private-resource-name" not in payload
+            assert "203.0.113.10" not in payload
+            return Commentary(text="Verify exposure.", justification="Review of planned rules.")
+
+    monkeypatch.setattr("sovereign_shift.report.insights.AIClient", FakeClient)
+    inventory = {"resources": [{"type": "security_group", "id": "private-resource-name",
+                               "properties": {"ingress": [{"cidrs": ["203.0.113.10/32"]}]}}]}
+    assessment = {"summary": {"resources": 1}, "findings": [], "finalize": {"security_groups": [
+        {"source_id": "private-resource-name", "attach_to": [], "rules": []}
+    ]}}
+    insights(Path("."), assessment, inventory)
+    assert all(assessment[agent]["ai_suggested"] for agent in ("explainer", "reviewer"))

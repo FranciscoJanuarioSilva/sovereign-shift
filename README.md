@@ -87,15 +87,20 @@ License: [Apache-2.0](LICENSE).
 
 ## Offline demo
 
-Run the assessment with the synthetic AWS snapshot and prepared example mapping:
+Run the full assessment with the synthetic AWS snapshot and the translator:
 
 ```bash
-sovereign-shift all --from-snapshot examples/sample_inventory.json --mapping examples/sample_mapping.json --no-ai --out out/demo
+sovereign-shift all --from-snapshot testdata/clickops_inventory.json --no-ai --out out/demo
 ```
 
 Open `out/demo/report.md`. Follow the inferred connection from the VM to PostgreSQL,
 the public SSH finding, and the database and bucket migration steps. Prices in the
 example are illustrative. Use a dedicated output directory for each assessment.
+
+For a live assessment, run `sovereign-shift all --profile sovereign-readonly --region eu-north-1 --out out/live`.
+Pass `--mapping FILE` to replay an existing translation. With AI enabled, the report can include a
+migration summary and a firewall review. Cost subtotals include only resources with a price.
+For post-apply finalization, `--private-network-cidr` supplies the private network range used by load balancer rules.
 
 The CLI loads `.env` from the current directory. Exported environment variables
 take precedence. For scans, explicit `--region` options take precedence over

@@ -47,6 +47,11 @@ def generate(out: Path, inventory: dict, graph: dict, mapping: dict) -> dict:
         ] in {"auto", "partial"}:
             for link in sorted(links):
                 members[link].append(key)
+    mapped_instances = {
+        entry["tf_name"]: labels[key] for key, entry in entries.items()
+        if entry.get("tf_name") and targets[key].get("kind") == "public_cloud_instance"
+        and entry["status"] in {"auto", "partial"}
+    }
     plan = dict(api=API, security_groups=[], target_registrations=[], manual=[])
     items = []
     for key, entry in entries.items():
@@ -58,7 +63,26 @@ def generate(out: Path, inventory: dict, graph: dict, mapping: dict) -> dict:
             continue
         if kind == "security_group":
             rules = []
-            for rule in props.get("ingress", []):
+            attachments = [labels[i] for i in sorted(members[key])]
+            if "rules" in t:
+                attachments = []
+                for name in t["attach_to"]:
+                    if name in mapped_instances:
+                        attachments.append(mapped_instances[name])
+                    else:
+                        plan["manual"].append(dict(source_id=key, what=f"Attach this group to {name} after manual provisioning"))
+                for rule in t["rules"]:
+                    source = rule["source"]
+                    if "private_ip_of" in source:
+                        name = source["private_ip_of"]
+                        if name not in mapped_instances:
+                            plan["manual"].append(dict(source_id=key, what=f"Resolve private address of {name} after manual provisioning"))
+                            continue
+                        source = {"private_ip_of": mapped_instances[name]}
+                    translated = {**rule, "source": source}
+                    if translated not in rules:
+                        rules.append(translated)
+            for rule in ([] if "rules" in t else props.get("ingress", [])):
                 protocol = str(rule.get("protocol")).upper()
                 start, end = rule.get("from_port"), rule.get("to_port")
                 if (
@@ -119,7 +143,7 @@ def generate(out: Path, inventory: dict, graph: dict, mapping: dict) -> dict:
                     source_id=key,
                     name=labels[key],
                     rules=rules,
-                    attach_to=[labels[i] for i in sorted(members[key])],
+                    attach_to=attachments,
                 )
             )
             continue

@@ -107,11 +107,12 @@ def finalize_command(
     out: Path = typer.Option(Path("out"), "--out"),
     dry_run: bool = typer.Option(False, "--dry-run"),
     admin_cidr: str | None = typer.Option(None, "--admin-cidr"),
+    private_network_cidr: str | None = typer.Option(None, "--private-network-cidr"),
 ) -> None:
     """Resolve deployed IDs and configure Leaseweb groups and targets."""
     token = None if dry_run else os.getenv("LEASEWEB_TOKEN")
     calls = finalize(
-        read(out, "finalize"), json.loads(outputs.read_text()), admin_cidr, token
+        read(out, "finalize"), json.loads(outputs.read_text()), admin_cidr, token, private_network_cidr=private_network_cidr
     )
     typer.echo(json.dumps(calls, indent=2))
 
@@ -130,33 +131,41 @@ def runbook_command(
 
 
 @app.command("report")
-def report_command(out: Path = typer.Option(Path("out"), "--out")) -> None:
+def report_command(out: Path = typer.Option(Path("out"), "--out"), no_ai: bool = typer.Option(False, "--no-ai")) -> None:
     """Write the Markdown and JSON migration assessment."""
-    report(out, read(out, "inventory"), read(out, "mapping"))
+    report(out, read(out, "inventory"), read(out, "mapping"), no_ai)
 
 
 @app.command("all")
 def all_command(
-    from_snapshot: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
-    mapping: Annotated[Path, typer.Option(exists=True, dir_okay=False, help="Prepared translator output.")],
+    from_snapshot: Annotated[Path | None, typer.Option(exists=True, dir_okay=False)] = None,
+    mapping: Annotated[Path | None, typer.Option(exists=True, dir_okay=False, help="Reuse a prepared mapping.")] = None,
+    profile: Annotated[str | None, typer.Option()] = None,
+    region: Annotated[list[str] | None, typer.Option()] = None,
+    target_region: Annotated[str | None, typer.Option()] = None,
     out: Annotated[Path, typer.Option()] = Path("out"),
     no_ai: Annotated[bool, typer.Option()] = False,
 ) -> None:
-    """Run the assessment using a snapshot and a prepared mapping."""
-    from sovereign_shift.artifacts import indexed
-    from sovereign_shift.models import Mapping
-
-    snapshot = json.loads(from_snapshot.read_text())
-    prepared = json.loads(mapping.read_text())
-    Inventory.model_validate(snapshot)
-    Mapping.model_validate(prepared)
-    indexed(snapshot, prepared)
-    save(out, "inventory", snapshot)
-    save(out, "mapping", prepared)
-    graph_command(out / "inventory.json", out)
+    """Scan or load a snapshot, translate it and generate the assessment."""
+    if from_snapshot is None:
+        scan_command(profile, region, out)
+    else:
+        if profile or region:
+            raise typer.BadParameter("--profile and --region apply only to live scans")
+        snapshot = json.loads(from_snapshot.read_text())
+        Inventory.model_validate(snapshot)
+        save(out, "inventory", snapshot)
+    inventory = out / "inventory.json"
+    graph_command(inventory, out)
+    if mapping is None:
+        translate_command(inventory, out / "graph.json", out, target_region, no_ai)
+    else:
+        if target_region:
+            raise typer.BadParameter("--target-region requires translation")
+        save(out, "mapping", json.loads(mapping.read_text()))
     generate_command(out)
     runbook_command(out, no_ai)
-    report_command(out)
+    report_command(out, no_ai)
     typer.echo(f"Assessment ready at {out / 'report.md'}")
 
 

@@ -62,7 +62,7 @@ class AIClient:
     def info(self) -> dict:
         return {"base_url": self.base_url, "model": self.model, "enabled": self.enabled}
 
-    def _routing(self) -> dict | None:
+    def routing(self) -> dict | None:
         # on openrouter, pin inference to one provider (mistral by default) and opt out of data collection
         # eu.openrouter.ai would do this per region but needs a business plan (docs/research/environment.md)
         if "openrouter.ai" not in self.base_url:
@@ -79,7 +79,8 @@ class AIClient:
             messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
             response_format={"type": "json_object"},
             temperature=0.2,
-            extra_body=self._routing(),
+            max_tokens=1024,
+            extra_body=self.routing(),
         )
         return response.choices[0].message.content or ""
 

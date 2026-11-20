@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
 
+from sovereign_shift.report.insights import insights
 from sovereign_shift.artifacts import indexed, read, save, write
 
 
@@ -12,7 +13,7 @@ def cell(value: object) -> str:
     return escape(str(value)).replace("|", "&#124;").replace("\n", " ")
 
 
-def report(out: Path, inventory: dict, mapping: dict) -> None:
+def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> None:
     resources, entries = indexed(inventory, mapping)
     graph, findings, plan, book = (
         read(out, name) for name in ("graph", "findings", "finalize", "runbook")
@@ -48,6 +49,7 @@ def report(out: Path, inventory: dict, mapping: dict) -> None:
     }
     for provider in ("aws", "leaseweb"):
         values = [c.get(provider) for c in costs]
+        cost[provider + "_priced_subtotal_eur"] = round(sum(v for v in values if v is not None), 2)
         cost[provider + "_monthly_eur"] = (
             round(sum(values), 2) if None not in values else None
         )
@@ -76,6 +78,8 @@ def report(out: Path, inventory: dict, mapping: dict) -> None:
         finalize=plan,
         terraform_files=sorted(p.name for p in (out / "terraform").glob("*.tf")),
     )
+    if not no_ai:
+        insights(out, data, inventory)
     if account:
         data = json.loads(json.dumps(data).replace(account, "****" + account[-4:]))
     save(out, "report", data)
@@ -95,7 +99,8 @@ def report(out: Path, inventory: dict, mapping: dict) -> None:
             f"| {cell(c['source_id'])} | {c.get('aws') if c.get('aws') is not None else 'unknown'} | {c.get('leaseweb') if c.get('leaseweb') is not None else 'unknown'} |"
         )
     lines += [
-        f"| Total | {cost['aws_monthly_eur']} | {cost['leaseweb_monthly_eur']} |",
+        f"| Subtotal of priced resources | {cost['aws_priced_subtotal_eur']:.2f} | {cost['leaseweb_priced_subtotal_eur']:.2f} |",
+        "Unknown prices are excluded from the subtotal.",
         "## Migration work",
         "| Resource | Status | Via | Details |",
         "|---|---|---|---|",
@@ -137,6 +142,11 @@ def report(out: Path, inventory: dict, mapping: dict) -> None:
         )
     for item in data["graph"].get("findings", []):
         lines.append(f"- {cell(item['resource'])} — {cell(item['message'])}")
+    for agent, title in [("explainer","Migration summary"), ("reviewer","Firewall review")]:
+        if agent in data:
+            lines.extend(["## "+title, "ai-suggested — "+cell(data[agent]["text"]), cell(data[agent]["justification"])])
+        elif agent == "reviewer":
+            lines.append("Firewall translation is unreviewed.")
     lines.append("## Migration runbook")
     for entry in data["runbook"]["entries"]:
         lines.append("### " + cell(entry["source_id"]))
