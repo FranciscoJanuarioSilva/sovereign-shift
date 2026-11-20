@@ -45,7 +45,7 @@ def test_mask_catches_other_arn_accounts():
 
 def test_report_is_readable(tmp_path):
     report = (run_all(tmp_path) / "report.md").read_text()
-    costs = report.split("## Monthly costs (EUR)")[1].split("## Migration work")[0]
+    costs = report.split("## Monthly costs (EUR)")[1].split("## Performance")[0]
     # only priced rows, by name, with the leaseweb type and the over-provisioning flag
     assert "| web-1 | t3.large |" in costs
     assert "| orders | db.t3.medium |" in costs and "over-provisioned" in costs

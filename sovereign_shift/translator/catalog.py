@@ -9,13 +9,15 @@ from pathlib import Path
 
 import yaml
 
-ROOT = Path(__file__).resolve().parents[2]
-SCHEMA = ROOT / "docs" / "schemas" / "leaseweb.json"
-CATALOG = ROOT / "data" / "leaseweb_catalog.json"
-PUBLIC_PRICES = ROOT / "data" / "leaseweb_public_prices.json"
-AWS_TYPES = ROOT / "data" / "aws_instance_types.json"
-REGIONS = ROOT / "mappings" / "regions.yaml"
-IMAGES = ROOT / "mappings" / "images.yaml"
+from sovereign_shift.paths import data_path
+
+# works in a clone and in an installed wheel, see sovereign_shift/paths.py
+SCHEMA = data_path("docs/schemas/leaseweb.json")
+CATALOG = data_path("data/leaseweb_catalog.json")
+PUBLIC_PRICES = data_path("data/leaseweb_public_prices.json")
+AWS_TYPES = data_path("data/aws_instance_types.json")
+REGIONS = data_path("mappings/regions.yaml")
+IMAGES = data_path("mappings/images.yaml")
 
 SIZE_VCPU = {
     "large": 2, "xlarge": 4, "2xlarge": 8, "4xlarge": 16, "8xlarge": 32,

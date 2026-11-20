@@ -12,13 +12,16 @@ from pydantic import BaseModel, ValidationError
 
 T = TypeVar("T", bound=BaseModel)
 ROOT = Path(__file__).resolve().parents[2]
-PROMPTS = ROOT / "sovereign_shift" / "prompts"
+# prompts ship inside the package, so this works in a wheel too
+PROMPTS = Path(__file__).resolve().parents[1] / "prompts"
 DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
 
 
-def load_env(path: Path = ROOT / ".env") -> None:
+def load_env(path: Path | None = None) -> None:
     # tiny .env reader, real env vars win
-    if not path.exists():
+    # the current folder first (installed tool), then the repo root (git clone)
+    path = path or next((p for p in (Path.cwd() / ".env", ROOT / ".env") if p.exists()), None)
+    if path is None or not path.exists():
         return
     for line in path.read_text().splitlines():
         line = line.strip()

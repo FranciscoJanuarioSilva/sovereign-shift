@@ -41,6 +41,7 @@ The [seeded demo Worker](../examples/cloudflare-worker/README.md) can run locall
 sovereign-shift graph out/inventory.json --out out/
 sovereign-shift translate out/inventory.json --out out/
 sovereign-shift generate --out out/
+sovereign-shift assess --out out/
 sovereign-shift runbook --out out/ --no-ai
 sovereign-shift report --out out/
 ```
@@ -71,6 +72,9 @@ sovereign-shift finalize --out out/ --outputs out/outputs.json --dry-run
 ```
 
 For live finalization, set `LEASEWEB_TOKEN`, omit `--dry-run`, and supply `--admin-cidr` when referenced. `--private-network-cidr` supplies the private network range used by load balancer rules. Check the effective default security group after attachment, and review the manual items in the report before deployment.
+
+### assess
+Writes `assessment.json`: security posture (scores before and after the migration, internet exposure), the risk register with a readiness verdict, performance and scaling. Rules only, no AI, so `--no-ai` gives the full result. How each score works: [assessment.md](assessment.md) and the `skills/assess-*` files.
 
 ### runbook and report
 Runbook defaults are offline. For AI notes and the report's summary and firewall review, omit `--no-ai` and set `SOVEREIGN_AI_API_KEY`, `SOVEREIGN_AI_MODEL` and optionally `SOVEREIGN_AI_BASE_URL`. On OpenRouter the client pins inference to Mistral with data collection denied (`SOVEREIGN_AI_PROVIDER_ONLY` changes the provider).

@@ -39,6 +39,8 @@ class MappingEntry(BaseModel):
     ai_suggested: bool = False
     monthly_cost_eur: Cost = Field(default_factory=Cost)
     notes: list[str] = Field(default_factory=list)
+    # security finding ids (e.g. SG-001) this translation removes, used by the posture before/after score
+    fixes: list[str] = Field(default_factory=list)
 
 
 class Mapping(BaseModel):

@@ -61,6 +61,7 @@ Every module reads and writes JSON files, so people can work in parallel from fi
 ```
 Resource types in the MVP: `ec2_instance`, `ebs_volume`, `elastic_ip`, `key_pair`, `vpc`, `subnet`, `security_group`, `lb`, `target_group`, `lb_listener`, `db_instance`, `s3_bucket`, `route53_zone`, `route53_record`. Anything else the scanner sees goes in with `"type": "other"` and `properties.aws_type`, so the report can list it.
 
+
 Cloudflare inventories use `source: cloudflare`, `regions: ["global"]`, the same relation shape, and resource types prefixed with `cloudflare_`. IDs begin with `cf:` and include the resource kind. Worker bindings retain their name and type through graph relations and resource nodes. Binding values, source code and stored application data are excluded. DNS record sets are grouped by zone, name and type. Account-level Cloudflare cost fields in the report use the `cloudflare_` prefix and the monthly total is null when billing is unknown.
 
 Secrets are never stored. `user_data` is stored only as a hash and a length. Public keys from `describe_key_pairs(IncludePublicKey=True)` are fine to store (they're public).
@@ -154,6 +155,27 @@ Every entry also has:
 Security fixes the translator already applies: 22/3389 from the internet become `var:admin_cidr` (SG-001). DB ports from the internet become the private IPs of the instances that use the DB, or `var:admin_cidr` if none are known (SG-002). SG-to-SG rules become `private_ip_of` rules. Groups only used by an LB, or unused, aren't recreated.
 
 Translator inputs: `inventory.json` (required), `graph.json` (optional, rebuilt if missing), `data/leaseweb_catalog.json` (optional, real prices), `data/aws_instance_types.json`, `mappings/regions.yaml`, `mappings/images.yaml`.
+
+Every entry also carries `fixes`: the finding ids (for example `SG-001`, `RDS-001`) the translation removes. The posture section uses it for the "after migration" score.
+
+## assessment.json (assess)
+Written by `sovereign-shift assess`, read by the report. Rules only. The rubrics are the `skills/assess-*` files, explained in `docs/assessment.md`.
+```json
+{
+  "posture": {"overall": {"before": 41, "after": 69, "grade_before": "D", "grade_after": "C"},
+              "domains": [{"id": "network", "title": "Network exposure", "assessed": true, "before": 0, "after": 84, "findings": 6, "fixed": 3}],
+              "not_assessed": ["Access and identity"], "findings": [], "exposure": {"before": [], "after": []}},
+  "risk": {"overall": {"current": "critical", "after_migration": "high", "migration": "high", "readiness": "ready with conditions",
+                       "resolved_by_migration": 3, "counts": {}},
+           "heatmap": [[0, 0, 0, 0, 0]], "top_today": [], "top_after_migration": [],
+           "register": [{"id": "R-RDS-001-0", "title": "...", "category": "security", "likelihood": 5, "impact": 5, "score": 25,
+                         "rating": "critical", "score_after": null, "rating_after": "resolved", "phase": "lasting",
+                         "resources": [], "evidence": "...", "mitigation": "...", "mitigated_by_migration": true}]},
+  "performance": {"rows": [], "general": [], "not_assessed": []},
+  "scaling": {"tiers": [], "single_points_of_failure": [], "scale_up": [], "scale_out": [], "limits": []}
+}
+```
+With AI on, `risk.narrative` and `scaling.narrative` hold `{text, justification, ai_suggested}`.
 
 ## finalize.json (generate)
 API calls Terraform can't make, in order. Ids that only exist after `terraform apply` are references into `terraform output -json`. Private IPs are looked up with `GET /instances/{id}/ips`.

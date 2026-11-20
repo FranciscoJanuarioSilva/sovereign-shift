@@ -5,7 +5,9 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from sovereign_shift import skills
 from sovereign_shift.ai.client import AIClient
+from sovereign_shift.ai.redact import redact
 
 
 class Commentary(BaseModel):
@@ -88,3 +90,34 @@ def insights(out: Path, data: dict, inventory: dict) -> None:
             )
             if answer:
                 data[agent] = {**answer.model_dump(), "ai_suggested": True}
+
+    assessment = data.get("assessment")
+    if not assessment:
+        return
+    rules = (
+        " You explain results that are already computed. Never change, recompute or invent a score, rating, price or "
+        "resource, only use what the JSON gives you. Plain words, for a customer. "
+        'Output exactly one JSON object shaped like {"text":"one concise paragraph","justification":"one sentence naming the evidence"}.'
+    )
+    r, s = assessment["risk"], assessment["scaling"]
+    narratives = [
+        ("risk_narrative", "assess-risk", "risk", {
+            "overall": r["overall"],
+            "top_today": [{k: x[k] for k in ("title", "category", "rating", "rating_after")} for x in r["top_today"]],
+            "top_after_migration": [{k: x[k] for k in ("title", "category", "rating_after", "mitigation")} for x in r["top_after_migration"]],
+        }),
+        ("scaling_advice", "assess-scaling", "scaling", {
+            "tiers": [{k: x[k] for k in ("tier", "kind", "servers", "horizontal")} for x in s["tiers"]],
+            "single_points_of_failure": s["single_points_of_failure"],
+            "scale_up": [{k: x.get(k) for k in ("resource", "from", "to", "extra_eur_month")} for x in s["scale_up"]],
+            "limits": [x["limit"] for x in s["limits"]],
+        }),
+    ]
+    for agent, skill, section, payload in narratives:
+        client = AIClient(out, agent)
+        if not client.enabled:
+            continue
+        # the skill is the system prompt, so the agent works from the same rubric the code implements
+        answer = client.complete(skills.load(skill) + "\n\n" + rules, json.dumps(redact(payload)), Commentary)
+        if answer:
+            assessment[section]["narrative"] = {**answer.model_dump(), "ai_suggested": True}

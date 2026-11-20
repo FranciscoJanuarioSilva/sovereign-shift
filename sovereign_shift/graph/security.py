@@ -41,6 +41,7 @@ def findings(inventory: dict, graph: dict) -> list[dict]:
             ("storage_encrypted", False, "RDS-002", "high", "Encrypt database storage"),
             ("backup_retention_period", 0, "RDS-003", "medium", "Configure backups"),
             ("backup_retention_days", 0, "RDS-003", "medium", "Configure backups"),
+            ("multi_az", False, "RDS-004", "medium", "Run the database in more than one zone"),
         ],
         "ec2_instance": [
             ("http_tokens", "optional", "EC2-001", "high", "Require IMDSv2")
@@ -97,6 +98,20 @@ def findings(inventory: dict, graph: dict) -> list[dict]:
                                 f"Restrict public TCP/{port}",
                                 ", ".join(sorted(internet)),
                             )
+                # anything else open to the world that isn't plain web traffic
+                start, end = rule.get("from_port", rule.get("FromPort")), rule.get("to_port", rule.get("ToPort"))
+                flagged = any(_allows_port(rule, p) for p in (22, 3389, 3306, 5432, 1433, 27017, 6379, 9200))
+                if (
+                    str(rule.get("protocol", rule.get("IpProtocol"))).lower() in ("tcp", "udp", "6", "17")
+                    and isinstance(start, int) and isinstance(end, int)
+                    and (start, end) not in ((80, 80), (443, 443)) and not flagged
+                ):
+                    add(
+                        "SG-005",
+                        "medium",
+                        f"Restrict public port {start}" + (f"-{end}" if end != start else ""),
+                        ", ".join(sorted(internet)),
+                    )
                 if str(rule.get("protocol", rule.get("IpProtocol"))) == "-1":
                     add(
                         "SG-003",

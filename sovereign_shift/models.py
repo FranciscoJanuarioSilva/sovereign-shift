@@ -82,6 +82,13 @@ class Report(Contract):
     terraform_files: list[str]
 
 
+class Assessment(Contract):
+    posture: dict
+    risk: dict
+    performance: dict
+    scaling: dict
+
+
 CONTRACTS = dict(
     inventory=Inventory,
     mapping=Mapping,
@@ -90,4 +97,5 @@ CONTRACTS = dict(
     finalize=Finalize,
     runbook=Runbook,
     report=Report,
+    assessment=Assessment,
 )

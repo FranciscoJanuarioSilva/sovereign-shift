@@ -18,11 +18,13 @@ Built for a 5-hour hackathon build. Scope and priorities are in `PLAN.md`.
 - `docs/research/README.md`: index of facts about AWS and Leaseweb. Check it before guessing.
 - `docs/research/environment.md`: our AWS account, AI setup and team VM.
 - `docs/schemas/*.json`: exact provider schemas. Never emit an attribute that isn't in them.
+- `skills/README.md`: the skill tree. Load the skill for the step you work on, the assess skills are the scoring rubrics.
 
 ## Layout
 ```
 sovereign_shift/
-  scanner/      # boto3 describe/list calls -> inventory
+  scanner/      # read-only scans -> inventory (aws.py boto3, cloudflare.py)
+  assess/       # security posture, risk, performance, scaling (rules, no AI) -> assessment.json
   graph/        # relationships from IDs (networkx) + security checks
   translator/   # rules from mappings/, then AI for unmappable resources
   generator/    # Jinja2 templates -> Terraform + cloud-init, and finalize.json
@@ -35,6 +37,7 @@ sovereign_shift/
 mappings/       # YAML: instance types, regions, services, security rules
 data/           # leaseweb_catalog.json (committed API snapshot, refresh with scripts/fetch_leaseweb_catalog.py), aws_instance_types.json
 runbook/templates/  # YAML: allowed runbook steps per resource type
+skills/         # skill tree: SKILL.md per pipeline job, for AI agents (linked from .claude/skills)
 docs/           # research, contracts, schemas
 scripts/        # fetch-corpus.sh, extract_schemas.py
 testdata/       # synthetic fixtures: inventories, mappings, small catalog (tests and the pitch demo)

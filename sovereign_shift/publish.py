@@ -6,7 +6,7 @@ from pathlib import Path
 # what we hand out, inventory.json stays private (raw ids, ips, public keys)
 SHAREABLE = [
     "graph.json", "graph.html", "findings.json", "mapping.json", "runbook.json",
-    "finalize.json", "report.json", "report.md",
+    "finalize.json", "report.json", "report.md", "assessment.json",
 ]
 
 

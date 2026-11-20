@@ -62,10 +62,16 @@ def first(p: dict[str, Any], *keys: str, default: Any = None) -> Any:
     return default
 
 
+# ids like SG-001, RDS-001, EC2-001 (letters, then digits allowed)
+FIXES = re.compile(r"\(fixes ([A-Z][A-Z0-9]*-\d+)\)")
+
+
 def entry(resource: dict[str, Any], ctx: Context, **fields: Any) -> MappingEntry:
+    # findings this translation removes, read from the "(fixes SG-001)" markers in the notes
+    fixes = sorted(set(FIXES.findall(" ".join(fields.get("notes") or []))))
     return MappingEntry(
         source_id=resource["id"], source_type=resource["type"], source_name=resource.get("name"),
-        tf_name=ctx.tf_names.get(resource["id"]), **fields,
+        tf_name=ctx.tf_names.get(resource["id"]), fixes=fixes, **fields,
     )
 
 
@@ -225,6 +231,9 @@ def ec2_instance(r: dict[str, Any], ctx: Context) -> MappingEntry:
     key = first(p, "key_name", "KeyName")
     if key:
         notes.append(f"ssh key {key} goes into the cloud-init user_data")
+    if p.get("http_tokens") == "optional":
+        # imdsv1 matters because it hands out aws iam role credentials, leaseweb instances have none to steal
+        notes.append("IMDSv1 credential theft ends with the move: no AWS IAM role credentials on Leaseweb (fixes EC2-001)")
     if p.get("user_data_sha256") or p.get("user_data_length"):
         notes.append("instance had user_data on aws, review it and merge it into the cloud-init by hand")
     lsw = sized["type"]
@@ -385,7 +394,7 @@ def db_instance(r: dict[str, Any], ctx: Context) -> MappingEntry:
     if multi_az:
         notes.append("multi-az on aws, a single instance on leaseweb, add a replica by hand if needed")
     if first(p, "publicly_accessible", default=False):
-        notes.append("was publicly accessible (RDS-001), on leaseweb only the app instances may reach it")
+        notes.append("was publicly accessible, on leaseweb only the app instances may reach it (fixes RDS-001)")
     return entry(
         r, ctx, status="manual", via="runbook",
         target={

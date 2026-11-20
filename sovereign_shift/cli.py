@@ -177,10 +177,26 @@ def all_command(
             raise typer.BadParameter("--target-region requires translation")
         save(out, "mapping", json.loads(mapping.read_text()))
     generate_command(out)
+    assess_command(out)
     runbook_command(out, no_ai)
     report_command(out, no_ai)
     publish_command(out)
     typer.echo(f"Assessment ready at {out / 'report.md'}")
+
+
+@app.command("assess")
+def assess_command(out: Path = typer.Option(Path("out"), "--out")) -> None:
+    """Score security posture, risk, performance and scaling (rules only), write assessment.json."""
+    from sovereign_shift.assess import assess
+
+    result = assess(read(out, "inventory"), read(out, "graph"), read(out, "findings")["findings"], read(out, "mapping"))
+    save(out, "assessment", result)
+    p, r = result["posture"]["overall"], result["risk"]["overall"]
+    typer.echo(
+        f"Security {p['grade_before'] or 'not assessed'} -> {p['grade_after'] or 'not assessed'}, "
+        f"risk {r['current']} -> {r['after_migration']}, "
+        f"{r['readiness']}. Wrote {out / 'assessment.json'}"
+    )
 
 
 @app.command("publish")

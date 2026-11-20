@@ -20,6 +20,11 @@ testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "runbook/templates" = "sovereign_shift/runbook/templates"
+# reference data the code reads, bundled so a normal pip install works too (sovereign_shift/paths.py)
+"data" = "sovereign_shift/_data/data"
+"mappings" = "sovereign_shift/_data/mappings"
+"docs/schemas" = "sovereign_shift/_data/docs/schemas"
+"skills" = "sovereign_shift/_data/skills"
 
 [tool.ruff]
 target-version = "py311"

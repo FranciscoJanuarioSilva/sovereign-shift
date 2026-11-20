@@ -188,8 +188,10 @@ def summary(mapping: Mapping) -> str:
     counts: dict[str, int] = {}
     for e in mapping.entries:
         counts[e.status] = counts.get(e.status, 0) + 1
-    aws = sum(e.monthly_cost_eur.aws or 0 for e in mapping.entries)
-    lsw = sum(e.monthly_cost_eur.leaseweb or 0 for e in mapping.entries)
+    # only rows priced on both sides, like the report
+    both = [e for e in mapping.entries if e.monthly_cost_eur.aws is not None and e.monthly_cost_eur.leaseweb is not None]
+    aws = sum(e.monthly_cost_eur.aws for e in both)
+    lsw = sum(e.monthly_cost_eur.leaseweb for e in both)
     parts = ", ".join(f"{k} {v}" for k, v in sorted(counts.items()))
     ai = mapping.ai
     ai_text = f", ai answered {ai.get('answered', 0)}/{ai.get('asked', 0)}" if ai.get("used") else ""

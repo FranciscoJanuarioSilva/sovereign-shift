@@ -5,8 +5,17 @@ from datetime import datetime, UTC
 from html import escape
 from pathlib import Path
 
+from sovereign_shift.report import sections
+from sovereign_shift.translator import catalog
 from sovereign_shift.report.insights import insights
 from sovereign_shift.artifacts import indexed, read, save, write
+
+
+def join_markdown(lines: list[str]) -> str:
+    # blank line between blocks, but table rows and mermaid lines stay together
+    text = "\n\n".join(lines)
+    text = re.sub(r"(\|[^\n]*)\n\n(?=\|)", r"\1\n", text)
+    return text.replace("\n\n  n", "\n  n")
 
 
 def cell(value: object) -> str:
@@ -123,6 +132,7 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
             aws_price_note(costs),
             *leaseweb_price_notes(mapping.get("catalog_source", "")),
             "Additional storage, traffic, public IPs and load balancers are not included in this compute subtotal.",
+            "Rows with a price on only one side are left out of both totals.",
             "The smallest Leaseweb size is 2 vCPU, so tiny AWS instances map to a bigger, pricier VM.",
         ],
     }
@@ -131,7 +141,9 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
     if source_cloud == "cloudflare":
         cost["assumptions"] = ["Cloudflare usage and billing were not scanned. Migration costs are unpriced."]
     for provider in (source_cloud, "leaseweb"):
-        values = [c.get(provider) for c in costs]
+        # totals only count rows priced on both sides, or the comparison isn't like for like
+        both = [c for c in costs if c.get("aws") is not None and c.get("leaseweb") is not None]
+        values = [c.get(provider) for c in (both if source_cloud != "cloudflare" else costs)]
         cost[provider + "_priced_subtotal_eur"] = round(sum(v for v in values if v is not None), 2)
         cost[provider + "_monthly_eur"] = (
             round(sum(values), 2) if None not in values and (values or source_cloud == "aws") else None
@@ -161,6 +173,8 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
         finalize=plan,
         terraform_files=sorted(p.name for p in (out / "terraform").glob("*.tf")),
     )
+    if (out / "assessment.json").exists():
+        data["assessment"] = read(out, "assessment")
     if inventory.get("denied"):
         data["denied"] = inventory["denied"]
     if not no_ai:
@@ -168,13 +182,17 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
     if account:
         data = json.loads(json.dumps(data).replace(account, "****" + account[-4:]))
     save(out, "report", data)
+    assessment = data.get("assessment")
+    target_location = catalog.regions()["leaseweb_codes"].get(mapping["target_region"], {}).get("location", mapping["target_region"])
     lines = [
         "# Migration assessment",
         f"{len(resources)} resources · {data['source']['account_id']} → {mapping['target_region']}",
+        *(sections.executive_summary(assessment, cost, source_label, target_location) if assessment else []),
         "## Dependencies",
         "```mermaid",
         data["graph"]["mermaid"],
         "```",
+        *(sections.posture_section(assessment) + sections.risk_section(assessment) if assessment else []),
         "## Monthly costs (EUR)",
         f"| Resource | {source_label} type | {source_label} | Leaseweb type | Leaseweb |",
         "|---|---|---:|---|---:|",
@@ -202,6 +220,8 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
             f"{len(oversized)} of {len(costs)} priced resources are smaller than Leaseweb's smallest size (2 vCPU). "
             "For them the Leaseweb VM is bigger than what runs today, so compare on capacity, not on the bill alone."
         )
+    if assessment:
+        lines += sections.performance_section(assessment) + sections.scaling_section(assessment)
     lines += [
         "## Migration work",
         "| Resource | Status | Via | Details |",
@@ -280,5 +300,5 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
     lines += ["## Terraform files", ", ".join(data["terraform_files"])]
     write(
         out / "report.md",
-        "\n\n".join(lines).replace("\n\n|", "\n|").replace("\n\n  n", "\n  n") + "\n",
+        join_markdown(lines) + "\n",
     )
