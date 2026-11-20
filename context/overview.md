@@ -1,3 +1,5 @@
+> Primeira análise, antes da pesquisa à API da Leaseweb. As security groups passaram para a API (finalize), não nftables. Ver `PLAN.md`.
+
 A ideia é boa e encaixa bem no tema. Há uma descoberta que muda o MVP: o provider Terraform da Leaseweb não tem recursos para security groups/firewall, redes privadas, Kubernetes nem object storage. Por isso, "EC2 + security groups + S3", a prioridade nº1 do plano, não se gera diretamente. Atualizei o [context/idea.md](context/idea.md) com tudo o que está abaixo, incluindo a correção do nome "soverein" para "sovereign".
 
 ## Enquadramento com o tema

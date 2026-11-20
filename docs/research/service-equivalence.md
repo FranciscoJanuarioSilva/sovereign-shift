@@ -1,26 +1,27 @@
 # AWS -> Leaseweb equivalence
 
 This feeds `mappings/*.yaml`. Status: `full` = generated automatically, `partial` = generated + manual note, `manual` = report only (AI may propose an alternative).
-Target A = `leaseweb/leaseweb` provider. Target B = `openstack` provider (new NL platform, pending the Keystone URL from Leaseweb). Target C = cloud-init on an instance.
+Target A = `leaseweb/leaseweb` provider. Target API = Leaseweb Public Cloud REST API, called by `finalize` after apply (`leaseweb-api.md`). Target C = cloud-init on an instance. The `openstack` provider (new NL platform) is roadmap only: the Leaseweb provider has no OpenStack code.
 
 | AWS | Leaseweb target | Status | Notes |
 |---|---|---|---|
 | EC2 instance | A `leaseweb_public_cloud_instance` | full | type via the table below, OS via AMI -> image id, `Name` tag -> `reference` |
 | EC2 large/steady (>= 16 vCPU, 24/7) | A `leaseweb_dedicated_server` + `_installation` | partial | server must be ordered first, cheaper at scale (cost report shows both) |
 | EBS root volume | A `root_disk_size` + `root_disk_storage_type = "CENTRAL"` | full | max 1000 GB |
-| EBS extra volumes | B `openstack_blockstorage_volume_v3` | partial | no volume resource in the Leaseweb provider. Without B: bigger root disk + manual data copy |
-| EIP | public IP on the instance (A), or B `openstack_networking_floatingip_v2` | partial | IP address changes, so DNS must be updated (we generate the records) |
+| EBS extra volumes | A bigger `root_disk_size` | partial | no volume resource in the provider or API. Data copy in the runbook |
+| EIP | none | manual | every instance gets one public IPv4, but it can't be reserved or moved. The IP changes, so DNS must be updated (we generate the records) |
 | Key pair | A `ssh_key` on the instance | full | AWS never exposes private keys; the public key comes from `describe_key_pairs(IncludePublicKey=True)` |
 | user_data | A `user_data` | full | can't combine with `ssh_key`, so merge the key into cloud-init |
-| VPC / subnets / route tables / IGW | B `openstack_networking_{network,subnet,router,router_interface}_v2`, or A `has_private_network = true` | partial | without B, everything collapses to one private network: report what was lost (isolation between subnets) |
-| NAT gateway | B router with external gateway | partial | |
-| Security group | B `openstack_networking_secgroup_v2` + `_rule_v2`, or C ufw/nftables rules in cloud-init | partial | SG-to-SG references become CIDR rules on the private network in C |
-| ALB / NLB | A `leaseweb_public_cloud_load_balancer` + `_listener` + `_target_group` | partial | path/host routing rules and multiple AZ backends aren't supported. HTTPS needs a cert, ACM can't be exported |
+| VPC / subnets / route tables / IGW | A `has_private_network = true` | partial | everything collapses to one private network (`eth1`, DHCP /27). Report what was lost (isolation between subnets) |
+| NAT gateway | none needed | partial | every instance has its own public IPv4. Report it |
+| Security group | API `POST /securityGroups`, `authorizeFirewallRules`, `attachSecurityGroups` | full | rules take CIDRs only, so SG-to-SG references become /32 rules on the source instances' private IPs, resolved after apply |
+| ALB / NLB | A `leaseweb_public_cloud_load_balancer` + `_listener` + `_target_group` | full | path/host routing rules and multiple AZ backends aren't supported (flag them). HTTPS needs a cert, ACM can't be exported |
 | Target group | A `leaseweb_public_cloud_target_group` | full | health check path/port/protocol map directly |
+| Target group members | API `POST /targetGroups/{id}/registerTargets` | full | backends need `has_private_network = true` |
 | ACM certificate | inline `certificate {}` on the listener | manual | issue a new cert (Let's Encrypt) |
 | Route 53 records | A `leaseweb_dns_resource_record_set` | partial | alias -> A record to the new LB/instance IP. TTL rounded to an allowed value. Zone/domain move is manual |
 | Route 53 zone | none | manual | transfer domain or change NS at the registrar |
-| S3 bucket | Leaseweb Object Storage via `aws` provider with custom endpoint (`*.object-storage.io`) | partial | native provider resources were reverted in v1.32.1. Data copy with rclone/s3cmd. Policies only partly compatible |
+| S3 bucket | Leaseweb Object Storage (`*.object-storage.io`) | partial | native provider resources were reverted in v1.32.1. Bucket creation and data copy with rclone in the runbook. Policies only partly compatible. Using the `aws` provider with a custom endpoint is untested, so not MVP |
 | RDS Postgres/MySQL/MariaDB | C instance + cloud-init installing the engine + backup cron to object storage | manual (AI) | no managed DB found. Size instance from `instance_class`. Report: dump/restore or logical replication plan, lost features (PITR, multi-AZ) |
 | Aurora | same as RDS | manual (AI) | |
 | ElastiCache Redis | C instance with Redis/Valkey | manual (AI) | |
@@ -31,7 +32,7 @@ Target A = `leaseweb/leaseweb` provider. Target B = `openstack` provider (new NL
 | CloudFront | Leaseweb CDN | manual | no TF resource |
 | IAM | none (Leaseweb has portal users, object storage users/groups) | manual | report only, plus security findings |
 | CloudWatch | Prometheus/Grafana on an instance | manual | |
-| Auto Scaling group | fixed N instances (`count`) | partial | auto-scaling is "coming soon" on the new platform |
+| Auto Scaling group | fixed N instances (`count`) | partial | the API has `/autoScalingGroups` but the provider doesn't. Roadmap |
 
 ## Instance type mapping
 Leaseweb names copy AWS: `lsw.<family><gen>.<size>`. Valid provider types: `m3, m4, m5, m5a, m6a, c3, c4, c5, c5a, c6a, r3, r4, r5, r5a, r6a, g6, gr6` with sizes `large` to `24xlarge` (not every size for every gen, see `docs/schemas/leaseweb.json`).

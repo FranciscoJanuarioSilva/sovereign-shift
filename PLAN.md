@@ -12,114 +12,142 @@ Business case for Leaseweb: a free self-service assessment turns hard-to-migrate
 ## Product
 Input: read-only AWS credentials. Output, in one folder:
 - `out/terraform/*.tf`: Leaseweb Terraform (provider `leaseweb/leaseweb`).
-- `out/graph.json` and `out/graph.html`: dependency graph.
-- `out/runbook.md` and `out/runbook.json`: AI-personalised data migration runbook.
-- `out/report.html`: the single report page. It holds the graph, cost comparison (AWS vs Leaseweb), automatic vs manual work, security findings, and the runbook.
+- `out/finalize.json`: the Leaseweb API calls Terraform can't make (security groups, firewall rules, load balancer targets). `sovereign-shift finalize` runs them after `terraform apply`.
+- `out/graph.json`: dependency graph.
+- `out/runbook.json`: AI-personalised data migration runbook.
+- `out/report.json` and `out/report.md`: the report. It holds the graph (Mermaid), cost comparison (AWS vs Leaseweb), automatic vs manual work, security findings and the runbook. The `.md` renders on GitHub and in any Markdown viewer. The `.json` feeds the website we build later.
 
 The source cloud stays pluggable. The IR is provider-neutral, and only the scanner is AWS-specific. Azure and GCP are the roadmap.
 
 ## Pipeline
+Each step reads the previous step's JSON, so steps run in order but any step can be rerun on its own.
 1. **Scan** (`sovereign_shift/scanner/`): own boto3 `describe_*` / `list_*` calls, read-only. Output `inventory.json`.
-2. **Graph** (`sovereign_shift/graph/`): resolve relationships from IDs. Output `graph.json` plus a visual.
+2. **Graph** (`sovereign_shift/graph/`): resolve relationships from IDs, run the security checks. Output `graph.json` and `findings.json`.
 3. **Translate** (`sovereign_shift/translator/`): rules pick the Leaseweb equivalent where one exists. AI proposes an open-source alternative for the rest. Output `mapping.json`.
-4. **Generate** (`sovereign_shift/generator/`): render Terraform from `mapping.json`, with Jinja2 templates. Firewall rules come from a template too (see below). Output `out/terraform/*.tf`.
-5. **Runbook** (`sovereign_shift/runbook/`): AI personalises a data migration runbook from the template library. Output `runbook.json` and `runbook.md`.
-6. **Report** (`sovereign_shift/report/`): static HTML report. Includes the runbook.
+4. **Generate** (`sovereign_shift/generator/`): Jinja2 templates render Terraform from `mapping.json`. The same step writes `finalize.json` (security groups and LB targets). Output `out/terraform/*.tf`, `out/finalize.json`.
+5. **Finalize** (`sovereign_shift/finalize/`), after `terraform apply`: reads `terraform output -json` for the new instance and target group ids, looks up private IPs, then calls the Leaseweb API from `finalize.json`. `--dry-run` (the default without `LEASEWEB_TOKEN`) prints the calls instead of making them.
+6. **Runbook** (`sovereign_shift/runbook/`): AI picks and fills steps from the template library. Output `runbook.json`.
+7. **Report** (`sovereign_shift/report/`): `report.json` plus `report.md`.
 
-Data contracts (JSON shapes for each file) are in `docs/contracts.md`. Keep them stable: team members build in parallel against them.
+Data contracts are in `docs/contracts.md`. Agree on them first and keep them stable. Then the people working on later steps can start from hand-written fixture files instead of waiting for the earlier steps.
 
 ## MVP scope
-Driven by what the Leaseweb provider can express (v1.32.1, verified in `docs/research/leaseweb-terraform.md`). It has no firewall, security group, private network, Kubernetes or object storage resources.
+Driven by what Leaseweb can express. The Terraform provider (v1.32.1, `docs/research/leaseweb-terraform.md`) has no security groups, firewall, networks, volumes, object storage or LB target membership. The Public Cloud REST API has security groups, firewall rules and target registration (`docs/research/leaseweb-api.md`), so finalize uses the API for those.
 
-| AWS | Leaseweb target | Status |
-|---|---|---|
-| EC2 instance + root EBS | `leaseweb_public_cloud_instance` | auto |
-| Security group | no TF resource. Template-generated nftables in `user_data` cloud-init. LLM reviews the rules, does not write them. | auto |
-| SSH key pair | inside the cloud-init (`ssh_key` and `user_data` can't both be set) | auto |
-| ALB/NLB + listeners + target groups | `leaseweb_public_cloud_load_balancer`, `_listener`, `_target_group` | auto (HTTPS certs manual) |
-| Route 53 records | `leaseweb_dns_resource_record_set` (domain must be at Leaseweb) | auto |
-| Elastic IP | none. `leaseweb_public_cloud_ip` only sets reverse DNS on an IP the instance already has, it doesn't reserve one. | manual (new IP, DNS update) |
-| S3 bucket | Leaseweb Object Storage via S3-compatible endpoint, `rclone` in runbook. Not in Terraform (reverted in provider 1.32.1). | semi-auto |
-| RDS | self-hosted Postgres/MySQL on a Leaseweb instance, dump/restore in runbook | manual (AI alternative) |
-| Lambda, SQS, DynamoDB, ECS/EKS, others | AI proposes open-source alternative and effort estimate | manual (AI) |
+| AWS | Leaseweb target | How | Status |
+|---|---|---|---|
+| EC2 instance + root EBS | `leaseweb_public_cloud_instance` | Terraform | auto |
+| SSH key pair | inside the cloud-init `user_data` (`ssh_key` and `user_data` can't both be set) | Terraform | auto |
+| Security group | native Leaseweb security group + firewall rules, attached to the instance | finalize (API) | auto |
+| SG-to-SG rule (e.g. web -> db on 5432) | one rule per source instance, its private IP as a /32 | finalize (API), after apply | auto |
+| ALB/NLB + listeners + target groups | `leaseweb_public_cloud_load_balancer`, `_listener`, `_target_group` | Terraform | auto |
+| Target group members | `POST /targetGroups/{id}/registerTargets`. Backends need `has_private_network = true` | finalize (API) | auto |
+| HTTPS listener certificate | ACM certs can't be exported, a new cert is needed | report | manual |
+| Route 53 records | `leaseweb_dns_resource_record_set` (domain must be at Leaseweb). Alias records become A records to the new IP | Terraform | partial |
+| Route 53 zone | domain transfer or NS change | report | manual |
+| Elastic IP | none. `leaseweb_public_cloud_ip` only sets reverse DNS. The IP changes, so DNS needs updating | report | manual |
+| Extra EBS volumes | none (no volume resource). Bigger root disk plus a data copy in the runbook | Terraform + runbook | partial |
+| S3 bucket | Leaseweb Object Storage (S3-compatible, not in Terraform since 1.32.1). `rclone` in the runbook | runbook | partial |
+| RDS | self-hosted Postgres/MySQL on a Leaseweb instance, dump/restore in the runbook | runbook | manual (AI) |
+| Lambda, SQS, DynamoDB, ECS/EKS, others | AI proposes an open-source alternative and effort estimate | report | manual (AI) |
 
-Region trap: Leaseweb `eu-west-3` is Amsterdam, AWS `eu-west-3` is Paris. Map regions through `mappings/regions.yaml`, never copy the string.
+Fallback if finalize can't run (no token, API problem): the security groups go into the report as manual work, and finalize's dry-run output shows the exact calls. An nftables cloud-init firewall is a possible later addition, not MVP.
+
+Traps:
+- Leaseweb `eu-west-3` is Amsterdam, AWS `eu-west-3` is Paris. Map regions through `mappings/regions.yaml`, never copy the string.
+- `user_data` goes as plain text, not base64.
+- The private network is `eth1` and isn't up by default. The cloud-init brings it up with DHCP.
+- Every Leaseweb instance gets a public IPv4. A DB that was in a private AWS subnet must be closed by its security group.
+- The default Leaseweb security group allows everything. Finalize attaches ours.
 
 ## Data migration runbook
 Terraform rebuilds infrastructure. It does not move disks, bucket objects or database rows. The runbook covers that gap, and the pitch says so before a judge asks.
 
 **How it's made:**
-- `runbook/templates/*.yaml` is a library of allowed steps per resource type. Each step has an id, a command template with named placeholders, the inputs it needs, which inputs the customer supplies, and a verification command.
-- The runbook agent gets one mapped resource, the templates for its type, and the target Leaseweb values. It returns JSON: which steps to use, their order, filled placeholders, short notes for this customer, and `not_capable` entries with a reason.
-- A validator checks every response. Step ids must exist in the library. Commands must match their template, with no free-form shell. Placeholders must be filled from inventory or marked as customer input `<CUSTOMER: ...>`. Anything that fails is dropped.
-- AI can only claim a resource is runbook-capable if a template exists. Everything else goes to the report's manual section with prose only, no commands.
+- `runbook/templates/*.yaml` is a library of allowed steps per resource type. Each step has an id, a command template with named placeholders, its inputs (from inventory or from the customer) and a verification command.
+- The runbook agent gets one mapped resource, the templates for its type and the target Leaseweb values. It returns JSON only: step ids in order, input values, short notes for this customer, and `not_capable` entries with a reason. It never returns a command.
+- Our code renders the commands from the templates. The validator only checks that every step id exists in the library and that every input is filled from inventory or marked `<CUSTOMER: ...>`. Anything else is dropped.
+- AI can only claim a resource is runbook-capable if a template exists. Everything else goes to the report's manual section with prose only.
 - If the AI fails or is off (`--no-ai`), the template's default steps are used, marked "not personalised".
 - Secrets never appear. The runbook shows placeholders, and the customer fills in keys at execution time.
 - Output is cached by input hash, so the demo is repeatable.
 
-**First template library (in order):** S3 bucket sync, EBS volume copy, RDS PostgreSQL dump/restore, RDS MySQL dump/restore, EC2 application data copy (rsync), Route 53 cutover (lower TTL, switch record, verify).
+**First template library (in order):** RDS PostgreSQL dump/restore, S3 bucket sync (rclone), EC2 application data copy (rsync), EBS volume copy, RDS MySQL dump/restore, Route 53 cutover (lower TTL, switch record, verify).
 
 ## AI use
 | Job | Agent | Input | Output | Fallback |
 |---|---|---|---|---|
 | Alternatives for unmappable services | translator | one resource + neighbours + Leaseweb schema subset | `{alternative, justification, effort, manual_steps, confidence}` | "manual, no suggestion" |
-| Personalised runbook | runbook | one resource + its templates + target values | steps by id, placeholders, notes, `not_capable` | template default steps |
-| Firewall review | reviewer | generated nftables rules + SG source | `{ok, issues[]}`; issues shown in report | rules still shipped, flagged "unreviewed" |
-| Plain-language report summary | explainer | final report JSON | short text, English/Portuguese | no summary |
-| Architecture summary | explainer | graph | one paragraph | omitted |
+| Personalised runbook | runbook | one resource + its templates + target values | step ids, inputs, notes, `not_capable` | template default steps |
+| Firewall review | reviewer | translated Leaseweb rules + the AWS SG source | `{ok, issues[]}`, shown in the report | rules still applied, flagged "unreviewed" |
+| Summary | explainer | `report.json` | short paragraph on the architecture and the migration | omitted (cut first if time runs short) |
 
-The LLM never writes HCL or firewall rules. Its output is JSON, validated with pydantic. Every AI choice carries a `justification` and an `ai-suggested` mark in the output.
+The LLM never writes HCL, firewall rules or commands. Its output is JSON, validated with pydantic. Every AI choice carries a `justification` and an `ai-suggested` mark in the output.
 
-Backend: OpenAI-compatible client with configurable base URL. Default is OpenRouter EU (`https://eu.openrouter.ai/api/v1`), with Ollama or Mistral as alternatives. Details and the open check on our key's plan are in `docs/research/ai-providers.md`.
+Demo moment for the AI: show the validator rejecting a bad AI answer (an unknown step id, or a suggestion for a resource with no template). This shows "AI with guardrails", which is also the security angle.
 
-Redaction before every call: no keys, passwords, tokens, `user_data` secrets or account IDs. The model gets resource metadata only.
+Backend: OpenAI-compatible client with configurable base URL. Which provider and key is the team's call (see `docs/research/ai-providers.md`).
+
+Redaction before every call: no keys, passwords, tokens, `user_data` contents, account IDs or host IP addresses. CIDRs in security group rules are kept, because the reviewer needs them (`0.0.0.0/0` is the point).
 
 ## Architecture
-Python 3.11+ (per the rules). Packages: boto3, pydantic, networkx, typer, jinja2, openai SDK, pytest, moto. No Textual, no FastAPI in the MVP.
+Python 3.11+. Packages: boto3, pydantic, networkx, typer, jinja2, openai SDK, httpx (Leaseweb API), pytest, moto. No Textual, no FastAPI in the MVP.
 
 ```
-scanner (boto3) -> inventory.json -> graph.json
+scanner (boto3) -> inventory.json
+  -> graph (networkx + security checks) -> graph.json, findings.json
   -> translator (rules, then AI) -> mapping.json
-  -> generator (Jinja2 templates) -> out/terraform/*.tf
-  -> runbook (AI + template library) -> runbook.json / runbook.md
-  -> report (static HTML)
+  -> generator (Jinja2) -> out/terraform/*.tf, finalize.json
+  -> [terraform apply] -> finalize (Leaseweb API)
+  -> runbook (AI + template library) -> runbook.json
+  -> report -> report.json, report.md
 ```
 
-- CLI (typer): `sovereign-shift scan|graph|translate|generate|runbook|report|all`. Each step reads the previous JSON file, so the demo can resume at any step.
-- `--no-ai` and `--from-snapshot examples/sample_inventory.json` must both work offline.
-- Former2 is not a dependency. It's documented in `docs/research/aws-scanning.md` as a reference for what raw data looks like, and it's in `corpus/tools/former2` for reading only.
-- Report: one self-contained HTML file. The graph is an inline SVG. Opening it in a browser is the demo. A web server can come later if there's time.
+- CLI (typer): `sovereign-shift scan|graph|translate|generate|finalize|runbook|report|all`. `all` runs everything except finalize, which needs `terraform apply` first.
+- `--no-ai` and `--from-snapshot <inventory.json>` must both work offline.
+- Former2, aws2tf, Terraformer and terracognita are not dependencies (`docs/research/aws-scanning.md`).
+- Report: Mermaid `flowchart` for the graph and Markdown tables for cost, work and findings. Mermaid renders on GitHub and in the website later (mermaid.js). A cost chart (Mermaid `xychart-beta` or a PNG) only if there's time.
+- Leaseweb catalog: `scripts/fetch_leaseweb_catalog.py` calls `GET /instanceTypes` and `GET /regions` with the token and writes `data/leaseweb_catalog.json`. Fallback values are in `docs/research/leaseweb-api.md`.
 
 Repo layout is in `AGENTS.md`. Files in `mappings/`, `data/` and `docs/` are reference data and must be validated on load.
 
 ## Timeline (today)
-- Now to ~11:00: organisers (Leaseweb token, AWS demo account decision), build the demo AWS account by hand in the console, ask the Leaseweb platform questions.
-- Until ~13:00: scanner, graph, `inventory.json` and `graph.json` working on the sample. Template generator for EC2, SG (nftables), ALB, DNS.
-- Until ~14:00: runbook templates and agent with the validator. Report HTML.
-- 14:00 to 15:00: AI calls cached, `--no-ai` path tested, demo rehearsed twice, feature freeze at 15:00.
-- Pitch prep: 5-minute script (below).
+The steps depend on each other, so this mostly runs in order. Fixture files written from the contracts let later steps start early.
+1. First: contracts frozen. Package skeleton, CLI and `pyproject.toml`. Real `inventory.json` from our AWS accounts becomes the fixture. Leaseweb token: fetch the catalog and regions, run `terraform init` and `plan`.
+2. Scanner + graph + findings on the real account.
+3. Translator rules + generator for EC2, ALB, DNS. `terraform validate` passes.
+4. Finalize (SGs, targets), tested for real with the token.
+5. Report (`report.md`, `report.json`).
+6. Runbook templates + agent + validator. Other AI agents.
+7. 14:30: AI answers cached, `--no-ai` tested, demo rehearsed twice. Feature freeze 15:00. 15:00-15:45: pitch rehearsal.
 
-Priority if time runs short, in order: EC2 + SG (nftables) > report with cost and security > runbook for EBS/RDS > ALB > S3 runbook > Route 53.
+Priority if time runs short, in order: EC2 + SGs (finalize) > report with cost and security > ALB with targets > runbook for RDS/S3 > DNS > explainer.
 
 ## Demo script (5 minutes)
 1. Screenshot of the AWS console: "all of this was made by clicking" (0:30).
-2. `sovereign-shift all` on the demo account or the snapshot. The graph shows a forgotten link, such as web SG to DB SG (1:00).
-3. Generated Terraform, `terraform validate` passes. Firewall rules come from the template, AI review flags a bad rule (1:30).
-4. Report: AWS vs Leaseweb monthly cost, automatic vs manual list, security findings (1:00).
-5. Runbook: personalised steps for the RDS and S3, placeholders visible, nothing secret (0:45).
-6. Close: "Built for AWS today, Azure and GCP next. Every report is a qualified lead for Leaseweb." Mention the data-runbook gap before a judge asks (0:15).
+2. `sovereign-shift all` on the demo account (or the snapshot). The graph shows a forgotten link, such as web SG to DB SG (1:00).
+3. Generated Terraform, `terraform plan` on Leaseweb. Finalize creates the security groups and registers the LB targets, the parts the Terraform provider can't do yet (1:15).
+4. Report: AWS vs Leaseweb monthly cost (with traffic), automatic vs manual list, security findings fixed by the migration (1:00).
+5. Runbook: personalised steps for the RDS and S3, placeholders visible, nothing secret. The validator rejects a bad AI answer (1:00).
+6. Close: "Built for AWS today, Azure and GCP next. Every report is a qualified lead for Leaseweb." (0:15).
 
 ## Verification
-- pytest: scanner with moto, graph edges, rule mapping, Jinja2 output golden files, validator rejects bad runbook responses, security rules.
-- `terraform init && terraform validate` through the container on every generated folder.
+- pytest: scanner with moto, graph edges, rule mapping, Jinja2 output golden files, finalize dry-run output, runbook validator, security rules.
+- `terraform init && terraform validate` on every generated folder.
 - `--no-ai` end to end from the snapshot, offline.
-- Runbook validator test: a response with an unknown step id, a free-form command, or a real-looking secret must be rejected.
-- Demo dry run from the snapshot, twice, before 15:00.
+- Runbook validator test: an unknown step id, a missing input, or a real-looking secret must be rejected.
+- Demo dry run, twice, before 15:00.
 
 ## Open questions
-- **License:** the repo `LICENSE` is MIT (copyright "Francisco Silva"). The organisers require an open license allowing commercial reuse, and idea.md says Apache-2.0. Confirm which one, and who the copyright holder is. Not changed yet.
-- Leaseweb API token and a test account, so the demo can run `terraform plan`.
-- Is a real AWS account OK on stage, or only the snapshot?
-- Does our OpenRouter key work on `eu.openrouter.ai`? If not, which fallback?
-- Leaseweb platform: does the provider target the old platform (8 regions, EC2-compatible) or the new one (NL, OpenStack)? Keystone URL for the new one.
-- Leaseweb object storage: ETA for the Terraform resources, and confirmation that the S3 endpoint accepts `rclone`.
+- AI provider and key: the team decides.
+- Can the default Leaseweb security group be detached from an instance? Test with the token.
+- Leaseweb region codes other than `eu-west-3` and `eu-central-1`: verify with `GET /regions`.
+- Load balancer prices: from the token's catalog if the API has them, otherwise ask Leaseweb.
+
+## Resolved
+- License: Apache-2.0.
+- Terraform (not OpenTofu).
+- Target: the `leaseweb/leaseweb` provider plus the Public Cloud REST API. The provider has no OpenStack code. The OpenStack-based new platform is roadmap.
+- Security groups and LB targets: Leaseweb API in finalize, not nftables.
+- Report: Markdown + JSON, website later.
+- AWS demo account: free for us, so use realistic instance types (`t3.large`, `m5.large`), not `t3.micro` (the smallest Leaseweb type is 2 vCPU, so tiny instances make the comparison unfair).
