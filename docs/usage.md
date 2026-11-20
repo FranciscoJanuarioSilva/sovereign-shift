@@ -47,6 +47,19 @@ sovereign-shift all --from-snapshot testdata/azure_inventory.json --no-ai --out 
 python scripts/fetch_azure_prices.py --inventory out/azure/inventory.json   # real VM prices, public API, no key
 ```
 
+## Scan a Google Cloud project
+
+Not verified against a live project yet: the scanner is tested by replaying made-up REST responses (`testdata/gcp_api_responses.json`). See [gcp.md](gcp.md).
+
+```bash
+pip install -e '.[gcp]'                       # google-auth, for application default credentials
+gcloud auth application-default login --impersonate-service-account=<viewer sa>
+sovereign-shift all --source gcp --project <project-id> --out out/gcp
+sovereign-shift all --from-snapshot testdata/gcp_inventory.json --no-ai --out out/gcp-sample   # offline sample
+```
+
+Instead of google-auth, `GCP_ACCESS_TOKEN=$(gcloud auth print-access-token --impersonate-service-account=<viewer sa>)` works too. The project id can also come from `GCP_PROJECT_ID`. The scan covers every region of the project. Use a service account with the Viewer role only. Disabled APIs and missing permissions show up under "Scan coverage" in the report. Google list prices aren't fetched, so the source cost column is unknown.
+
 ## Run the steps one by one
 
 ```bash

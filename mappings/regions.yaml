@@ -19,6 +19,41 @@ aws_to_leaseweb:
   ap-southeast-1: ap-southeast-1
   ap-northeast-1: ap-northeast-1
   ap-southeast-2: ap-southeast-1 # sydney -> singapore, the provider (1.32.1) rejects ap-southeast-2
+# google cloud region (or multi-region bucket location) -> leaseweb, same nearest-dc logic as aws
+# picked when the inventory source is gcp
+# locations per https://cloud.google.com/compute/docs/regions-zones (2026-11-20)
+gcp_to_leaseweb:
+  europe-west1: eu-west-3       # belgium -> amsterdam
+  europe-west2: eu-west-3       # london -> amsterdam (uk isn't eu, override with --target-region eu-west-2)
+  europe-west3: eu-central-1    # frankfurt -> frankfurt
+  europe-west4: eu-west-3       # netherlands -> amsterdam
+  europe-west6: eu-central-1    # zurich -> frankfurt
+  europe-west8: eu-central-1    # milan -> frankfurt
+  europe-west9: eu-west-3       # paris -> amsterdam
+  europe-west10: eu-central-1   # berlin -> frankfurt
+  europe-west12: eu-central-1   # turin -> frankfurt
+  europe-north1: eu-west-3      # finland -> amsterdam
+  europe-north2: eu-west-3      # stockholm -> amsterdam
+  europe-central2: eu-central-1 # warsaw -> frankfurt
+  europe-southwest1: eu-central-1 # madrid -> frankfurt
+  us-central1: us-east-1
+  us-east1: us-east-1
+  us-east4: us-east-1
+  us-east5: us-east-1
+  us-west1: us-west-1
+  us-west2: us-west-1           # the provider (1.32.1) rejects us-west-2 (los angeles)
+  us-west3: us-west-1
+  us-west4: us-west-1
+  northamerica-northeast1: ca-central-1
+  northamerica-northeast2: ca-central-1
+  asia-southeast1: ap-southeast-1
+  asia-northeast1: ap-northeast-1
+  asia-northeast2: ap-northeast-1
+  australia-southeast1: ap-southeast-1
+  eu: eu-west-3                 # multi-region buckets
+  eur4: eu-west-3
+  us: us-east-1
+  asia: ap-southeast-1
 default: eu-west-3
 
 leaseweb_codes:

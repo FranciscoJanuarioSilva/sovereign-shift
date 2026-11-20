@@ -42,7 +42,9 @@ def tf_names(resources: list[dict[str, Any]]) -> dict[str, str]:
     """Stable terraform-safe names, unique across the whole inventory."""
     names: dict[str, str] = {}
     used: set[str] = set()
-    for r in sorted(resources, key=lambda x: (x["type"], x["id"])):
+    # compute and lb resources pick first, gcp names boot disks after their instance and the vm should keep the clean name
+    first = {"ec2_instance", "db_instance", "lb", "target_group"}
+    for r in sorted(resources, key=lambda x: (x["type"] not in first, x["type"], x["id"])):
         label = r.get("name") or r["id"]
         p = r.get("properties") or {}
         if label.startswith("arn:"):
@@ -102,7 +104,7 @@ def db_clients(graph: dict[str, Any], resources: list[dict[str, Any]]) -> dict[s
 
 def ai_payload(resource: dict[str, Any], ctx: Context) -> dict[str, Any]:
     neighbours = [
-        {"type": o["type"], "aws_type": (o.get("properties") or {}).get("aws_type"), "name": o.get("name")}
+        {"type": o["type"], "aws_type": (o.get("properties") or {}).get("aws_type") or (o.get("properties") or {}).get("cloud_type"), "name": o.get("name")}
         for o in ctx.related(resource) + ctx.referrers(resource["id"])
     ]
     if resource["type"].startswith("cloudflare_"):
@@ -201,6 +203,8 @@ def summary(mapping: Mapping) -> str:
         ai_text += f" (ai off: {ai['disabled_reason']})"
     if mapping.source == "cloudflare":
         return f"{len(mapping.entries)} resources -> {mapping.target_region}: {parts}{ai_text}. Costs unpriced."
+    if mapping.source == "gcp":
+        return f"{len(mapping.entries)} resources -> {mapping.target_region}: {parts}{ai_text}. monthly estimate leaseweb {sum(e.monthly_cost_eur.leaseweb or 0 for e in mapping.entries):.2f} eur, google cloud unpriced"
     return f"{len(mapping.entries)} resources -> {mapping.target_region}: {parts}{ai_text}. monthly estimate {mapping.source} {aws:.2f} eur vs leaseweb {lsw:.2f} eur"
 
 

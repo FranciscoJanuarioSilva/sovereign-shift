@@ -1,0 +1,816 @@
+{
+ "project": "demo-shop-4821",
+ "responses": {
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks": {
+   "items": [
+    {
+     "name": "default",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+     "autoCreateSubnetworks": true,
+     "mtu": 1460
+    }
+   ]
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/aggregated/subnetworks": {
+   "items": {
+    "regions/europe-west4": {
+     "subnetworks": [
+      {
+       "name": "default",
+       "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/regions/europe-west4/subnetworks/default",
+       "region": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/regions/europe-west4",
+       "network": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+       "ipCidrRange": "10.164.0.0/20"
+      }
+     ]
+    },
+    "zones/europe-west4-b": {
+     "warning": {
+      "code": "NO_RESULTS_ON_PAGE"
+     }
+    }
+   }
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/global/firewalls": {
+   "items": [
+    {
+     "name": "default-allow-ssh",
+     "network": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+     "direction": "INGRESS",
+     "priority": 65534,
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/firewalls/default-allow-ssh",
+     "sourceRanges": [
+      "0.0.0.0/0"
+     ],
+     "allowed": [
+      {
+       "IPProtocol": "tcp",
+       "ports": [
+        "22"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "default-allow-internal",
+     "network": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+     "direction": "INGRESS",
+     "priority": 65534,
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/firewalls/default-allow-internal",
+     "sourceRanges": [
+      "10.128.0.0/9"
+     ],
+     "allowed": [
+      {
+       "IPProtocol": "tcp",
+       "ports": [
+        "0-65535"
+       ]
+      },
+      {
+       "IPProtocol": "udp",
+       "ports": [
+        "0-65535"
+       ]
+      },
+      {
+       "IPProtocol": "icmp"
+      }
+     ]
+    },
+    {
+     "name": "default-allow-icmp",
+     "network": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+     "direction": "INGRESS",
+     "priority": 65534,
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/firewalls/default-allow-icmp",
+     "sourceRanges": [
+      "0.0.0.0/0"
+     ],
+     "allowed": [
+      {
+       "IPProtocol": "icmp"
+      }
+     ]
+    },
+    {
+     "name": "allow-http",
+     "network": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+     "direction": "INGRESS",
+     "priority": 1000,
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/firewalls/allow-http",
+     "sourceRanges": [
+      "0.0.0.0/0"
+     ],
+     "targetTags": [
+      "http-server"
+     ],
+     "allowed": [
+      {
+       "IPProtocol": "tcp",
+       "ports": [
+        "80",
+        "443"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "allow-health-checks",
+     "network": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+     "direction": "INGRESS",
+     "priority": 1000,
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/firewalls/allow-health-checks",
+     "sourceRanges": [
+      "130.211.0.0/22",
+      "35.191.0.0/16"
+     ],
+     "targetTags": [
+      "http-server"
+     ],
+     "allowed": [
+      {
+       "IPProtocol": "tcp",
+       "ports": [
+        "80"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "allow-web-to-worker",
+     "network": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+     "direction": "INGRESS",
+     "priority": 1000,
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/firewalls/allow-web-to-worker",
+     "sourceTags": [
+      "http-server"
+     ],
+     "targetTags": [
+      "worker"
+     ],
+     "allowed": [
+      {
+       "IPProtocol": "tcp",
+       "ports": [
+        "8080"
+       ]
+      },
+      {
+       "IPProtocol": "esp"
+      }
+     ]
+    },
+    {
+     "name": "deny-telnet",
+     "network": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+     "direction": "INGRESS",
+     "priority": 900,
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/firewalls/deny-telnet",
+     "sourceRanges": [
+      "0.0.0.0/0"
+     ],
+     "denied": [
+      {
+       "IPProtocol": "tcp",
+       "ports": [
+        "23"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "old-rule",
+     "network": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+     "direction": "INGRESS",
+     "priority": 1000,
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/firewalls/old-rule",
+     "sourceRanges": [
+      "0.0.0.0/0"
+     ],
+     "allowed": [
+      {
+       "IPProtocol": "tcp",
+       "ports": [
+        "9000"
+       ]
+      }
+     ],
+     "disabled": true
+    },
+    {
+     "name": "allow-egress-https",
+     "network": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+     "direction": "EGRESS",
+     "priority": 1000,
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/firewalls/allow-egress-https",
+     "destinationRanges": [
+      "0.0.0.0/0"
+     ],
+     "allowed": [
+      {
+       "IPProtocol": "tcp",
+       "ports": [
+        "443"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/aggregated/instances": {
+   "items": {
+    "zones/europe-west4-a": {
+     "instances": [
+      {
+       "name": "web-1",
+       "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/instances/web-1",
+       "zone": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a",
+       "machineType": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/machineTypes/e2-medium",
+       "status": "RUNNING",
+       "tags": {
+        "items": [
+         "http-server"
+        ]
+       },
+       "labels": {
+        "app": "shop"
+       },
+       "networkInterfaces": [
+        {
+         "network": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+         "subnetwork": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/regions/europe-west4/subnetworks/default",
+         "networkIP": "10.164.0.2",
+         "accessConfigs": [
+          {
+           "natIP": "34.90.10.1"
+          }
+         ]
+        }
+       ],
+       "disks": [
+        {
+         "source": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/disks/web-1",
+         "boot": true,
+         "deviceName": "persistent-disk-0",
+         "diskSizeGb": "20"
+        }
+       ],
+       "metadata": {
+        "items": []
+       },
+       "serviceAccounts": [
+        {
+         "email": "123456789012-compute@developer.gserviceaccount.com"
+        }
+       ],
+       "scheduling": {
+        "provisioningModel": "STANDARD"
+       }
+      },
+      {
+       "name": "web-2",
+       "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/instances/web-2",
+       "zone": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a",
+       "machineType": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/machineTypes/e2-medium",
+       "status": "RUNNING",
+       "tags": {
+        "items": [
+         "http-server"
+        ]
+       },
+       "labels": {
+        "app": "shop"
+       },
+       "networkInterfaces": [
+        {
+         "network": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+         "subnetwork": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/regions/europe-west4/subnetworks/default",
+         "networkIP": "10.164.0.3",
+         "accessConfigs": [
+          {
+           "natIP": "34.90.10.2"
+          }
+         ]
+        }
+       ],
+       "disks": [
+        {
+         "source": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/disks/web-2",
+         "boot": true,
+         "deviceName": "persistent-disk-0",
+         "diskSizeGb": "20"
+        }
+       ],
+       "metadata": {
+        "items": []
+       },
+       "serviceAccounts": [
+        {
+         "email": "123456789012-compute@developer.gserviceaccount.com"
+        }
+       ],
+       "scheduling": {
+        "provisioningModel": "STANDARD"
+       }
+      },
+      {
+       "name": "worker",
+       "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/instances/worker",
+       "zone": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a",
+       "machineType": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/machineTypes/n2-highmem-4",
+       "status": "RUNNING",
+       "tags": {
+        "items": [
+         "worker"
+        ]
+       },
+       "labels": {
+        "app": "shop"
+       },
+       "networkInterfaces": [
+        {
+         "network": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+         "subnetwork": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/regions/europe-west4/subnetworks/default",
+         "networkIP": "10.164.0.4",
+         "accessConfigs": [
+          {
+           "natIP": "34.90.10.9"
+          }
+         ]
+        }
+       ],
+       "disks": [
+        {
+         "source": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/disks/worker",
+         "boot": true,
+         "deviceName": "persistent-disk-0",
+         "diskSizeGb": "20"
+        },
+        {
+         "source": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/disks/worker-data",
+         "boot": false,
+         "deviceName": "worker-data",
+         "diskSizeGb": "100"
+        }
+       ],
+       "metadata": {
+        "items": [
+         {
+          "key": "ssh-keys",
+          "value": "deploy:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDemoKeyOnlyForTests deploy@laptop"
+         },
+         {
+          "key": "startup-script",
+          "value": "#!/bin/sh\nexport API_TOKEN=do-not-store\n"
+         }
+        ]
+       },
+       "serviceAccounts": [
+        {
+         "email": "123456789012-compute@developer.gserviceaccount.com"
+        }
+       ],
+       "scheduling": {
+        "provisioningModel": "STANDARD"
+       }
+      }
+     ]
+    },
+    "zones/europe-west4-b": {
+     "warning": {
+      "code": "NO_RESULTS_ON_PAGE"
+     }
+    }
+   }
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/aggregated/disks": {
+   "items": {
+    "zones/europe-west4-a": {
+     "disks": [
+      {
+       "name": "web-1",
+       "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/disks/web-1",
+       "sizeGb": "20",
+       "type": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/diskTypes/pd-balanced",
+       "users": [
+        "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/instances/web-1"
+       ],
+       "sourceImage": "https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/ubuntu-2204-jammy-v20241115"
+      },
+      {
+       "name": "web-2",
+       "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/disks/web-2",
+       "sizeGb": "20",
+       "type": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/diskTypes/pd-balanced",
+       "users": [
+        "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/instances/web-2"
+       ],
+       "sourceImage": "https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/ubuntu-2204-jammy-v20241115"
+      },
+      {
+       "name": "worker",
+       "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/disks/worker",
+       "sizeGb": "20",
+       "type": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/diskTypes/pd-balanced",
+       "users": [
+        "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/instances/worker"
+       ],
+       "sourceImage": "https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/debian-12-bookworm-v20241112"
+      },
+      {
+       "name": "worker-data",
+       "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/disks/worker-data",
+       "sizeGb": "100",
+       "type": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/diskTypes/pd-balanced",
+       "users": [
+        "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/instances/worker"
+       ]
+      },
+      {
+       "name": "old-backup",
+       "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/disks/old-backup",
+       "sizeGb": "50",
+       "type": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/diskTypes/pd-standard"
+      }
+     ]
+    },
+    "zones/europe-west4-b": {
+     "warning": {
+      "code": "NO_RESULTS_ON_PAGE"
+     }
+    }
+   }
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/aggregated/addresses": {
+   "items": {
+    "regions/europe-west4": {
+     "addresses": [
+      {
+       "name": "worker-ip",
+       "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/regions/europe-west4/addresses/worker-ip",
+       "address": "34.90.10.9",
+       "addressType": "EXTERNAL",
+       "status": "IN_USE",
+       "users": [
+        "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/instances/worker"
+       ]
+      },
+      {
+       "name": "spare-ip",
+       "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/regions/europe-west4/addresses/spare-ip",
+       "address": "34.90.10.50",
+       "addressType": "EXTERNAL",
+       "status": "RESERVED"
+      }
+     ]
+    },
+    "zones/europe-west4-b": {
+     "warning": {
+      "code": "NO_RESULTS_ON_PAGE"
+     }
+    }
+   }
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/global/addresses": {
+   "items": [
+    {
+     "name": "web-ip",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/addresses/web-ip",
+     "address": "34.120.0.10",
+     "addressType": "EXTERNAL",
+     "users": [
+      "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/forwardingRules/web-https",
+      "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/forwardingRules/web-http"
+     ]
+    }
+   ]
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821": {
+   "name": "demo-shop-4821",
+   "commonInstanceMetadata": {
+    "items": [
+     {
+      "key": "enable-oslogin",
+      "value": "FALSE"
+     }
+    ]
+   }
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/machineTypes/e2-medium": {
+   "name": "e2-medium",
+   "guestCpus": 2,
+   "memoryMb": 4096,
+   "architecture": "X86_64"
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/machineTypes/n2-highmem-4": {
+   "name": "n2-highmem-4",
+   "guestCpus": 4,
+   "memoryMb": 32768,
+   "architecture": "X86_64"
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/aggregated/forwardingRules": {
+   "items": {
+    "global": {
+     "forwardingRules": [
+      {
+       "name": "web-https",
+       "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/forwardingRules/web-https",
+       "IPAddress": "34.120.0.10",
+       "IPProtocol": "TCP",
+       "portRange": "443-443",
+       "target": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/targetHttpsProxies/web-https-proxy",
+       "loadBalancingScheme": "EXTERNAL_MANAGED"
+      },
+      {
+       "name": "web-http",
+       "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/forwardingRules/web-http",
+       "IPAddress": "34.120.0.10",
+       "IPProtocol": "TCP",
+       "portRange": "80-80",
+       "target": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/targetHttpProxies/web-http-proxy",
+       "loadBalancingScheme": "EXTERNAL_MANAGED"
+      }
+     ]
+    }
+   }
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/global/forwardingRules": {
+   "items": []
+  },
+  "POST https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/instanceGroups/web-ig/listInstances": {
+   "items": [
+    {
+     "instance": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/instances/web-1"
+    },
+    {
+     "instance": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/instances/web-2"
+    }
+   ]
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/global/targetHttpsProxies/web-https-proxy": {
+   "name": "web-https-proxy",
+   "urlMap": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/urlMaps/web-map",
+   "sslCertificates": [
+    "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/sslCertificates/shop-cert"
+   ]
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/global/targetHttpProxies/web-http-proxy": {
+   "name": "web-http-proxy",
+   "urlMap": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/urlMaps/web-redirect"
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/global/urlMaps/web-map": {
+   "name": "web-map",
+   "defaultService": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/backendServices/web-backend"
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/global/urlMaps/web-redirect": {
+   "name": "web-redirect",
+   "defaultUrlRedirect": {
+    "httpsRedirect": true,
+    "redirectResponseCode": "MOVED_PERMANENTLY_DEFAULT"
+   }
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/global/backendServices/web-backend": {
+   "name": "web-backend",
+   "protocol": "HTTP",
+   "portName": "http",
+   "healthChecks": [
+    "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/healthChecks/web-hc"
+   ],
+   "backends": [
+    {
+     "group": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/instanceGroups/web-ig"
+    }
+   ]
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/global/healthChecks/web-hc": {
+   "name": "web-hc",
+   "type": "HTTP",
+   "httpHealthCheck": {
+    "port": 80,
+    "requestPath": "/healthz"
+   }
+  },
+  "https://compute.googleapis.com/compute/v1/projects/demo-shop-4821/zones/europe-west4-a/instanceGroups/web-ig": {
+   "name": "web-ig",
+   "namedPorts": [
+    {
+     "name": "http",
+     "port": 80
+    }
+   ]
+  },
+  "https://sqladmin.googleapis.com/v1/projects/demo-shop-4821/instances": {
+   "items": [
+    {
+     "name": "shop-db",
+     "databaseVersion": "POSTGRES_15",
+     "region": "europe-west4",
+     "instanceType": "CLOUD_SQL_INSTANCE",
+     "settings": {
+      "tier": "db-custom-2-7680",
+      "dataDiskSizeGb": "50",
+      "availabilityType": "ZONAL",
+      "edition": "ENTERPRISE",
+      "ipConfiguration": {
+       "ipv4Enabled": true,
+       "privateNetwork": "https://www.googleapis.com/compute/v1/projects/demo-shop-4821/global/networks/default",
+       "authorizedNetworks": [
+        {
+         "name": "anywhere",
+         "value": "0.0.0.0/0"
+        }
+       ]
+      },
+      "backupConfiguration": {
+       "enabled": false
+      },
+      "userLabels": {
+       "app": "shop"
+      }
+     },
+     "ipAddresses": [
+      {
+       "type": "PRIMARY",
+       "ipAddress": "35.204.1.1"
+      }
+     ]
+    }
+   ]
+  },
+  "https://storage.googleapis.com/storage/v1/b?project=demo-shop-4821": {
+   "items": [
+    {
+     "name": "shop-assets-4821",
+     "location": "EUROPE-WEST4",
+     "storageClass": "STANDARD",
+     "versioning": {
+      "enabled": false
+     },
+     "iamConfiguration": {
+      "uniformBucketLevelAccess": {
+       "enabled": true
+      },
+      "publicAccessPrevention": "inherited"
+     },
+     "labels": {
+      "app": "shop"
+     }
+    },
+    {
+     "name": "shop-backups-4821",
+     "location": "EU",
+     "storageClass": "NEARLINE",
+     "versioning": {
+      "enabled": true
+     },
+     "iamConfiguration": {
+      "uniformBucketLevelAccess": {
+       "enabled": true
+      },
+      "publicAccessPrevention": "enforced"
+     }
+    }
+   ]
+  },
+  "https://storage.googleapis.com/storage/v1/b/shop-assets-4821/iam": {
+   "bindings": [
+    {
+     "role": "roles/storage.objectViewer",
+     "members": [
+      "allUsers"
+     ]
+    }
+   ]
+  },
+  "https://storage.googleapis.com/storage/v1/b/shop-backups-4821/iam": {
+   "bindings": [
+    {
+     "role": "roles/storage.admin",
+     "members": [
+      "user:ops@example.test"
+     ]
+    }
+   ]
+  },
+  "https://dns.googleapis.com/dns/v1/projects/demo-shop-4821/managedZones": {
+   "managedZones": [
+    {
+     "name": "shop-zone",
+     "dnsName": "shop.example.test.",
+     "visibility": "public"
+    }
+   ]
+  },
+  "https://dns.googleapis.com/dns/v1/projects/demo-shop-4821/managedZones/shop-zone/rrsets": {
+   "rrsets": [
+    {
+     "name": "shop.example.test.",
+     "type": "NS",
+     "ttl": 21600,
+     "rrdatas": [
+      "ns-cloud-a1.googledomains.com."
+     ]
+    },
+    {
+     "name": "shop.example.test.",
+     "type": "A",
+     "ttl": 300,
+     "rrdatas": [
+      "34.120.0.10"
+     ]
+    },
+    {
+     "name": "worker.shop.example.test.",
+     "type": "A",
+     "ttl": 300,
+     "rrdatas": [
+      "34.90.10.9"
+     ]
+    },
+    {
+     "name": "shop.example.test.",
+     "type": "TXT",
+     "ttl": 300,
+     "rrdatas": [
+      "\"google-site-verification=secretish\""
+     ]
+    }
+   ],
+   "nextPageToken": "page2"
+  },
+  "https://dns.googleapis.com/dns/v1/projects/demo-shop-4821/managedZones/shop-zone/rrsets?pageToken=page2": {
+   "rrsets": [
+    {
+     "name": "www.shop.example.test.",
+     "type": "CNAME",
+     "ttl": 300,
+     "rrdatas": [
+      "shop.example.test."
+     ]
+    }
+   ]
+  },
+  "https://container.googleapis.com/v1/projects/demo-shop-4821/locations/-/clusters": {
+   "clusters": [
+    {
+     "name": "analytics",
+     "selfLink": "https://container.googleapis.com/v1/projects/demo-shop-4821/locations/europe-west4/clusters/analytics",
+     "currentNodeCount": 3,
+     "nodePools": [
+      {
+       "config": {
+        "machineType": "e2-standard-4"
+       }
+      }
+     ],
+     "resourceLabels": {
+      "team": "data"
+     }
+    }
+   ]
+  },
+  "https://run.googleapis.com/v2/projects/demo-shop-4821/locations/-/services": {
+   "services": [
+    {
+     "name": "projects/demo-shop-4821/locations/europe-west4/services/api",
+     "ingress": "INGRESS_TRAFFIC_ALL",
+     "template": {
+      "containers": [
+       {
+        "env": [
+         {
+          "name": "DB_PASSWORD",
+          "value": "do-not-store"
+         }
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  "https://pubsub.googleapis.com/v1/projects/demo-shop-4821/topics": {
+   "topics": [
+    {
+     "name": "projects/demo-shop-4821/topics/orders"
+    }
+   ]
+  },
+  "https://cloudfunctions.googleapis.com/v2/projects/demo-shop-4821/locations/-/functions": {
+   "__status": 403,
+   "error": {
+    "code": 403,
+    "status": "PERMISSION_DENIED",
+    "errors": [
+     {
+      "reason": "accessNotConfigured"
+     }
+    ]
+   }
+  },
+  "https://redis.googleapis.com/v1/projects/demo-shop-4821/locations/-/instances": {
+   "instances": []
+  }
+ }
+}

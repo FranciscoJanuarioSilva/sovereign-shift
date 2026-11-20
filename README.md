@@ -10,7 +10,7 @@ Infrastructure built by clicking in the AWS console is hard to move: nobody has 
 - a **data migration runbook** (pg_dump, rclone, rsync) personalised by AI, with commands that only come from vetted templates,
 - a **report** (Markdown + JSON) with the monthly cost on both sides, and what migrates automatically and what doesn't.
 
-AWS is the main source. Cloudflare Workers accounts are supported too.
+AWS is the main source. Cloudflare Workers accounts are supported too, and Google Cloud projects and Azure subscriptions map to the same pipeline (tested with mocked APIs only, see [docs/gcp.md](docs/gcp.md) and [docs/azure.md](docs/azure.md)).
 
 ## How it works
 

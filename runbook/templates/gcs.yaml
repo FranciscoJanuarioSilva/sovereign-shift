@@ -1,0 +1,13 @@
+resource_type: gcs_bucket
+engine: null
+steps:
+- id: gcs-bucket-copy
+  title: Copy objects to the configured Leaseweb remote
+  command: rclone copy "gcs:{bucket}" "leaseweb:{target_bucket}"
+  verify: rclone check --one-way "gcs:{bucket}" "leaseweb:{target_bucket}"
+  inputs:
+    bucket:
+      source: inventory
+      field: name
+    target_bucket:
+      source: customer

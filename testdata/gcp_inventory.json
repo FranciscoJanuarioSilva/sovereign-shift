@@ -1,0 +1,986 @@
+{
+  "source": "gcp",
+  "account_id": "demo-shop-4821",
+  "scanned_at": "2026-11-20T12:00:00Z",
+  "regions": [
+    "europe-west4"
+  ],
+  "denied": [
+    {
+      "service": "cloudfunctions",
+      "region": "global",
+      "operation": "locations/-/functions",
+      "error": "ServiceDisabled"
+    }
+  ],
+  "resources": [
+    {
+      "id": "gcp:storage/b/shop-backups-4821",
+      "type": "s3_bucket",
+      "region": "eu",
+      "name": "shop-backups-4821",
+      "properties": {
+        "policy_public": false,
+        "public_access_block": {
+          "BlockPublicAcls": true,
+          "IgnorePublicAcls": true,
+          "BlockPublicPolicy": true,
+          "RestrictPublicBuckets": true
+        },
+        "encryption": [
+          "google-managed"
+        ],
+        "versioning": "Enabled",
+        "storage_class": "NEARLINE",
+        "uniform_access": true,
+        "cloud_type": "storage.googleapis.com/Bucket"
+      },
+      "tags": {},
+      "relations": []
+    },
+    {
+      "id": "gcp:sql/instances/shop-db",
+      "type": "db_instance",
+      "region": "europe-west4",
+      "name": "shop-db",
+      "properties": {
+        "engine": "postgres",
+        "engine_version": "15",
+        "instance_class": "db-custom-2-7680",
+        "vcpu": 2,
+        "memory_gib": 7.5,
+        "storage_gib": 50,
+        "storage_encrypted": true,
+        "publicly_accessible": true,
+        "backup_retention_days": 0,
+        "multi_az": false,
+        "port": 5432,
+        "edition": "ENTERPRISE",
+        "replica": false,
+        "cloud_type": "sqladmin.googleapis.com/Instance"
+      },
+      "tags": {
+        "app": "shop"
+      },
+      "relations": [
+        {
+          "type": "in_vpc",
+          "target": "gcp:global/networks/default"
+        },
+        {
+          "type": "uses_security_group",
+          "target": "gcp:sql/instances/shop-db/access"
+        }
+      ]
+    },
+    {
+      "id": "gcp:zones/europe-west4-a/disks/old-backup",
+      "type": "ebs_volume",
+      "region": "europe-west4",
+      "name": "old-backup",
+      "properties": {
+        "size_gib": 50,
+        "volume_type": "pd-standard",
+        "encrypted": true,
+        "cmek": false,
+        "cloud_type": "compute.googleapis.com/Disk"
+      },
+      "tags": {},
+      "relations": []
+    },
+    {
+      "id": "gcp:zones/europe-west4-a/disks/web-1",
+      "type": "ebs_volume",
+      "region": "europe-west4",
+      "name": "web-1",
+      "properties": {
+        "size_gib": 20,
+        "volume_type": "pd-balanced",
+        "encrypted": true,
+        "cmek": false,
+        "cloud_type": "compute.googleapis.com/Disk"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "attached_to",
+          "target": "gcp:zones/europe-west4-a/instances/web-1"
+        }
+      ]
+    },
+    {
+      "id": "gcp:zones/europe-west4-a/disks/web-2",
+      "type": "ebs_volume",
+      "region": "europe-west4",
+      "name": "web-2",
+      "properties": {
+        "size_gib": 20,
+        "volume_type": "pd-balanced",
+        "encrypted": true,
+        "cmek": false,
+        "cloud_type": "compute.googleapis.com/Disk"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "attached_to",
+          "target": "gcp:zones/europe-west4-a/instances/web-2"
+        }
+      ]
+    },
+    {
+      "id": "gcp:zones/europe-west4-a/disks/worker",
+      "type": "ebs_volume",
+      "region": "europe-west4",
+      "name": "worker",
+      "properties": {
+        "size_gib": 20,
+        "volume_type": "pd-balanced",
+        "encrypted": true,
+        "cmek": false,
+        "cloud_type": "compute.googleapis.com/Disk"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "attached_to",
+          "target": "gcp:zones/europe-west4-a/instances/worker"
+        }
+      ]
+    },
+    {
+      "id": "gcp:zones/europe-west4-a/disks/worker-data",
+      "type": "ebs_volume",
+      "region": "europe-west4",
+      "name": "worker-data",
+      "properties": {
+        "size_gib": 100,
+        "volume_type": "pd-balanced",
+        "encrypted": true,
+        "cmek": false,
+        "cloud_type": "compute.googleapis.com/Disk"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "attached_to",
+          "target": "gcp:zones/europe-west4-a/instances/worker"
+        }
+      ]
+    },
+    {
+      "id": "gcp:zones/europe-west4-a/instances/web-1",
+      "type": "ec2_instance",
+      "region": "europe-west4",
+      "name": "web-1",
+      "properties": {
+        "instance_type": "e2-medium",
+        "vcpu": 2,
+        "memory_gib": 4.0,
+        "os": "ubuntu-2204-jammy-v20241115",
+        "state": "running",
+        "public_ip": true,
+        "public_ip_address": "34.90.10.1",
+        "private_ip": "10.164.0.2",
+        "volumes": [
+          {
+            "id": "gcp:zones/europe-west4-a/disks/web-1",
+            "device_name": "persistent-disk-0",
+            "root": true,
+            "size_gib": 20,
+            "volume_type": "pd-balanced",
+            "encrypted": true
+          }
+        ],
+        "key_name": null,
+        "network_tags": [
+          "http-server"
+        ],
+        "zone": "europe-west4-a",
+        "architecture": "x86_64",
+        "cloud_type": "compute.googleapis.com/Instance"
+      },
+      "tags": {
+        "app": "shop"
+      },
+      "relations": [
+        {
+          "type": "in_vpc",
+          "target": "gcp:global/networks/default"
+        },
+        {
+          "type": "in_subnet",
+          "target": "gcp:regions/europe-west4/subnetworks/default"
+        },
+        {
+          "type": "uses_security_group",
+          "target": "gcp:global/networks/default/firewall/all/all"
+        },
+        {
+          "type": "uses_security_group",
+          "target": "gcp:global/networks/default/firewall/tag/http-server"
+        },
+        {
+          "type": "uses_volume",
+          "target": "gcp:zones/europe-west4-a/disks/web-1"
+        }
+      ]
+    },
+    {
+      "id": "gcp:zones/europe-west4-a/instances/web-2",
+      "type": "ec2_instance",
+      "region": "europe-west4",
+      "name": "web-2",
+      "properties": {
+        "instance_type": "e2-medium",
+        "vcpu": 2,
+        "memory_gib": 4.0,
+        "os": "ubuntu-2204-jammy-v20241115",
+        "state": "running",
+        "public_ip": true,
+        "public_ip_address": "34.90.10.2",
+        "private_ip": "10.164.0.3",
+        "volumes": [
+          {
+            "id": "gcp:zones/europe-west4-a/disks/web-2",
+            "device_name": "persistent-disk-0",
+            "root": true,
+            "size_gib": 20,
+            "volume_type": "pd-balanced",
+            "encrypted": true
+          }
+        ],
+        "key_name": null,
+        "network_tags": [
+          "http-server"
+        ],
+        "zone": "europe-west4-a",
+        "architecture": "x86_64",
+        "cloud_type": "compute.googleapis.com/Instance"
+      },
+      "tags": {
+        "app": "shop"
+      },
+      "relations": [
+        {
+          "type": "in_vpc",
+          "target": "gcp:global/networks/default"
+        },
+        {
+          "type": "in_subnet",
+          "target": "gcp:regions/europe-west4/subnetworks/default"
+        },
+        {
+          "type": "uses_security_group",
+          "target": "gcp:global/networks/default/firewall/all/all"
+        },
+        {
+          "type": "uses_security_group",
+          "target": "gcp:global/networks/default/firewall/tag/http-server"
+        },
+        {
+          "type": "uses_volume",
+          "target": "gcp:zones/europe-west4-a/disks/web-2"
+        }
+      ]
+    },
+    {
+      "id": "gcp:zones/europe-west4-a/instances/worker",
+      "type": "ec2_instance",
+      "region": "europe-west4",
+      "name": "worker",
+      "properties": {
+        "instance_type": "n2-highmem-4",
+        "vcpu": 4,
+        "memory_gib": 32.0,
+        "os": "debian-12-bookworm-v20241112",
+        "state": "running",
+        "public_ip": true,
+        "public_ip_address": "34.90.10.9",
+        "private_ip": "10.164.0.4",
+        "volumes": [
+          {
+            "id": "gcp:zones/europe-west4-a/disks/worker",
+            "device_name": "persistent-disk-0",
+            "root": true,
+            "size_gib": 20,
+            "volume_type": "pd-balanced",
+            "encrypted": true
+          },
+          {
+            "id": "gcp:zones/europe-west4-a/disks/worker-data",
+            "device_name": "worker-data",
+            "root": false,
+            "size_gib": 100,
+            "volume_type": "pd-balanced",
+            "encrypted": true
+          }
+        ],
+        "key_name": "deploy",
+        "network_tags": [
+          "worker"
+        ],
+        "zone": "europe-west4-a",
+        "architecture": "x86_64",
+        "user_data_sha256": "fd256e7f099f7ede39166732fdcff6840cbb92930fd51b3f1b96009ea45abc57",
+        "user_data_length": 40,
+        "cloud_type": "compute.googleapis.com/Instance"
+      },
+      "tags": {
+        "app": "shop"
+      },
+      "relations": [
+        {
+          "type": "in_vpc",
+          "target": "gcp:global/networks/default"
+        },
+        {
+          "type": "in_subnet",
+          "target": "gcp:regions/europe-west4/subnetworks/default"
+        },
+        {
+          "type": "uses_security_group",
+          "target": "gcp:global/networks/default/firewall/all/all"
+        },
+        {
+          "type": "uses_security_group",
+          "target": "gcp:global/networks/default/firewall/tag/worker"
+        },
+        {
+          "type": "uses_volume",
+          "target": "gcp:zones/europe-west4-a/disks/worker"
+        },
+        {
+          "type": "uses_volume",
+          "target": "gcp:zones/europe-west4-a/disks/worker-data"
+        },
+        {
+          "type": "uses_key_pair",
+          "target": "gcp:europe-west4/sshKeys/deploy"
+        },
+        {
+          "type": "uses_elastic_ip",
+          "target": "gcp:regions/europe-west4/addresses/worker-ip"
+        }
+      ]
+    },
+    {
+      "id": "gcp:regions/europe-west4/addresses/spare-ip",
+      "type": "elastic_ip",
+      "region": "europe-west4",
+      "name": "spare-ip",
+      "properties": {
+        "public_ip": "34.90.10.50",
+        "status": "RESERVED",
+        "cloud_type": "compute.googleapis.com/Address"
+      },
+      "tags": {},
+      "relations": []
+    },
+    {
+      "id": "gcp:regions/europe-west4/addresses/worker-ip",
+      "type": "elastic_ip",
+      "region": "europe-west4",
+      "name": "worker-ip",
+      "properties": {
+        "public_ip": "34.90.10.9",
+        "status": "IN_USE",
+        "cloud_type": "compute.googleapis.com/Address"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "attached_to",
+          "target": "gcp:zones/europe-west4-a/instances/worker"
+        }
+      ]
+    },
+    {
+      "id": "gcp:europe-west4/sshKeys/deploy",
+      "type": "key_pair",
+      "region": "europe-west4",
+      "name": "deploy",
+      "properties": {
+        "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDemoKeyOnlyForTests deploy@laptop",
+        "fingerprint": "5d02150d8e4ebb4c",
+        "cloud_type": "compute.googleapis.com/Metadata/ssh-keys"
+      },
+      "tags": {},
+      "relations": []
+    },
+    {
+      "id": "gcp:global/loadBalancers/web-map",
+      "type": "lb",
+      "region": "europe-west4",
+      "name": "web-map",
+      "properties": {
+        "lb_type": "application",
+        "scheme": "internet-facing",
+        "ip_address": "34.120.0.10",
+        "load_balancing_scheme": "EXTERNAL_MANAGED",
+        "cloud_type": "compute.googleapis.com/ForwardingRule"
+      },
+      "tags": {},
+      "relations": []
+    },
+    {
+      "id": "gcp:global/forwardingRules/web-http",
+      "type": "lb_listener",
+      "region": "europe-west4",
+      "name": "web-http",
+      "properties": {
+        "protocol": "HTTP",
+        "port": 80,
+        "default_actions": [
+          "redirect"
+        ],
+        "redirects_to_https": true,
+        "rules": false,
+        "certificates": [],
+        "cloud_type": "compute.googleapis.com/ForwardingRule"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "listens_on",
+          "target": "gcp:global/loadBalancers/web-map"
+        }
+      ]
+    },
+    {
+      "id": "gcp:global/forwardingRules/web-https",
+      "type": "lb_listener",
+      "region": "europe-west4",
+      "name": "web-https",
+      "properties": {
+        "protocol": "HTTPS",
+        "port": 443,
+        "default_actions": [
+          "forward"
+        ],
+        "redirects_to_https": false,
+        "rules": false,
+        "certificates": [
+          "shop-cert"
+        ],
+        "cloud_type": "compute.googleapis.com/ForwardingRule"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "listens_on",
+          "target": "gcp:global/loadBalancers/web-map"
+        },
+        {
+          "type": "forwards_to",
+          "target": "gcp:global/backendServices/web-backend"
+        }
+      ]
+    },
+    {
+      "id": "gcp:container/locations/europe-west4/clusters/analytics",
+      "type": "other",
+      "region": "europe-west4",
+      "name": "analytics",
+      "properties": {
+        "node_count": 3,
+        "autopilot": false,
+        "machine_types": [
+          "e2-standard-4"
+        ],
+        "cloud_type": "container.googleapis.com/Cluster"
+      },
+      "tags": {
+        "team": "data"
+      },
+      "relations": []
+    },
+    {
+      "id": "gcp:run/locations/europe-west4/services/api",
+      "type": "other",
+      "region": "europe-west4",
+      "name": "api",
+      "properties": {
+        "ingress": "INGRESS_TRAFFIC_ALL",
+        "cloud_type": "run.googleapis.com/Service"
+      },
+      "tags": {},
+      "relations": []
+    },
+    {
+      "id": "gcp:storage/b/shop-assets-4821",
+      "type": "s3_bucket",
+      "region": "europe-west4",
+      "name": "shop-assets-4821",
+      "properties": {
+        "policy_public": true,
+        "public_access_block": {
+          "BlockPublicAcls": false,
+          "IgnorePublicAcls": false,
+          "BlockPublicPolicy": false,
+          "RestrictPublicBuckets": false
+        },
+        "encryption": [
+          "google-managed"
+        ],
+        "versioning": "Disabled",
+        "storage_class": "STANDARD",
+        "uniform_access": true,
+        "cloud_type": "storage.googleapis.com/Bucket"
+      },
+      "tags": {
+        "app": "shop"
+      },
+      "relations": []
+    },
+    {
+      "id": "gcp:sql/instances/shop-db/access",
+      "type": "security_group",
+      "region": "europe-west4",
+      "name": "shop-db-access",
+      "properties": {
+        "ingress": [
+          {
+            "protocol": "tcp",
+            "from_port": 5432,
+            "to_port": 5432,
+            "cidrs": [
+              "0.0.0.0/0"
+            ],
+            "source_groups": [],
+            "source_instances": [
+              "gcp:zones/europe-west4-a/instances/web-1",
+              "gcp:zones/europe-west4-a/instances/web-2",
+              "gcp:zones/europe-west4-a/instances/worker"
+            ]
+          }
+        ],
+        "egress": [],
+        "cloud_type": "sqladmin.googleapis.com/Instance/ipConfiguration"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "in_vpc",
+          "target": "gcp:global/networks/default"
+        }
+      ]
+    },
+    {
+      "id": "gcp:regions/europe-west4/subnetworks/default",
+      "type": "subnet",
+      "region": "europe-west4",
+      "name": "default",
+      "properties": {
+        "cidr": "10.164.0.0/20",
+        "private_google_access": false,
+        "cloud_type": "compute.googleapis.com/Subnetwork"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "in_vpc",
+          "target": "gcp:global/networks/default"
+        }
+      ]
+    },
+    {
+      "id": "gcp:global/backendServices/web-backend",
+      "type": "target_group",
+      "region": "europe-west4",
+      "name": "web-backend",
+      "properties": {
+        "protocol": "HTTP",
+        "port": 80,
+        "target_type": "instance",
+        "health_check_protocol": "HTTP",
+        "health_check_path": "/healthz",
+        "health_check_port": 80,
+        "targets": [
+          {
+            "id": "gcp:zones/europe-west4-a/instances/web-1"
+          },
+          {
+            "id": "gcp:zones/europe-west4-a/instances/web-2"
+          }
+        ],
+        "cloud_type": "compute.googleapis.com/BackendService"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "associated_with",
+          "target": "gcp:global/loadBalancers/web-map"
+        },
+        {
+          "type": "targets",
+          "target": "gcp:zones/europe-west4-a/instances/web-1"
+        },
+        {
+          "type": "targets",
+          "target": "gcp:zones/europe-west4-a/instances/web-2"
+        }
+      ]
+    },
+    {
+      "id": "gcp:pubsub/topics/orders",
+      "type": "other",
+      "region": "global",
+      "name": "orders",
+      "properties": {
+        "cloud_type": "pubsub.googleapis.com/Topic"
+      },
+      "tags": {},
+      "relations": []
+    },
+    {
+      "id": "gcp:dns/managedZones/shop-zone/rrsets/shop.example.test./A",
+      "type": "route53_record",
+      "region": "global",
+      "name": "shop.example.test.",
+      "properties": {
+        "record_type": "A",
+        "ttl": 300,
+        "zone_name": "shop.example.test.",
+        "values": [
+          "34.120.0.10"
+        ],
+        "cloud_type": "dns.googleapis.com/ResourceRecordSet"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "in_zone",
+          "target": "gcp:dns/managedZones/shop-zone"
+        },
+        {
+          "type": "points_to",
+          "target": "gcp:global/loadBalancers/web-map"
+        }
+      ]
+    },
+    {
+      "id": "gcp:dns/managedZones/shop-zone/rrsets/shop.example.test./NS",
+      "type": "route53_record",
+      "region": "global",
+      "name": "shop.example.test.",
+      "properties": {
+        "record_type": "NS",
+        "ttl": 21600,
+        "zone_name": "shop.example.test.",
+        "values": [
+          "ns-cloud-a1.googledomains.com."
+        ],
+        "cloud_type": "dns.googleapis.com/ResourceRecordSet"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "in_zone",
+          "target": "gcp:dns/managedZones/shop-zone"
+        }
+      ]
+    },
+    {
+      "id": "gcp:dns/managedZones/shop-zone/rrsets/shop.example.test./TXT",
+      "type": "route53_record",
+      "region": "global",
+      "name": "shop.example.test.",
+      "properties": {
+        "record_type": "TXT",
+        "ttl": 300,
+        "zone_name": "shop.example.test.",
+        "values_omitted": true,
+        "cloud_type": "dns.googleapis.com/ResourceRecordSet"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "in_zone",
+          "target": "gcp:dns/managedZones/shop-zone"
+        }
+      ]
+    },
+    {
+      "id": "gcp:dns/managedZones/shop-zone/rrsets/worker.shop.example.test./A",
+      "type": "route53_record",
+      "region": "global",
+      "name": "worker.shop.example.test.",
+      "properties": {
+        "record_type": "A",
+        "ttl": 300,
+        "zone_name": "shop.example.test.",
+        "values": [
+          "34.90.10.9"
+        ],
+        "cloud_type": "dns.googleapis.com/ResourceRecordSet"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "in_zone",
+          "target": "gcp:dns/managedZones/shop-zone"
+        },
+        {
+          "type": "points_to",
+          "target": "gcp:regions/europe-west4/addresses/worker-ip"
+        },
+        {
+          "type": "points_to",
+          "target": "gcp:zones/europe-west4-a/instances/worker"
+        }
+      ]
+    },
+    {
+      "id": "gcp:dns/managedZones/shop-zone/rrsets/www.shop.example.test./CNAME",
+      "type": "route53_record",
+      "region": "global",
+      "name": "www.shop.example.test.",
+      "properties": {
+        "record_type": "CNAME",
+        "ttl": 300,
+        "zone_name": "shop.example.test.",
+        "values": [
+          "shop.example.test."
+        ],
+        "cloud_type": "dns.googleapis.com/ResourceRecordSet"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "in_zone",
+          "target": "gcp:dns/managedZones/shop-zone"
+        }
+      ]
+    },
+    {
+      "id": "gcp:dns/managedZones/shop-zone",
+      "type": "route53_zone",
+      "region": "global",
+      "name": "shop.example.test.",
+      "properties": {
+        "private": false,
+        "dnssec": false,
+        "cloud_type": "dns.googleapis.com/ManagedZone"
+      },
+      "tags": {},
+      "relations": []
+    },
+    {
+      "id": "gcp:global/networks/default/firewall/all/all",
+      "type": "security_group",
+      "region": "global",
+      "name": "default-all",
+      "properties": {
+        "ingress": [
+          {
+            "protocol": "icmp",
+            "from_port": null,
+            "to_port": null,
+            "cidrs": [
+              "0.0.0.0/0"
+            ],
+            "source_groups": [],
+            "source_instances": [],
+            "gcp_rule": "default-allow-icmp",
+            "priority": 65534
+          },
+          {
+            "protocol": "tcp",
+            "from_port": 1,
+            "to_port": 65535,
+            "cidrs": [
+              "10.128.0.0/9"
+            ],
+            "source_groups": [],
+            "source_instances": [],
+            "gcp_rule": "default-allow-internal",
+            "priority": 65534
+          },
+          {
+            "protocol": "udp",
+            "from_port": 1,
+            "to_port": 65535,
+            "cidrs": [
+              "10.128.0.0/9"
+            ],
+            "source_groups": [],
+            "source_instances": [],
+            "gcp_rule": "default-allow-internal",
+            "priority": 65534
+          },
+          {
+            "protocol": "icmp",
+            "from_port": null,
+            "to_port": null,
+            "cidrs": [
+              "10.128.0.0/9"
+            ],
+            "source_groups": [],
+            "source_instances": [],
+            "gcp_rule": "default-allow-internal",
+            "priority": 65534
+          },
+          {
+            "protocol": "tcp",
+            "from_port": 22,
+            "to_port": 22,
+            "cidrs": [
+              "0.0.0.0/0"
+            ],
+            "source_groups": [],
+            "source_instances": [],
+            "gcp_rule": "default-allow-ssh",
+            "priority": 65534
+          }
+        ],
+        "egress": [
+          {
+            "gcp_rule": "allow-egress-https",
+            "destinations": [
+              "0.0.0.0/0"
+            ]
+          }
+        ],
+        "gcp_rules": [
+          "deny-telnet",
+          "allow-egress-https",
+          "default-allow-icmp",
+          "default-allow-internal",
+          "default-allow-ssh"
+        ],
+        "deny_rules": [
+          "deny-telnet"
+        ],
+        "cloud_type": "compute.googleapis.com/Firewall"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "in_vpc",
+          "target": "gcp:global/networks/default"
+        }
+      ]
+    },
+    {
+      "id": "gcp:global/networks/default/firewall/tag/http-server",
+      "type": "security_group",
+      "region": "global",
+      "name": "default-http-server",
+      "properties": {
+        "ingress": [
+          {
+            "protocol": "tcp",
+            "from_port": 80,
+            "to_port": 80,
+            "cidrs": [
+              "130.211.0.0/22",
+              "35.191.0.0/16"
+            ],
+            "source_groups": [],
+            "source_instances": [],
+            "gcp_rule": "allow-health-checks",
+            "priority": 1000
+          },
+          {
+            "protocol": "tcp",
+            "from_port": 80,
+            "to_port": 80,
+            "cidrs": [
+              "0.0.0.0/0"
+            ],
+            "source_groups": [],
+            "source_instances": [],
+            "gcp_rule": "allow-http",
+            "priority": 1000
+          },
+          {
+            "protocol": "tcp",
+            "from_port": 443,
+            "to_port": 443,
+            "cidrs": [
+              "0.0.0.0/0"
+            ],
+            "source_groups": [],
+            "source_instances": [],
+            "gcp_rule": "allow-http",
+            "priority": 1000
+          }
+        ],
+        "egress": [],
+        "gcp_rules": [
+          "allow-health-checks",
+          "allow-http"
+        ],
+        "cloud_type": "compute.googleapis.com/Firewall"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "in_vpc",
+          "target": "gcp:global/networks/default"
+        }
+      ]
+    },
+    {
+      "id": "gcp:global/networks/default/firewall/tag/worker",
+      "type": "security_group",
+      "region": "global",
+      "name": "default-worker",
+      "properties": {
+        "ingress": [
+          {
+            "protocol": "tcp",
+            "from_port": 8080,
+            "to_port": 8080,
+            "cidrs": [],
+            "source_groups": [],
+            "source_instances": [
+              "gcp:zones/europe-west4-a/instances/web-1",
+              "gcp:zones/europe-west4-a/instances/web-2"
+            ],
+            "gcp_rule": "allow-web-to-worker",
+            "priority": 1000
+          }
+        ],
+        "egress": [],
+        "gcp_rules": [
+          "allow-web-to-worker"
+        ],
+        "skipped_protocols": [
+          "esp"
+        ],
+        "cloud_type": "compute.googleapis.com/Firewall"
+      },
+      "tags": {},
+      "relations": [
+        {
+          "type": "in_vpc",
+          "target": "gcp:global/networks/default"
+        },
+        {
+          "type": "ingress_from_instance",
+          "target": "gcp:zones/europe-west4-a/instances/web-1"
+        },
+        {
+          "type": "ingress_from_instance",
+          "target": "gcp:zones/europe-west4-a/instances/web-2"
+        }
+      ]
+    },
+    {
+      "id": "gcp:global/networks/default",
+      "type": "vpc",
+      "region": "global",
+      "name": "default",
+      "properties": {
+        "auto_subnets": true,
+        "default": true,
+        "mtu": 1460,
+        "cloud_type": "compute.googleapis.com/Network"
+      },
+      "tags": {},
+      "relations": []
+    }
+  ]
+}

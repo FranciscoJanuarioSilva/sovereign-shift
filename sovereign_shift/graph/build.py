@@ -97,6 +97,13 @@ def build_graph(inventory: dict[str, Any]) -> dict[str, Any]:
                 if _allows_port(rule, port):
                     for source in _source_groups(rule):
                         allowed[source] = f"{group_id} allows {source} on TCP/{port}"
+                    # gcp firewall tags and cloud sql private access name the instances directly
+                    for instance_id in rule.get("source_instances", []):
+                        if instance_id in by_id and not graph.has_edge(instance_id, database_id, "talks_to"):
+                            graph.add_edge(
+                                instance_id, database_id, key="talks_to", type="talks_to", inferred=True,
+                                evidence=f"{group_id} allows {instance_id} on TCP/{port}",
+                            )
         for instance_id in instances:
             matches = sorted(security_groups[instance_id].intersection(allowed))
             # an explicit relationship takes precedence over an inference

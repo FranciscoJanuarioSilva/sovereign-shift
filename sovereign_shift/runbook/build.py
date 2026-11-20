@@ -83,6 +83,9 @@ def runbook(out: Path, inventory: dict, mapping: dict, no_ai: bool) -> dict:
         template_kind = kind
         if kind == "cloudflare_dns_record" and entries[identifier]["via"] == "terraform":
             template_kind = "route53_record"
+        if kind == "s3_bucket" and inventory.get("source") == "gcp":
+            # same bucket copy, but from a gcs remote
+            template_kind = "gcs_bucket"
         steps = library.get((template_kind, engine), [])
         entry = dict(
             source_id=identifier,

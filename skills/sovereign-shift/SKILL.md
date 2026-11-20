@@ -1,11 +1,11 @@
 ---
 name: sovereign-shift
-description: Root skill for the sovereign-shift repo, which scans a ClickOps AWS (or Azure/Cloudflare) account read-only and produces Leaseweb Terraform, a migration runbook and a scored report. Use it before any other skill here.
+description: Root skill for the sovereign-shift repo, which scans a ClickOps AWS (or Azure/Google Cloud/Cloudflare) account read-only and produces Leaseweb Terraform, a migration runbook and a scored report. Use it before any other skill here.
 ---
 
 # sovereign-shift
 
-Children: scan-aws, scan-azure, translate-leaseweb, assess-security-posture, assess-risk, assess-performance, assess-scaling, assess-cost, generate-terraform, finalize-leaseweb, runbook, report.
+Children: scan-aws, scan-azure, scan-gcp, translate-leaseweb, assess-security-posture, assess-risk, assess-performance, assess-scaling, assess-cost, generate-terraform, finalize-leaseweb, runbook, report.
 
 ## Pipeline
 `scan -> graph (+ findings) -> translate -> generate -> assess -> runbook -> report -> publish`, each step reads the previous step's JSON in the output folder. `sovereign-shift all` runs them in order. Contracts: `docs/contracts.md`.

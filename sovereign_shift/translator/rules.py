@@ -1,5 +1,6 @@
 """Deterministic aws -> leaseweb rules, one function per resource type."""
 
+import ipaddress
 import math
 import re
 from dataclasses import dataclass, field
@@ -153,6 +154,37 @@ def storage_for(lsw: catalog.LswType | None, region: str) -> tuple[str, list[str
     ]
 
 
+# google cloud series that run on arm or carry accelerators
+GCP_ARM = {"t2a", "c4a", "n4a"}
+GCP_ACCELERATOR = {"a2", "a3", "a4", "g2", "g4"}
+
+
+def gcp_family(instance_type: str, vcpu: float, memory: float) -> tuple[str, list[str], bool] | None:
+    """Leaseweb family, notes and partial flag for a google machine type or cloud sql tier, None if it isn't one."""
+    name = instance_type.lower().removeprefix("db-")
+    parts = name.split("-")
+    if "." in name or len(parts) < 2 or not re.fullmatch(r"[a-z]+\d*[a-z]?", parts[0]):
+        return None
+    series, shape = parts[0], parts[1]
+    notes: list[str] = []
+    partial = False
+    if series in GCP_ARM:
+        notes.append(f"{series} is arm on google cloud -> x86, rebuild images and binaries")
+        partial = True
+    if series in GCP_ACCELERATOR:
+        notes.append("gpu/accelerator machine type, mapped to a cpu type, review by hand")
+        partial = True
+    if shape in ("micro", "small", "medium") and series in ("e2", "f1", "g1"):
+        notes.append("shared-core machine on google cloud, leaseweb vcpus are dedicated")
+    if shape in ("highmem", "megamem", "ultramem", "hypermem") or series[0] in "mx":
+        return "r", notes, partial
+    if shape == "highcpu" or series[0] in "ch":
+        return "c", notes, partial
+    if shape == "standard":
+        return "m", notes, partial
+    return leaseweb_family("t", vcpu, memory), notes, partial
+
+
 def size_instance(
     instance_type: str, vcpu: float | None, memory: float | None, region: str,
     prefer_central: bool = False, aws_region: str | None = None,
@@ -174,20 +206,26 @@ def size_instance(
         notes.append(f"vcpu/ram of {instance_type} unknown, assumed 2 vcpu / 4 GiB")
         vcpu, memory = vcpu or 2, memory or 4
         partial = True
-    if "g" in suffix:
-        notes.append("aws graviton (arm) -> x86, rebuild images and binaries")
-        partial = True
-    if aws_family[0] in "gpf" or aws_family in {"inf", "trn", "dl"}:
-        notes.append("gpu/accelerator instance, mapped to a cpu type, review by hand")
-        partial = True
-    family = leaseweb_family(aws_family, vcpu, memory)
+    gcp = None if match else gcp_family(instance_type, vcpu, memory)
+    if gcp:
+        family, gcp_notes, gcp_partial = gcp
+        notes += gcp_notes
+        partial = partial or gcp_partial
+    else:
+        if "g" in suffix:
+            notes.append("aws graviton (arm) -> x86, rebuild images and binaries")
+            partial = True
+        if aws_family[0] in "gpf" or aws_family in {"inf", "trn", "dl"}:
+            notes.append("gpu/accelerator instance, mapped to a cpu type, review by hand")
+            partial = True
+        family = leaseweb_family(aws_family, vcpu, memory)
     chosen, pick_notes = pick_type(vcpu, memory, region, family, prefer_central)
     notes += pick_notes
     # compare real capacity, not the size name: t3.medium has 2 vcpu / 4 GiB and fits a leaseweb large exactly
     if chosen and (chosen.vcpu > vcpu or chosen.memory_gib >= 2 * memory):
         notes.append(
             f"smallest leaseweb fit is {chosen.vcpu} vcpu / {chosen.memory_gib:g} GiB, "
-            f"more than the {vcpu:g} vcpu / {memory:g} GiB used on aws, so this is over-provisioned"
+            f"more than the {vcpu:g} vcpu / {memory:g} GiB used today, so this is over-provisioned"
         )
     return {
         "type": chosen, "notes": notes, "partial": partial or chosen is None,
@@ -243,7 +281,7 @@ def ec2_instance(r: dict[str, Any], ctx: Context) -> MappingEntry:
         # imdsv1 matters because it hands out aws iam role credentials, leaseweb instances have none to steal
         notes.append("IMDSv1 credential theft ends with the move: no AWS IAM role credentials on Leaseweb (fixes EC2-001)")
     if p.get("user_data_sha256") or p.get("user_data_length"):
-        notes.append("instance had user_data on aws, review it and merge it into the cloud-init by hand")
+        notes.append("instance had user_data (or a startup script), review it and merge it into the cloud-init by hand")
     lsw = sized["type"]
     storage, storage_notes = storage_for(lsw, region)
     notes += storage_notes
@@ -295,6 +333,20 @@ def _covers(start: int | None, end: int | None, ports: set[int]) -> set[int]:
     return {port for port in ports if start <= port <= end}
 
 
+# google front ends and health checkers reach backends from these, on leaseweb that's the lb on the private network
+GOOGLE_LB_RANGES = {"130.211.0.0/22", "35.191.0.0/16"}
+# identity-aware proxy tcp forwarding (ssh through iap)
+GOOGLE_IAP_RANGE = "35.235.240.0/20"
+
+
+def _inside(cidr: str, ranges: list[str]) -> bool:
+    try:
+        network = ipaddress.ip_network(cidr, strict=False)
+        return network.is_private and any(network.overlaps(ipaddress.ip_network(r, strict=False)) for r in ranges)
+    except ValueError:
+        return False
+
+
 def security_group(r: dict[str, Any], ctx: Context) -> MappingEntry:
     p = props(r)
     users = ctx.referrers(r["id"], rel="uses_security_group")
@@ -305,7 +357,7 @@ def security_group(r: dict[str, Any], ctx: Context) -> MappingEntry:
         reason = "only used by a load balancer, leaseweb lbs have no security group" if lb_users else "not attached to anything"
         return entry(
             r, ctx, status="auto", via="report", target=None,
-            justification=f"Not recreated: {reason}.", notes=[f"{reason} on aws"],
+            justification=f"Not recreated: {reason}.", notes=[f"{reason} on the source cloud"],
         )
 
     # instances that, per the graph, connect to a db using this group
@@ -313,6 +365,12 @@ def security_group(r: dict[str, Any], ctx: Context) -> MappingEntry:
         ctx.tf_names[i] for u in users if u["type"] == "db_instance"
         for i in ctx.db_clients.get(u["id"], set()) if i in ctx.tf_names
     })
+    # gcp's default-allow-internal opens the whole vpc range, which means nothing on leaseweb
+    internal = [props(s).get("cidr") for s in ctx.by_id.values() if s["type"] == "subnet" and props(s).get("cidr")]
+    if str(p.get("cloud_type", "")).startswith("compute.googleapis.com"):
+        internal.append("10.128.0.0/9")
+    else:
+        internal = []
     rules: list[dict[str, Any]] = []
     for rule in p.get("ingress") or []:
         protocol, start, end = _ports(rule)
@@ -334,8 +392,22 @@ def security_group(r: dict[str, Any], ctx: Context) -> MappingEntry:
                 else:
                     sources.append({"cidr": "var:admin_cidr"})
                     notes.append(f"db port {start}-{end} from {cidr} had no known clients, restricted to var.admin_cidr (fixes SG-002)")
+            elif internal and _inside(cidr, internal):
+                sources.append({"cidr": "var:private_network_cidr"})
+                notes.append(f"vpc range {cidr} became the leaseweb private network range")
+            elif cidr in GOOGLE_LB_RANGES:
+                sources.append({"cidr": "var:private_network_cidr"})
+                notes.append(f"google load balancer range {cidr} became the private network range")
+            elif cidr == GOOGLE_IAP_RANGE:
+                sources.append({"cidr": "var:admin_cidr"})
+                notes.append("google iap tunnel range became var.admin_cidr, ssh no longer goes through iap")
             else:
                 sources.append({"cidr": cidr})
+        # gcp source tags / service accounts and cloud sql private access, already resolved to instances
+        peers = [i for i in rule.get("source_instances") or [] if i in ctx.tf_names and ctx.by_id.get(i, {}).get("type") in ("ec2_instance", "db_instance")]
+        if peers:
+            sources += [{"private_ip_of": ctx.tf_names[i]} for i in peers]
+            notes.append(f"rule from named instances (gcp tags, service accounts or private access) became /32 rules on {len(peers)} private ip(s), resolved after apply")
         for group_id in groups:
             members = [u for u in ctx.referrers(group_id, rel="uses_security_group") if u["type"] in ("ec2_instance", "db_instance")]
             if members:
@@ -354,6 +426,10 @@ def security_group(r: dict[str, Any], ctx: Context) -> MappingEntry:
                 rules.append(rule_out)
     if p.get("egress"):
         notes.append("egress rules not translated, leaseweb firewall rules are inbound only (verify)")
+    if p.get("deny_rules"):
+        notes.append(f"deny rules {', '.join(p['deny_rules'])} dropped, leaseweb groups only allow, check nothing they blocked is now open")
+    if p.get("skipped_protocols"):
+        notes.append(f"protocols {', '.join(p['skipped_protocols'])} dropped, leaseweb filters tcp, udp and icmp only")
     notes.append("the default leaseweb group allows everything, finalize attaches this one instead")
     return entry(
         r, ctx, status="auto", via="finalize",
@@ -400,7 +476,7 @@ def db_instance(r: dict[str, Any], ctx: Context) -> MappingEntry:
         "backups, patching and failover become your job (or use an operator on leaseweb managed kubernetes)",
     ]
     if multi_az:
-        notes.append("multi-az on aws, a single instance on leaseweb, add a replica by hand if needed")
+        notes.append("multi-az (or regional ha) at the source, a single instance on leaseweb, add a replica by hand if needed")
     if first(p, "publicly_accessible", default=False):
         notes.append("was publicly accessible, on leaseweb only the app instances may reach it (fixes RDS-001)")
     return entry(
@@ -430,7 +506,7 @@ def lb(r: dict[str, Any], ctx: Context) -> MappingEntry:
     kind = str(first(p, "lb_type", "type", "load_balancer_type", default="application")).lower()
     notes = []
     if str(first(p, "scheme", default="internet-facing")).lower() == "internal":
-        notes.append("internal lb on aws, leaseweb lbs are public, restrict it with the backend security groups")
+        notes.append("internal lb at the source, leaseweb lbs are public, restrict it with the backend security groups")
     if kind == "network":
         notes.append("network lb, mapped to tcp listeners")
     if kind not in ("application", "network"):
@@ -456,6 +532,10 @@ def lb_listener(r: dict[str, Any], ctx: Context) -> MappingEntry:
     if not groups and first(p, "default_target_group"):
         tg = ctx.by_id.get(first(p, "default_target_group"))
         groups = [tg] if tg else []
+    if not groups and (p.get("redirects_to_https") or "redirect" in (p.get("default_actions") or [])):
+        # nothing to forward to, and leaseweb listeners can't redirect
+        return entry(r, ctx, status="manual", via="report", target=None,
+                     justification=f"{protocol}:{port} only redirects to https, leaseweb listeners can only forward: redirect in the backend web server (e.g. nginx return 301).")
     notes = []
     mapped = {"HTTP": "HTTP", "HTTPS": "HTTPS", "TCP": "TCP", "TLS": "TCP"}.get(protocol)
     if mapped is None:
@@ -463,7 +543,7 @@ def lb_listener(r: dict[str, Any], ctx: Context) -> MappingEntry:
                      justification=f"{protocol} listeners aren't supported by leaseweb load balancers.")
     status = "auto"
     if protocol == "HTTPS":
-        notes.append("acm certificates can't be exported, issue a new one (e.g. let's encrypt) and set it as var")
+        notes.append("managed certificates (acm, google-managed) can't be exported, issue a new one (e.g. let's encrypt) and set it as var")
         status = "partial"
     if protocol == "TLS":
         notes.append("tls listener became plain tcp, terminate tls on the backends")
@@ -499,7 +579,7 @@ def target_group(r: dict[str, Any], ctx: Context) -> MappingEntry:
     hc_port = hc.get("port", port)
     notes = ["members are registered by finalize after apply, the provider can't do it"]
     if str(first(p, "target_type", default="instance")) != "instance":
-        notes.append(f"target type {p['target_type']} on aws, only instances can be leaseweb targets")
+        notes.append(f"target type {p['target_type']} at the source, only instances can be leaseweb targets")
     if protocol not in ("HTTP", "HTTPS", "TCP"):
         notes.append(f"{protocol} not supported, used TCP")
         protocol = "TCP"
@@ -530,7 +610,7 @@ def s3_bucket(r: dict[str, Any], ctx: Context) -> MappingEntry:
         notes.append(f"no object storage in {country}, used the nl endpoint")
     p = props(r)
     if p.get("versioning") in (True, "Enabled"):
-        notes.append("versioning on aws, check support on leaseweb object storage (not documented)")
+        notes.append("versioning is on at the source, check support on leaseweb object storage (not documented)")
     return entry(
         r, ctx, status="partial", via="runbook",
         target={"kind": "object_storage_bucket", "bucket": r.get("name") or r["id"], "endpoint": endpoint},
@@ -559,7 +639,7 @@ def route53_record(r: dict[str, Any], ctx: Context) -> MappingEntry:
     content = list(p.get("values") or p.get("records") or [])
     if p.get("values_omitted"):
         notes.append(f"{rtype} values weren't scanned (they can hold tokens), copy them by hand")
-    if p.get("set_identifier") or p.get("weight") is not None or p.get("failover"):
+    if p.get("set_identifier") or p.get("weight") is not None or p.get("failover") or p.get("routing_policy"):
         notes.append("weighted/failover routing isn't supported, kept as a plain record")
     alias_of = None
     if alias:
@@ -638,7 +718,7 @@ def elastic_ip(r: dict[str, Any], ctx: Context) -> MappingEntry:
     owner = (ctx.related(r, "ec2_instance") or [None])[0]
     if owner is None:
         return entry(r, ctx, status="auto", via="report", target=None,
-                     justification="Not attached to anything on aws, nothing to migrate (release it to stop paying for it).")
+                     justification="Not attached to anything at the source, nothing to migrate (release it to stop paying for it).")
     return entry(
         r, ctx, status="manual", via="report", target=None,
         justification="Leaseweb can't reserve or move ips, every instance gets its own public ipv4.",
@@ -654,7 +734,23 @@ def cloudflare_dns_record(r: dict[str, Any], ctx: Context) -> MappingEntry:
     return route53_record(r, ctx)
 
 
+def other(r: dict[str, Any], ctx: Context) -> MappingEntry:
+    """Services outside the neutral types, by cloud_type. Only the ones with a real leaseweb equivalent get a rule."""
+    if props(r).get("cloud_type") == "container.googleapis.com/Cluster":
+        p = props(r)
+        notes = ["recreate the cluster, re-apply manifests and helm charts, move persistent volumes with velero or a dump"]
+        if p.get("autopilot"):
+            notes.append("autopilot cluster on gke, leaseweb nodes are sized and paid for by you")
+        return entry(
+            r, ctx, status="manual", via="report", target={"kind": "managed_kubernetes", "region": ctx.region_for(r.get("region"))},
+            justification=f"Leaseweb Managed Kubernetes, nodes sized like {', '.join(p.get('machine_types') or ['the gke pools'])}.",
+            notes=notes,
+        )
+    return unsupported(r, ctx)
+
+
 RULES: dict[str, Callable[[dict[str, Any], Context], MappingEntry]] = {
+    "other": other,
     "ec2_instance": ec2_instance,
     "security_group": security_group,
     "db_instance": db_instance,
@@ -676,7 +772,7 @@ RULES: dict[str, Callable[[dict[str, Any], Context], MappingEntry]] = {
 
 
 def unsupported(r: dict[str, Any], ctx: Context) -> MappingEntry:
-    aws_type = props(r).get("aws_type") or r["type"]
+    aws_type = props(r).get("aws_type") or props(r).get("cloud_type") or r["type"]
     return entry(r, ctx, status="unsupported", via="report", target=None,
                  justification=f"No leaseweb equivalent for {aws_type}.")
 

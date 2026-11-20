@@ -137,18 +137,26 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
         ],
     }
     source_cloud = inventory.get("source", "aws")
-    source_label = {"cloudflare": "Cloudflare", "azure": "Azure"}.get(source_cloud, "AWS")
+    source_label = {"cloudflare": "Cloudflare", "azure": "Azure", "gcp": "Google Cloud"}.get(source_cloud, "AWS")
     if source_cloud == "azure":
         # the price notes are written for aws, name the right cloud and price api
         cost["assumptions"] = [a.replace("AWS Pricing API", "Azure Retail Prices API").replace("AWS:", "Azure:").replace("tiny AWS", "tiny Azure")
                                for a in cost["assumptions"]]
+    if source_cloud == "gcp":
+        # no google price list is fetched, so only the leaseweb side has numbers
+        cost["assumptions"] = [
+            "Google Cloud: list prices weren't fetched, the source side is unpriced. Compare the Leaseweb column with your billing export."
+            if a == aws_price_note(costs) else a.replace("tiny AWS", "tiny Google Cloud").replace(
+                "Rows with a price on only one side are left out of both totals.", "The Leaseweb total sums every priced Leaseweb row.")
+            for a in cost["assumptions"]
+        ]
     if source_cloud == "cloudflare":
         cost["assumptions"] = ["Cloudflare usage and billing were not scanned. Migration costs are unpriced."]
     for provider in (source_cloud, "leaseweb"):
+        # the translator stores any source cloud's price in the "aws" field
         # totals only count rows priced on both sides, or the comparison isn't like for like
         both = [c for c in costs if c.get("aws") is not None and c.get("leaseweb") is not None]
-        # the translator stores any source cloud's price in the "aws" field
-        values = [c.get("aws" if provider == source_cloud else provider) for c in (both if source_cloud != "cloudflare" else costs)]
+        values = [c.get("aws" if provider == source_cloud else provider) for c in (costs if source_cloud in ("cloudflare", "gcp") else both)]
         cost[provider + "_priced_subtotal_eur"] = round(sum(v for v in values if v is not None), 2)
         cost[provider + "_monthly_eur"] = (
             round(sum(values), 2) if None not in values and (values or source_cloud in ("aws", "azure")) else None
@@ -213,6 +221,7 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
             f"{cell(c.get('leaseweb_type') or '')}{flag} | {eur(c.get('leaseweb'), c.get('leaseweb_estimated', False))} |"
         )
     lines += [
+        f"| **Total** | | unknown | | {cost['leaseweb_priced_subtotal_eur']:.2f} |" if source_cloud == "gcp" and costs else
         f"| **Total** | | {cost[source_cloud + '_priced_subtotal_eur']:.2f} | | {cost['leaseweb_priced_subtotal_eur']:.2f} |"
         if costs or source_cloud == "aws" else "| **Total** | | unknown | | unknown |",
         "\n".join(f"- {a}" for a in cost["assumptions"]),

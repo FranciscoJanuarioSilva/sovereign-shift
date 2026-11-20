@@ -16,7 +16,7 @@ from sovereign_shift.artifacts import read, save
 from sovereign_shift.finalize.apply import finalize
 from sovereign_shift.generator.build import generate
 from sovereign_shift.graph import build_graph, render_html
-from sovereign_shift.scanner import azure, cloudflare
+from sovereign_shift.scanner import azure, cloudflare, gcp
 from sovereign_shift.scanner.aws import scan
 from sovereign_shift.graph.security import findings
 from sovereign_shift.models import Inventory
@@ -37,9 +37,12 @@ def scan_command(
     profile: Annotated[str | None, typer.Option(help="AWS shared configuration profile.")] = None,
     region: Annotated[list[str] | None, typer.Option(help="AWS region to scan. Repeat for multiple regions.")] = None,
     out: Annotated[Path, typer.Option(help="Output directory.")] = Path("out"),
-    source: Annotated[str, typer.Option(help="Source cloud (aws, azure or cloudflare).")] = "aws",
+    source: Annotated[str, typer.Option(help="Source cloud (aws, azure, gcp or cloudflare).")] = "aws",
+    project: Annotated[str | None, typer.Option(help="Google Cloud project id (default GCP_PROJECT_ID).")] = None,
 ) -> None:
     """Write inventory.json using read-only source API calls."""
+    if project and source != "gcp":
+        raise typer.BadParameter("--project applies only to --source gcp")
     try:
         if source == "azure":
             if profile or region:
@@ -49,13 +52,17 @@ def scan_command(
             if profile or region:
                 raise typer.BadParameter("--profile and --region apply only to AWS")
             inventory = cloudflare.scan()
+        elif source == "gcp":
+            if profile or region:
+                raise typer.BadParameter("--profile and --region apply only to AWS (Google Cloud scans every region of --project)")
+            inventory = gcp.scan(project)
         elif source == "aws":
             if not region and os.getenv("AWS_REGION"):
                 region = [os.environ["AWS_REGION"]]
             inventory = scan(boto3.Session(profile_name=profile), region)
         else:
-            raise typer.BadParameter("--source must be aws, azure or cloudflare")
-    except (cloudflare.ScanError, azure.ScanError) as exc:
+            raise typer.BadParameter("--source must be aws, azure, gcp or cloudflare")
+    except (cloudflare.ScanError, azure.ScanError, gcp.ScanError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from None
     except ClientError as exc:
@@ -161,14 +168,15 @@ def all_command(
     target_region: Annotated[str | None, typer.Option()] = None,
     out: Annotated[Path, typer.Option()] = Path("out"),
     no_ai: Annotated[bool, typer.Option()] = False,
-    source: Annotated[str | None, typer.Option(help="Live source cloud (aws, azure or cloudflare).")] = None,
+    source: Annotated[str | None, typer.Option(help="Live source cloud (aws, azure, gcp or cloudflare).")] = None,
+    project: Annotated[str | None, typer.Option(help="Google Cloud project id for --source gcp.")] = None,
 ) -> None:
     """Scan or load a snapshot, translate it and generate the assessment."""
     if from_snapshot is None:
-        scan_command(profile, region, out, source or "aws")
+        scan_command(profile, region, out, source or "aws", project)
     else:
-        if profile or region or source:
-            raise typer.BadParameter("--source, --profile and --region apply only to live scans")
+        if profile or region or source or project:
+            raise typer.BadParameter("--source, --project, --profile and --region apply only to live scans")
         snapshot = json.loads(from_snapshot.read_text())
         Inventory.model_validate(snapshot)
         save(out, "inventory", snapshot)

@@ -14,4 +14,5 @@ images:
   - {match: 'debian.*(12|bookworm)', id: DEBIAN_12_64BIT, verified: false}
   - {match: 'debian', id: DEBIAN_12_64BIT, verified: false, note: "unknown debian release, defaulted to 12"}
   - {match: 'al2023|amzn|amazon|^al2', id: ALMALINUX_9_64BIT, verified: false, note: "amazon linux has no leaseweb image, almalinux 9 is the closest rhel-like os, check packages"}
+  - {match: '^cos-|container-optimized', id: UBUNTU_24_04_64BIT, verified: true, note: "google container-optimized os has no leaseweb image, run the containers with docker on ubuntu 24.04"}
 fallback: {id: UBUNTU_24_04_64BIT, note: "os not detected, defaulted to ubuntu 24.04"}

@@ -9,6 +9,7 @@ Start with `../../PLAN.md` for the product, and `../contracts.md` for the data s
 | [leaseweb-terraform.md](leaseweb-terraform.md) | Leaseweb provider v1.32.1: resources, attributes, gaps, plan/validate behaviour |
 | [leaseweb-api.md](leaseweb-api.md) | Public Cloud REST API: security groups, firewall rules, target registration, instance types with prices. What finalize calls |
 | [leaseweb-platform.md](leaseweb-platform.md) | public cloud platforms, instance families, LB, object storage (S3), VPC, k8s, DCs, compliance, open questions |
+| [gcp-scanning.md](gcp-scanning.md) | Google Cloud REST calls, viewer credentials, firewall and load balancer facts the GCP scanner relies on (all verify) |
 | [aws-scanning.md](aws-scanning.md) | read-only credentials, boto3 calls and dependency edges (the scanner we build). Former2 as reference only. |
 | [aws-terraform.md](aws-terraform.md) | AWS HCL format, in-scope resources and fields |
 | [service-equivalence.md](service-equivalence.md) | AWS -> Leaseweb table, instance/AMI/RDS mapping rules |

@@ -8,6 +8,7 @@ The tree follows the pipeline. Start at the root and go down to the step you are
 sovereign-shift                     the product, the pipeline, the rules every skill inherits
 ├── scan-aws                        read-only AWS inventory
 ├── scan-azure                      Azure inventory (sample and mocks only, not live yet)
+├── scan-gcp                        Google Cloud inventory (mocked REST only, not live yet)
 ├── translate-leaseweb              AWS/Azure resources -> Leaseweb targets, sizing, prices
 ├── assess                          (group) scoring sections of the report, rules only
 │   ├── assess-security-posture     domain scores before/after, internet exposure
@@ -26,6 +27,7 @@ sovereign-shift                     the product, the pipeline, the rules every s
 | [sovereign-shift](sovereign-shift/SKILL.md) | you start any work in this repo |
 | [scan-aws](scan-aws/SKILL.md) | you change or run the AWS scanner |
 | [scan-azure](scan-azure/SKILL.md) | you work on Azure as a source |
+| [scan-gcp](scan-gcp/SKILL.md) | you work on Google Cloud as a source |
 | [translate-leaseweb](translate-leaseweb/SKILL.md) | you change how a resource maps to Leaseweb |
 | [assess-security-posture](assess-security-posture/SKILL.md) | you score or explain security |
 | [assess-risk](assess-risk/SKILL.md) | you add, score or explain risks |

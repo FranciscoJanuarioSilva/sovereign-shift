@@ -9,11 +9,16 @@ ACCOUNT_ID = re.compile(r"(?<!\d)\d{12}(?!\d)")
 # a bare ip, but not a cidr (cidrs stay, the reviewer needs 0.0.0.0/0)
 HOST_IP = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d./])")
 ARN = re.compile(r"arn:aws[\w-]*:[^\s\"']+")
+# google project ids sit in api paths and service account emails
+GCP_PROJECT = re.compile(r"projects/[a-z][a-z0-9-]{4,28}[a-z0-9]")
+GCP_ACCOUNT = re.compile(r"[\w.-]+@[\w-]+\.iam\.gserviceaccount\.com")
 
 
 def redact_text(text: str) -> str:
     text = CF_ACCOUNT_ID.sub("<account>", text)
     text = ARN.sub("<arn>", text)
+    text = GCP_PROJECT.sub("projects/<project>", text)
+    text = GCP_ACCOUNT.sub("<service-account>", text)
     text = ACCOUNT_ID.sub("<account>", text)
     return HOST_IP.sub("<ip>", text)
 
