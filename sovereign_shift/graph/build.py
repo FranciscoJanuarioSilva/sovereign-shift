@@ -22,7 +22,7 @@ def _allows_port(rule: dict[str, Any], port: int) -> bool:
 
 
 def _source_groups(rule: dict[str, Any]) -> set[str]:
-    groups = rule.get("security_groups", rule.get("UserIdGroupPairs", []))
+    groups = rule.get("source_groups", rule.get("security_groups", rule.get("UserIdGroupPairs", [])))
     return {
         group if isinstance(group, str) else group["GroupId"]
         for group in groups
@@ -33,7 +33,7 @@ def build_graph(inventory: dict[str, Any]) -> dict[str, Any]:
     """Build the stable graph contract, preserving unresolved relation targets.
 
     SG properties accept normalized ingress rules or boto3 IpPermissions.
-    Normalized rules use protocol, from_port, to_port and security_groups.
+    Normalized rules use protocol, from_port, to_port and source_groups.
     """
     resources = inventory.get("resources")
     if not isinstance(resources, list):

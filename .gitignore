@@ -6,3 +6,7 @@ corpus/
 __pycache__/
 .venv/
 raw.json
+out/
+inventory.json
+*.egg-info/
+.pytest_cache/
