@@ -44,3 +44,9 @@ Replace the synthetic D1 and KV IDs with your demo resource IDs and provision th
 A protected `workers.dev` URL works. For a custom hostname, set up the Worker custom domain and disable `workers_dev`. Preview URLs are disabled in the demo config. Use a separate read-only Cloudflare API token for migration inventory and separate scoped credentials for any authorized data transfer.
 
 [Worker secrets](https://developers.cloudflare.com/workers/configuration/secrets/) · [Worker routes](https://developers.cloudflare.com/workers/configuration/routing/)
+
+## Assess the hosted Worker
+
+Set a separate `MIGRATION_READ_KEY` Worker secret for `GET /api/migration`. The endpoint returns an inventory of the demo's configured bindings present in the runtime. It reads no application data and includes no Cloudflare account or resource IDs. The key grants access only to this endpoint.
+
+In GitHub Actions, configure the HTTPS endpoint in the `CLOUDFLARE_MIGRATION_URL` variable and its key in the `MIGRATION_READ_KEY` secret. Run **Run migration assessment** with source `cloudflare`. Live results stay on the runner unless publication is explicitly enabled.

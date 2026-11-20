@@ -20,9 +20,8 @@ export class Audit extends WorkflowEntrypoint {
   }
 }
 
-async function authorized(request, password) {
-  if (!password) return false;
-  const expected = "Basic " + btoa("demo:" + password);
+async function authorized(request, expected) {
+  if (!expected) return false;
   const encoder = new TextEncoder();
   const [suppliedHash, expectedHash] = await Promise.all(
     [request.headers.get("Authorization") || "", expected].map(value =>
@@ -32,16 +31,55 @@ async function authorized(request, password) {
   return crypto.subtle.timingSafeEqual(suppliedHash, expectedHash);
 }
 
+function migrationInventory(env) {
+  const bindings = [
+    ["DB", "d1", "shift-demo-catalog"],
+    ["SETTINGS", "kv_namespace", "shift-demo-settings"],
+    ["FILES", "r2_bucket", "shift-demo-assets"],
+    ["DEPOT", "durable_object_namespace", "Depot"],
+    ["EVENTS", "queue", "shift-demo-events"],
+    ["AUDIT", "workflow", "shift-demo-audit"],
+    ["ASSETS", "assets", "Stockroom static assets"]
+  ];
+  const worker = {
+    id: "cf:worker:shift-demo",
+    type: "cloudflare_worker",
+    name: "shift-demo",
+    region: "global",
+    relations: []
+  };
+  const resources = [worker];
+  for (const [binding, kind, name] of bindings) {
+    if (!env[binding]) continue;
+    const id = `cf:${kind}:${name}`;
+    resources.push({ id, type: `cloudflare_${kind}`, name, region: "global" });
+    worker.relations.push({ type: `binds_${binding}`, target: id });
+  }
+  return { source: "cloudflare", regions: ["global"], scanned_at: new Date().toISOString(), resources };
+}
+
 export default {
   async fetch(request, env) {
     const headers = { "Cache-Control": "private, no-store" };
-    if (!await authorized(request, env.STOCKROOM_ACCESS_KEY)) {
+    const path = new URL(request.url).pathname;
+    if (path === "/api/migration") {
+      const credential = env.MIGRATION_READ_KEY && "Bearer " + env.MIGRATION_READ_KEY;
+      if (!await authorized(request, credential)) {
+        return new Response("Authentication required", { status: 401, headers });
+      }
+      if (request.method !== "GET") {
+        return new Response("Method not allowed", { status: 405, headers: { ...headers, Allow: "GET" } });
+      }
+      return Response.json(migrationInventory(env), { headers });
+    }
+    const catalogCredential = env.STOCKROOM_ACCESS_KEY && "Basic " + btoa("demo:" + env.STOCKROOM_ACCESS_KEY);
+    if (!await authorized(request, catalogCredential)) {
       return new Response("Authentication required", {
         status: 401,
         headers: { ...headers, "WWW-Authenticate": 'Basic realm="Stockroom demo"' }
       });
     }
-    if (new URL(request.url).pathname !== "/api/catalog") {
+    if (path !== "/api/catalog") {
       const asset = await env.ASSETS.fetch(request);
       const response = new Response(asset.body, asset);
       response.headers.set("Cache-Control", headers["Cache-Control"]);

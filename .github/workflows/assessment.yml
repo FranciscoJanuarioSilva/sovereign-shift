@@ -58,25 +58,41 @@ jobs:
         run: |
           mkdir -p out
           cp examples/cloudflare-worker/sample_snapshot.json out/inventory.json
-      - name: Scan Cloudflare
+      - name: Read Cloudflare Worker inventory
         if: inputs.source == 'cloudflare'
         env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_MIGRATION_URL: ${{ vars.CLOUDFLARE_MIGRATION_URL }}
+          MIGRATION_READ_KEY: ${{ secrets.MIGRATION_READ_KEY }}
         run: |
-          : "${CLOUDFLARE_ACCOUNT_ID:?Set CLOUDFLARE_ACCOUNT_ID}" "${CLOUDFLARE_API_TOKEN:?Set CLOUDFLARE_API_TOKEN}"
+          : "${CLOUDFLARE_MIGRATION_URL:?Set the migration endpoint URL}" "${MIGRATION_READ_KEY:?Set the migration read key}"
           python - <<'PYSCAN'
+          import os
           from pathlib import Path
-          from sovereign_shift.artifacts import save
-          from sovereign_shift.scanner.cloudflare import scan
+          from urllib.parse import urlsplit
 
-          inventory = scan()
-          if any("/workers/scripts" in operation["operation"] for operation in inventory["denied"]):
-              raise SystemExit("Cloudflare denied access to Worker scripts, settings or schedules")
-          if not any(resource["type"] == "cloudflare_worker" for resource in inventory["resources"]):
-              raise SystemExit("Cloudflare returned no Workers for the configured account")
+          import httpx
+
+          from sovereign_shift.artifacts import save
+          from sovereign_shift.models import Inventory
+
+          url = os.environ["CLOUDFLARE_MIGRATION_URL"]
+          parsed = urlsplit(url)
+          if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or parsed.path != "/api/migration":
+              raise SystemExit("Configure an HTTPS Worker migration endpoint")
+          response = httpx.get(
+              url, headers={"Authorization": "Bearer " + os.environ["MIGRATION_READ_KEY"]},
+              follow_redirects=False, timeout=20,
+          )
+          if response.status_code != 200:
+              raise SystemExit(f"Worker migration endpoint returned HTTP {response.status_code}")
+          inventory = response.json()
+          Inventory.model_validate(inventory)
+          if inventory.get("source") != "cloudflare" or not any(
+              resource["type"] == "cloudflare_worker" for resource in inventory["resources"]
+          ):
+              raise SystemExit("Endpoint returned no Cloudflare Worker inventory")
           save(Path("out"), "inventory", inventory)
-          print("Read Cloudflare Workers inventory")
+          print("Read scoped Cloudflare Worker inventory")
           PYSCAN
       - name: Build assessment
         env:
