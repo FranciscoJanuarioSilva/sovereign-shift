@@ -24,6 +24,9 @@ function Ring({ score, grade, label, tone }) {
 
 export function Posture({ posture }) {
   const o = posture.overall ?? {};
+  if (!Number.isFinite(o.before) && !Number.isFinite(o.after)) {
+    return <p>This inventory provides insufficient evidence to grade security posture.</p>;
+  }
   return (
     <>
       <div className="posture-top">

@@ -18,7 +18,9 @@ function Kpis({ report }) {
   const both = lines.filter((l) => Number.isFinite(l.aws) && Number.isFinite(l.leaseweb));
   const saving = both.reduce((t, l) => t + l.aws - l.leaseweb, 0);
   const items = [
-    p && ["Security grade", `${p.grade_before} ▸ ${p.grade_after}`, `${p.before} ▸ ${p.after} out of 100`],
+    p && (Number.isFinite(p.before) && Number.isFinite(p.after)
+      ? ["Security grade", `${p.grade_before ?? "–"} ▸ ${p.grade_after ?? "–"}`, `${p.before} ▸ ${p.after} out of 100`]
+      : ["Security grade", "Not assessed", "Insufficient security data for a grade"]),
     r && ["Risk", `${cap(r.current)} ▸ ${cap(r.after_migration)}`, `${r.resolved_by_migration} risks resolved by the move`],
     r && ["Readiness", cap(r.readiness), "for the migration itself"],
     both.length && ["Compute cost", money(Math.abs(saving)), `${saving >= 0 ? "saved" : "more"} per month on Leaseweb, ${both.length} servers priced on both sides`],
