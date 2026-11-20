@@ -1,11 +1,30 @@
 import { useMemo, useState } from "react";
 import Terraform from "./Terraform.jsx";
+import { AiNarrative, Performance, Posture, Risk, Scaling } from "./Assessment.jsx";
 import { AWS_REGIONS, LEASEWEB_REGIONS, SEVERITY, STATUS, cloudName, money } from "./format.js";
 
 const SECTIONS = [
-  ["summary", "Summary"], ["costs", "Costs"], ["security", "Security"], ["terraform", "Terraform"],
+  ["summary", "Summary"], ["posture", "Security posture"], ["risk", "Risk"], ["costs", "Costs"],
+  ["performance", "Performance"], ["scaling", "Scaling"], ["security", "Findings"], ["terraform", "Terraform"],
   ["work", "Migration work"], ["runbook", "Data runbook"], ["dependencies", "Dependencies"],
 ];
+
+const cap = (s) => (s ? String(s)[0].toUpperCase() + String(s).slice(1) : "");
+
+function Kpis({ report }) {
+  const a = report.assessment ?? {};
+  const p = a.posture?.overall, r = a.risk?.overall;
+  const lines = report.cost?.lines ?? [];
+  const both = lines.filter((l) => Number.isFinite(l.aws) && Number.isFinite(l.leaseweb));
+  const saving = both.reduce((t, l) => t + l.aws - l.leaseweb, 0);
+  const items = [
+    p && ["Security grade", `${p.grade_before} ▸ ${p.grade_after}`, `${p.before} ▸ ${p.after} out of 100`],
+    r && ["Risk", `${cap(r.current)} ▸ ${cap(r.after_migration)}`, `${r.resolved_by_migration} risks resolved by the move`],
+    r && ["Readiness", cap(r.readiness), "for the migration itself"],
+    both.length && ["Compute cost", money(Math.abs(saving)), `${saving >= 0 ? "saved" : "more"} per month on Leaseweb, ${both.length} servers priced on both sides`],
+  ].filter(Boolean);
+  return <dl className="kpis">{items.map(([k, v, hint]) => <div key={k}><dt>{k}</dt><dd>{v}</dd><span>{hint}</span></div>)}</dl>;
+}
 
 function Route({ report }) {
   const from = report.source.regions?.[0];
@@ -49,7 +68,7 @@ function Readiness({ summary }) {
       </div>
       <dl className="legend">
         {Object.entries(STATUS).map(([k, s]) => (
-          <div key={k} className={`item ${k}`}><dt>{s.label}</dt><dd><strong>{summary[k] ?? 0}</strong> {s.hint}</dd></div>
+          <div key={k} className={`item ${k}`} title={s.hint}><dt>{s.label}</dt><dd><strong>{summary[k] ?? 0}</strong></dd></div>
         ))}
       </dl>
     </div>
@@ -67,7 +86,7 @@ function Costs({ cost }) {
         <div className="compare">
           <div className="bar-row"><span>AWS</span><span className="bar aws" style={{ width: `${(aws / top) * 100}%` }} /><strong>{money(aws)}</strong></div>
           <div className="bar-row"><span>Leaseweb</span><span className="bar lsw" style={{ width: `${(lsw / top) * 100}%` }} /><strong>{money(lsw)}</strong></div>
-          <p className="quiet">Monthly, for the {both.length} resources priced on both sides. Storage, traffic, public IPs and load balancers are not included yet{cost.unpriced_resources ? `, and ${cost.unpriced_resources} resources have no price` : ""}.</p>
+          <p className="quiet">Monthly compute, {both.length} servers priced on both sides.</p>
         </div>
       ) : <p className="quiet">No resource has a price on both sides yet.</p>}
       <table>
@@ -138,6 +157,42 @@ function Runbook({ runbook, names }) {
   ));
 }
 
+const short = (text = "") => {
+  // first sentence, cut at about 70 characters, the full text stays in the tooltip
+  const first = text.split(/(?<=\.)\s|:\s/)[0];
+  return first.length > 72 ? first.slice(0, 70).trimEnd() + "…" : first;
+};
+
+function WorkTable({ work, names }) {
+  const row = (w, i) => (
+    <tr key={w.source_id + i}><td>{names.get(w.source_id) ?? w.source_id}</td><td><span className={`pill ${w.status}`}>{STATUS[w.status]?.label ?? w.status}</span></td><td title={w.what}>{short(w.what)}</td></tr>
+  );
+  const head = <thead><tr><th scope="col">Resource</th><th scope="col">Status</th><th scope="col">What happens</th></tr></thead>;
+  return (
+    <>
+      <table>{head}<tbody>{work.slice(0, 6).map(row)}</tbody></table>
+      {work.length > 6 && <details><summary>All {work.length} resources</summary><table>{head}<tbody>{work.slice(6).map((w, i) => row(w, i + 6))}</tbody></table></details>}
+    </>
+  );
+}
+
+function Dependencies({ edges, names }) {
+  const inferred = edges.filter((e) => e.inferred);
+  const read = edges.filter((e) => !e.inferred);
+  const name = (id) => names.get(id) ?? id;
+  return (
+    <>
+      <ul className="links">
+        {inferred.map((e, i) => <li key={i}><strong>{name(e.from)}</strong><span className="link-line" aria-hidden="true" /><strong>{name(e.to)}</strong><span className="quiet">{e.evidence ?? "inferred"}</span></li>)}
+        {!inferred.length && <li className="quiet">No hidden links found.</li>}
+      </ul>
+      <details><summary>{read.length} links read from the account</summary>
+        <table><tbody>{read.map((e, i) => <tr key={i}><td>{name(e.from)}</td><td>{(e.type ?? "").replaceAll("_", " ")}</td><td>{name(e.to)}</td></tr>)}</tbody></table>
+      </details>
+    </>
+  );
+}
+
 export default function Report({ report, label, onReset }) {
   const names = useMemo(() => new Map(report.graph.nodes.map((n) => [n.id, n.name])), [report]);
   const s = report.summary;
@@ -150,51 +205,56 @@ export default function Report({ report, label, onReset }) {
       </nav>
       <main id="main">
         <header id="summary" className="head">
-          <p className="label">{label}</p>
-          <Route report={report} />
-          <h1>{s.auto} of {s.resources} resources migrate automatically.</h1>
+          <div className="head-band">
+            <p className="label">{label}</p>
+            <Route report={report} />
+            <h1>{s.auto} of {s.resources} resources migrate automatically.</h1>
+            <Kpis report={report} />
+          </div>
           <Readiness summary={s} />
           <AiNote item={report.explainer} title="What this migration involves" />
         </header>
 
+        {report.assessment?.posture && (
+          <section id="posture"><h2>Security posture</h2>
+            <AiNarrative section={report.assessment.posture} title="Posture" /><Posture posture={report.assessment.posture} /></section>
+        )}
+
+        {report.assessment?.risk && (
+          <section id="risk"><h2>Risk</h2>
+            <AiNarrative section={report.assessment.risk} title="Risk summary" /><Risk risk={report.assessment.risk} /></section>
+        )}
+
         <section id="costs"><h2>Monthly cost</h2><Costs cost={report.cost} /></section>
 
+        {report.assessment?.performance && (
+          <section id="performance"><h2>Performance</h2>
+            <Performance performance={report.assessment.performance} /></section>
+        )}
+
+        {report.assessment?.scaling && (
+          <section id="scaling"><h2>Scaling on Leaseweb</h2>
+            <AiNarrative section={report.assessment.scaling} title="Scaling summary" /><Scaling scaling={report.assessment.scaling} /></section>
+        )}
+
         <section id="security">
-          <h2>Security findings</h2>
-          <p className="quiet">Problems found while reading the account. The network ones are closed in the generated setup.</p>
+          <h2>Findings</h2>
           <AiNote item={report.reviewer} title="Firewall review" />
-          <Security findings={report.findings} names={names} />
+          <Security findings={report.assessment?.posture?.findings ?? report.findings} names={names} />
         </section>
 
         <section id="terraform"><h2>Terraform for Leaseweb</h2><Terraform workspace={report.workspace} /></section>
 
         <section id="work">
           <h2>Migration work</h2>
-          <table>
-            <thead><tr><th scope="col">Resource</th><th scope="col">Status</th><th scope="col">What happens</th></tr></thead>
-            <tbody>
-              {report.work.map((w, i) => (
-                <tr key={w.source_id + i}><td>{names.get(w.source_id) ?? w.source_id}</td><td><span className={`pill ${w.status}`}>{STATUS[w.status]?.label ?? w.status}</span></td><td>{w.what}</td></tr>
-              ))}
-            </tbody>
-          </table>
+          <WorkTable work={report.work} names={names} />
         </section>
 
-        <section id="runbook"><h2>Data runbook</h2><p className="quiet">Terraform rebuilds the infrastructure. These steps move the data. Values in angle brackets are filled in by your team.</p><Runbook runbook={report.runbook} names={names} /></section>
+        <section id="runbook"><h2>Data runbook</h2><p className="quiet">Steps to move the data. Fill in the values in angle brackets.</p><Runbook runbook={report.runbook} names={names} /></section>
 
         <section id="dependencies">
           <h2>Dependencies</h2>
-          <table>
-            <thead><tr><th scope="col">From</th><th scope="col">To</th><th scope="col">Link</th><th scope="col">Source</th></tr></thead>
-            <tbody>
-              {report.graph.edges.map((e, i) => (
-                <tr key={i} className={e.inferred ? "inferred" : ""}>
-                  <td>{names.get(e.from) ?? e.from}</td><td>{names.get(e.to) ?? e.to}</td><td>{(e.type ?? "").replaceAll("_", " ")}</td>
-                  <td>{e.inferred ? `Inferred: ${e.evidence ?? "from firewall rules"}` : "Read from the account"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Dependencies edges={report.graph.edges} names={names} />
         </section>
         <footer>Generated on this machine. Share the files in <code>public/</code> only, where the account id is masked.</footer>
       </main>
