@@ -8,7 +8,6 @@ on:
         options:
           - demo
           - aws
-          - cloudflare-demo
           - cloudflare
         default: demo
       use_ai:
@@ -53,11 +52,6 @@ jobs:
         run: |
           : "${AWS_REGION:?Set AWS_REGION}" "${AWS_ACCESS_KEY_ID:?Set read-only credentials}" "${AWS_SECRET_ACCESS_KEY:?Set read-only credentials}"
           sovereign-shift scan --region "$AWS_REGION" --out out
-      - name: Load synthetic Cloudflare inventory
-        if: inputs.source == 'cloudflare-demo'
-        run: |
-          mkdir -p out
-          cp examples/cloudflare-worker/sample_snapshot.json out/inventory.json
       - name: Read Cloudflare Worker inventory
         if: inputs.source == 'cloudflare'
         env:
@@ -112,7 +106,7 @@ jobs:
           terraform -chdir=out/terraform init -backend=false -input=false
           terraform -chdir=out/terraform validate
       - uses: actions/upload-artifact@v4
-        if: inputs.source == 'demo' || inputs.source == 'cloudflare-demo' || inputs.publish_live_results
+        if: inputs.source == 'demo' || inputs.publish_live_results
         with:
           name: migration-assessment-${{ github.run_id }}
           retention-days: 3
