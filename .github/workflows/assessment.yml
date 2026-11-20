@@ -98,19 +98,22 @@ jobs:
           print("Read scoped Cloudflare Worker inventory")
           PYSCAN
       - name: Authenticate to Google Cloud (Workload Identity Federation)
+        id: auth
         if: inputs.source == 'gcp'
         uses: google-github-actions/auth@v2
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          token_format: 'access_token'
       - name: Scan Google Cloud
         if: inputs.source == 'gcp'
         env:
           GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GCP_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
           : "${GCP_PROJECT_ID:?Set GCP_PROJECT_ID}"
-          python -m pip install -e '.[gcp]'
+          python -m pip install -e '.[gcp]' requests
           sovereign-shift scan --source gcp --project "$GCP_PROJECT_ID" --out out
       - name: Build assessment
         env:

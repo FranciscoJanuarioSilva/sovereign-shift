@@ -16,7 +16,7 @@ azure = ["azure-identity>=1.15", "azure-mgmt-compute>=30", "azure-mgmt-network>=
          "azure-mgmt-storage>=21", "azure-mgmt-dns>=8", "azure-mgmt-resource>=23"]
 
 # live google cloud scans with application default credentials, GCP_ACCESS_TOKEN works without it
-gcp = ["google-auth>=2.20"]
+gcp = ["google-auth>=2.20", "requests>=2.25"]
 
 [project.scripts]
 sovereign-shift = "sovereign_shift.cli:app"
