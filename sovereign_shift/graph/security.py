@@ -2,22 +2,34 @@
 
 from .build import _allows_port, _rules
 
+BLOCK_FLAGS = ("BlockPublicAcls", "IgnorePublicAcls", "BlockPublicPolicy", "RestrictPublicBuckets")
+
+
+def _bucket_checks(props: dict) -> list[tuple[str, str, str, str]]:
+    # the scanner writes policy_public/acl_public/public_access_block/encryption/versioning,
+    # older fixtures use public/encrypted/versioning=false, so read both
+    out = []
+    public = props.get("public") or props.get("policy_public") or props.get("acl_public")
+    if public and not props.get("static_website"):
+        how = [k for k in ("policy_public", "acl_public", "public") if props.get(k)]
+        out.append(("S3-001", "critical", "Review public bucket access", ", ".join(how)))
+    if "public_access_block" in props:
+        block = props["public_access_block"]
+        off = [f for f in BLOCK_FLAGS if not (block or {}).get(f)] if isinstance(block, dict) else ([] if block else list(BLOCK_FLAGS))
+        if off:
+            out.append(("S3-002", "high", "Enable public access blocking", "off: " + ", ".join(off)))
+    if "encryption" in props and not props["encryption"]:
+        out.append(("S3-003", "medium", "Enable default encryption", "no default encryption rule"))
+    elif props.get("encrypted") is False:
+        out.append(("S3-003", "medium", "Enable default encryption", "encrypted = False"))
+    if "versioning" in props and props["versioning"] not in (True, "Enabled"):
+        out.append(("S3-004", "low", "Enable object versioning", f"versioning = {props['versioning']}"))
+    return out
+
 
 def findings(inventory: dict, graph: dict) -> list[dict]:
     result = []
     checks = {
-        "s3_bucket": [
-            ("public", True, "S3-001", "critical", "Review public bucket access"),
-            (
-                "public_access_block",
-                False,
-                "S3-002",
-                "high",
-                "Enable public access blocking",
-            ),
-            ("encrypted", False, "S3-003", "medium", "Enable default encryption"),
-            ("versioning", False, "S3-004", "low", "Enable object versioning"),
-        ],
         "db_instance": [
             (
                 "publicly_accessible",
@@ -28,6 +40,7 @@ def findings(inventory: dict, graph: dict) -> list[dict]:
             ),
             ("storage_encrypted", False, "RDS-002", "high", "Encrypt database storage"),
             ("backup_retention_period", 0, "RDS-003", "medium", "Configure backups"),
+            ("backup_retention_days", 0, "RDS-003", "medium", "Configure backups"),
         ],
         "ec2_instance": [
             ("http_tokens", "optional", "EC2-001", "high", "Require IMDSv2")
@@ -57,10 +70,11 @@ def findings(inventory: dict, graph: dict) -> list[dict]:
             )
 
         for key, value, code, severity, title in checks.get(kind, []):
-            if props.get(key) == value and not (
-                code == "S3-001" and props.get("static_website")
-            ):
+            if key in props and props[key] == value:
                 add(code, severity, title, f"{key} = {value}")
+        if kind == "s3_bucket":
+            for code, severity, title, evidence in _bucket_checks(props):
+                add(code, severity, title, evidence)
         if kind == "security_group":
             for rule in _rules(resource):
                 cidrs = [
@@ -92,10 +106,14 @@ def findings(inventory: dict, graph: dict) -> list[dict]:
                     )
             if props.get("attached_eni_count") == 0:
                 add("SG-004", "low", "Review unused group", "No attached ENIs")
+        # scanner writes redirects_to_https, older fixtures write default_action
         if (
             kind == "lb_listener"
             and props.get("protocol") == "HTTP"
-            and props.get("default_action") == "forward"
+            and (
+                props.get("redirects_to_https") is False
+                or props.get("default_action") == "forward"
+            )
         ):
             add(
                 "ELB-001",
@@ -114,7 +132,7 @@ def findings(inventory: dict, graph: dict) -> list[dict]:
                 "Restrict backend ingress",
                 "Public load balancer backend",
             )
-        if kind == "vpc" and props.get("is_default") and len(vpcs) == 1:
+        if kind == "vpc" and (props.get("is_default") or props.get("default")) and len(vpcs) == 1:
             add(
                 "NET-001",
                 "info",

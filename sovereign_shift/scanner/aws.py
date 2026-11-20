@@ -118,6 +118,9 @@ def scan_ec2(ec2: Any, region: str) -> Iterator[Item]:
 
     addresses: dict[str, list[str]] = {}
     for address in items(ec2, "describe_addresses", "Addresses"):
+        # aws creates these for albs and public rds instances, they aren't the customer's eips
+        if address.get("ServiceManaged"):
+            continue
         ident = address.get("AllocationId") or address["PublicIp"]
         if address.get("InstanceId"):
             addresses.setdefault(address["InstanceId"], []).append(ident)
@@ -346,6 +349,22 @@ def scan_route53(route53: Any, resources: list[Item]) -> Iterator[Item]:
             )
 
 
+# what an scp, a region opt-out or a missing permission looks like
+DENIED = ("UnauthorizedOperation", "AccessDenied", "AccessDeniedException", "UnrecognizedClientException", "AuthFailure", "OptInRequired")
+
+
+def guarded(scanner: Iterator[Item], region: str, service: str, denied: list[Item]) -> list[Item]:
+    # collect a whole service at once, so a denial halfway through doesn't leave half a region behind
+    try:
+        return list(scanner)
+    except ClientError as exc:
+        code = exc.response["Error"]["Code"]
+        if code not in DENIED:
+            raise
+        denied.append({"region": region, "service": service, "operation": exc.operation_name, "error": code})
+        return []
+
+
 def scan(session: Session, regions: list[str] | None = None) -> Item:
     home = (regions or [session.region_name or "eu-west-1"])[0]
     account = session.client("sts", region_name=home).get_caller_identity()["Account"]
@@ -353,17 +372,22 @@ def scan(session: Session, regions: list[str] | None = None) -> Item:
         ec2 = session.client("ec2", region_name=home)
         regions = [entry["RegionName"] for entry in ec2.describe_regions(AllRegions=False)["Regions"]]
     regions = sorted(set(regions))
-    resources = []
+    resources: list[Item] = []
+    denied: list[Item] = []
     for region in regions:
-        resources.extend(scan_ec2(session.client("ec2", region_name=region), region))
-        resources.extend(scan_elb(session.client("elbv2", region_name=region), region))
-        resources.extend(scan_rds(session.client("rds", region_name=region), region))
-    resources.extend(scan_s3(session, home, regions))
-    resources.extend(scan_route53(session.client("route53", region_name=home), resources))
+        resources.extend(guarded(scan_ec2(session.client("ec2", region_name=region), region), region, "ec2", denied))
+        resources.extend(guarded(scan_elb(session.client("elbv2", region_name=region), region), region, "elbv2", denied))
+        resources.extend(guarded(scan_rds(session.client("rds", region_name=region), region), region, "rds", denied))
+    # global services go through a region that answered, the first one asked for may be the denied one
+    blocked = {entry["region"] for entry in denied if entry["service"] == "ec2"}
+    home = next((region for region in [home, *regions] if region not in blocked), home)
+    resources.extend(guarded(scan_s3(session, home, regions), "global", "s3", denied))
+    resources.extend(guarded(scan_route53(session.client("route53", region_name=home), resources), "global", "route53", denied))
     return {
         "source": "aws",
         "account_id": account,
         "scanned_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "regions": regions,
+        "denied": denied,
         "resources": sorted(resources, key=lambda item: (item["region"], item["type"], item["id"])),
     }

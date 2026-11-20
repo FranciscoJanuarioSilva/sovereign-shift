@@ -65,6 +65,8 @@ def scan_command(
         if temporary is not None:
             temporary.unlink(missing_ok=True)
     typer.echo(f"Wrote {len(inventory['resources'])} resources to {destination}")
+    for entry in inventory.get("denied", []):
+        typer.echo(f"Skipped {entry['service']} in {entry['region']}: {entry['error']} ({entry['operation']})", err=True)
 
 
 

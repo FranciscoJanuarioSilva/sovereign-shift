@@ -1,0 +1,668 @@
+{
+ "source": "aws",
+ "account_id": "123456789012",
+ "scanned_at": "2026-11-20T11:29:37Z",
+ "regions": [
+  "eu-north-1"
+ ],
+ "denied": [],
+ "resources": [
+  {
+   "id": "arn:aws:rds:eu-north-1:123456789012:db:orders-db",
+   "type": "db_instance",
+   "region": "eu-north-1",
+   "name": "orders-db",
+   "properties": {
+    "engine": "postgres",
+    "engine_version": "18.3",
+    "instance_class": "db.t4g.micro",
+    "db_name": "orders",
+    "storage_gib": 20,
+    "storage_encrypted": false,
+    "publicly_accessible": true,
+    "backup_retention_days": 0,
+    "multi_az": false,
+    "endpoint": "orders-db.example00000.eu-north-1.rds.amazonaws.com",
+    "port": 5432
+   },
+   "tags": {
+    "sovereign-shift-demo": "true",
+    "env": "prod"
+   },
+   "relations": [
+    {
+     "type": "in_vpc",
+     "target": "vpc-0a0bc583d62ef4461"
+    },
+    {
+     "type": "in_subnet",
+     "target": "subnet-0b9e7e70e2c8d2141"
+    },
+    {
+     "type": "in_subnet",
+     "target": "subnet-0c736e1e757bd6a5e"
+    },
+    {
+     "type": "in_subnet",
+     "target": "subnet-0ca8df0fcb1e2386d"
+    },
+    {
+     "type": "uses_security_group",
+     "target": "sg-0113c66a8a410cae6"
+    }
+   ]
+  },
+  {
+   "id": "vol-012f3dcaf563cd627",
+   "type": "ebs_volume",
+   "region": "eu-north-1",
+   "name": "web-1-uploads",
+   "properties": {
+    "size_gib": 20,
+    "encrypted": false,
+    "volume_type": "gp3",
+    "availability_zone": "eu-north-1a",
+    "iops": 3000,
+    "throughput": 125
+   },
+   "tags": {
+    "env": "prod",
+    "sovereign-shift-demo": "true"
+   },
+   "relations": []
+  },
+  {
+   "id": "vol-01e9e02e5aeb856e5",
+   "type": "ebs_volume",
+   "region": "eu-north-1",
+   "name": "web-2-root",
+   "properties": {
+    "size_gib": 30,
+    "encrypted": false,
+    "volume_type": "gp3",
+    "availability_zone": "eu-north-1b",
+    "iops": 3000,
+    "throughput": 125
+   },
+   "tags": {
+    "sovereign-shift-demo": "true",
+    "env": "prod"
+   },
+   "relations": []
+  },
+  {
+   "id": "vol-03cacee67b142ebfa",
+   "type": "ebs_volume",
+   "region": "eu-north-1",
+   "name": "web-1-root",
+   "properties": {
+    "size_gib": 30,
+    "encrypted": false,
+    "volume_type": "gp3",
+    "availability_zone": "eu-north-1a",
+    "iops": 3000,
+    "throughput": 125
+   },
+   "tags": {
+    "env": "prod",
+    "sovereign-shift-demo": "true"
+   },
+   "relations": []
+  },
+  {
+   "id": "i-0140a24d3cefab37c",
+   "type": "ec2_instance",
+   "region": "eu-north-1",
+   "name": "web-1",
+   "properties": {
+    "instance_type": "t3.micro",
+    "image_id": "ami-01613d9e4755fbdf3",
+    "key_name": "ops-key",
+    "public_ip_address": "203.0.113.11",
+    "private_ip": "172.31.25.247",
+    "root_device_name": "/dev/sda1",
+    "architecture": "x86_64",
+    "vcpu": 2,
+    "memory_gib": 1.0,
+    "os": "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-20261120",
+    "state": "running",
+    "public_ip": true,
+    "http_tokens": "optional",
+    "volumes": [
+     {
+      "id": "vol-03cacee67b142ebfa",
+      "device_name": "/dev/sda1",
+      "root": true,
+      "size_gib": 30,
+      "encrypted": false,
+      "volume_type": "gp3",
+      "availability_zone": "eu-north-1a",
+      "iops": 3000,
+      "throughput": 125
+     },
+     {
+      "id": "vol-012f3dcaf563cd627",
+      "device_name": "/dev/sdf",
+      "root": false,
+      "size_gib": 20,
+      "encrypted": false,
+      "volume_type": "gp3",
+      "availability_zone": "eu-north-1a",
+      "iops": 3000,
+      "throughput": 125
+     }
+    ]
+   },
+   "tags": {
+    "env": "prod",
+    "sovereign-shift-demo": "true"
+   },
+   "relations": [
+    {
+     "type": "in_vpc",
+     "target": "vpc-0a0bc583d62ef4461"
+    },
+    {
+     "type": "in_subnet",
+     "target": "subnet-0c736e1e757bd6a5e"
+    },
+    {
+     "type": "uses_security_group",
+     "target": "sg-062ef38805d115471"
+    },
+    {
+     "type": "uses_volume",
+     "target": "vol-012f3dcaf563cd627"
+    },
+    {
+     "type": "uses_volume",
+     "target": "vol-03cacee67b142ebfa"
+    },
+    {
+     "type": "uses_key_pair",
+     "target": "key-03d3aa6feba4312f7"
+    },
+    {
+     "type": "uses_elastic_ip",
+     "target": "eipalloc-09afe492a11f70543"
+    }
+   ]
+  },
+  {
+   "id": "i-078d4fb3bb0a542c6",
+   "type": "ec2_instance",
+   "region": "eu-north-1",
+   "name": "web-2",
+   "properties": {
+    "instance_type": "m7i-flex.large",
+    "image_id": "ami-01613d9e4755fbdf3",
+    "key_name": "ops-key",
+    "public_ip_address": "203.0.113.10",
+    "private_ip": "172.31.41.41",
+    "root_device_name": "/dev/sda1",
+    "architecture": "x86_64",
+    "vcpu": 2,
+    "memory_gib": 8.0,
+    "os": "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-20261120",
+    "state": "running",
+    "public_ip": true,
+    "http_tokens": "optional",
+    "volumes": [
+     {
+      "id": "vol-01e9e02e5aeb856e5",
+      "device_name": "/dev/sda1",
+      "root": true,
+      "size_gib": 30,
+      "encrypted": false,
+      "volume_type": "gp3",
+      "availability_zone": "eu-north-1b",
+      "iops": 3000,
+      "throughput": 125
+     }
+    ]
+   },
+   "tags": {
+    "sovereign-shift-demo": "true",
+    "env": "prod"
+   },
+   "relations": [
+    {
+     "type": "in_vpc",
+     "target": "vpc-0a0bc583d62ef4461"
+    },
+    {
+     "type": "in_subnet",
+     "target": "subnet-0ca8df0fcb1e2386d"
+    },
+    {
+     "type": "uses_security_group",
+     "target": "sg-062ef38805d115471"
+    },
+    {
+     "type": "uses_volume",
+     "target": "vol-01e9e02e5aeb856e5"
+    },
+    {
+     "type": "uses_key_pair",
+     "target": "key-03d3aa6feba4312f7"
+    }
+   ]
+  },
+  {
+   "id": "eipalloc-09afe492a11f70543",
+   "type": "elastic_ip",
+   "region": "eu-north-1",
+   "name": "web-1-ip",
+   "properties": {
+    "public_ip": "203.0.113.11",
+    "domain": "vpc"
+   },
+   "tags": {
+    "sovereign-shift-demo": "true",
+    "env": "prod"
+   },
+   "relations": [
+    {
+     "type": "attached_to",
+     "target": "i-0140a24d3cefab37c"
+    }
+   ]
+  },
+  {
+   "id": "key-03d3aa6feba4312f7",
+   "type": "key_pair",
+   "region": "eu-north-1",
+   "name": "ops-key",
+   "properties": {
+    "fingerprint": "EXAMPLEfingerprintEXAMPLEfingerprintEXAMPL=",
+    "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAMP ops-key\n"
+   },
+   "tags": {
+    "sovereign-shift-demo": "true",
+    "env": "prod"
+   },
+   "relations": []
+  },
+  {
+   "id": "arn:aws:elasticloadbalancing:eu-north-1:123456789012:loadbalancer/app/web-alb/2edd48748ff69ef1",
+   "type": "lb",
+   "region": "eu-north-1",
+   "name": "web-alb",
+   "properties": {
+    "lb_type": "application",
+    "dns_name": "web-alb-0000000000.eu-north-0000000000.elb.amazonaws.com",
+    "scheme": "internet-facing",
+    "ip_address_type": "ipv4"
+   },
+   "tags": {},
+   "relations": [
+    {
+     "type": "in_vpc",
+     "target": "vpc-0a0bc583d62ef4461"
+    },
+    {
+     "type": "in_subnet",
+     "target": "subnet-0c736e1e757bd6a5e"
+    },
+    {
+     "type": "in_subnet",
+     "target": "subnet-0ca8df0fcb1e2386d"
+    },
+    {
+     "type": "uses_security_group",
+     "target": "sg-0db4d4db3336c190f"
+    }
+   ]
+  },
+  {
+   "id": "arn:aws:elasticloadbalancing:eu-north-1:123456789012:listener/app/web-alb/2edd48748ff69ef1/da78a08df2051d54",
+   "type": "lb_listener",
+   "region": "eu-north-1",
+   "name": "arn:aws:elasticloadbalancing:eu-north-1:123456789012:listener/app/web-alb/2edd48748ff69ef1/da78a08df2051d54",
+   "properties": {
+    "port": 80,
+    "protocol": "HTTP",
+    "default_actions": [
+     "forward"
+    ],
+    "redirects_to_https": false,
+    "certificate_arns": []
+   },
+   "tags": {},
+   "relations": [
+    {
+     "type": "listens_on",
+     "target": "arn:aws:elasticloadbalancing:eu-north-1:123456789012:loadbalancer/app/web-alb/2edd48748ff69ef1"
+    },
+    {
+     "type": "forwards_to",
+     "target": "arn:aws:elasticloadbalancing:eu-north-1:123456789012:targetgroup/web-tg/95ea4d5b9ac176bb"
+    }
+   ]
+  },
+  {
+   "id": "orders-shop-assets-9d6a52c2",
+   "type": "s3_bucket",
+   "region": "eu-north-1",
+   "name": "orders-shop-assets-9d6a52c2",
+   "properties": {
+    "policy_public": true,
+    "acl_public": false,
+    "public_access_block": {},
+    "encryption": [
+     "AES256"
+    ],
+    "versioning": "Disabled"
+   },
+   "tags": {
+    "sovereign-shift-demo": "true",
+    "env": "prod"
+   },
+   "relations": []
+  },
+  {
+   "id": "sg-0113c66a8a410cae6",
+   "type": "security_group",
+   "region": "eu-north-1",
+   "name": "db-sg",
+   "properties": {
+    "ingress": [
+     {
+      "protocol": "tcp",
+      "from_port": 5432,
+      "to_port": 5432,
+      "cidrs": [
+       "0.0.0.0/0"
+      ],
+      "source_groups": [
+       "sg-062ef38805d115471"
+      ],
+      "prefix_list_ids": []
+     }
+    ],
+    "egress": [
+     {
+      "protocol": "-1",
+      "from_port": null,
+      "to_port": null,
+      "cidrs": [
+       "0.0.0.0/0"
+      ],
+      "source_groups": [],
+      "prefix_list_ids": []
+     }
+    ]
+   },
+   "tags": {
+    "env": "prod",
+    "sovereign-shift-demo": "true"
+   },
+   "relations": [
+    {
+     "type": "in_vpc",
+     "target": "vpc-0a0bc583d62ef4461"
+    },
+    {
+     "type": "ingress_security_group",
+     "target": "sg-062ef38805d115471"
+    }
+   ]
+  },
+  {
+   "id": "sg-062ef38805d115471",
+   "type": "security_group",
+   "region": "eu-north-1",
+   "name": "web-sg",
+   "properties": {
+    "ingress": [
+     {
+      "protocol": "tcp",
+      "from_port": 80,
+      "to_port": 80,
+      "cidrs": [
+       "0.0.0.0/0"
+      ],
+      "source_groups": [],
+      "prefix_list_ids": []
+     },
+     {
+      "protocol": "tcp",
+      "from_port": 22,
+      "to_port": 22,
+      "cidrs": [
+       "0.0.0.0/0"
+      ],
+      "source_groups": [],
+      "prefix_list_ids": []
+     },
+     {
+      "protocol": "tcp",
+      "from_port": 443,
+      "to_port": 443,
+      "cidrs": [
+       "0.0.0.0/0"
+      ],
+      "source_groups": [],
+      "prefix_list_ids": []
+     }
+    ],
+    "egress": [
+     {
+      "protocol": "-1",
+      "from_port": null,
+      "to_port": null,
+      "cidrs": [
+       "0.0.0.0/0"
+      ],
+      "source_groups": [],
+      "prefix_list_ids": []
+     }
+    ]
+   },
+   "tags": {
+    "sovereign-shift-demo": "true",
+    "env": "prod"
+   },
+   "relations": [
+    {
+     "type": "in_vpc",
+     "target": "vpc-0a0bc583d62ef4461"
+    }
+   ]
+  },
+  {
+   "id": "sg-0db4d4db3336c190f",
+   "type": "security_group",
+   "region": "eu-north-1",
+   "name": "alb-sg",
+   "properties": {
+    "ingress": [
+     {
+      "protocol": "tcp",
+      "from_port": 80,
+      "to_port": 80,
+      "cidrs": [
+       "0.0.0.0/0"
+      ],
+      "source_groups": [],
+      "prefix_list_ids": []
+     }
+    ],
+    "egress": [
+     {
+      "protocol": "-1",
+      "from_port": null,
+      "to_port": null,
+      "cidrs": [
+       "0.0.0.0/0"
+      ],
+      "source_groups": [],
+      "prefix_list_ids": []
+     }
+    ]
+   },
+   "tags": {
+    "sovereign-shift-demo": "true",
+    "env": "prod"
+   },
+   "relations": [
+    {
+     "type": "in_vpc",
+     "target": "vpc-0a0bc583d62ef4461"
+    }
+   ]
+  },
+  {
+   "id": "sg-0f02bc55ecb2afafd",
+   "type": "security_group",
+   "region": "eu-north-1",
+   "name": "default",
+   "properties": {
+    "ingress": [
+     {
+      "protocol": "-1",
+      "from_port": null,
+      "to_port": null,
+      "cidrs": [],
+      "source_groups": [
+       "sg-0f02bc55ecb2afafd"
+      ],
+      "prefix_list_ids": []
+     }
+    ],
+    "egress": [
+     {
+      "protocol": "-1",
+      "from_port": null,
+      "to_port": null,
+      "cidrs": [
+       "0.0.0.0/0"
+      ],
+      "source_groups": [],
+      "prefix_list_ids": []
+     }
+    ]
+   },
+   "tags": {},
+   "relations": [
+    {
+     "type": "in_vpc",
+     "target": "vpc-0a0bc583d62ef4461"
+    },
+    {
+     "type": "ingress_security_group",
+     "target": "sg-0f02bc55ecb2afafd"
+    }
+   ]
+  },
+  {
+   "id": "subnet-0b9e7e70e2c8d2141",
+   "type": "subnet",
+   "region": "eu-north-1",
+   "name": "subnet-0b9e7e70e2c8d2141",
+   "properties": {
+    "cidr": "172.31.0.0/20",
+    "availability_zone": "eu-north-1c",
+    "map_public_ip": true
+   },
+   "tags": {},
+   "relations": [
+    {
+     "type": "in_vpc",
+     "target": "vpc-0a0bc583d62ef4461"
+    }
+   ]
+  },
+  {
+   "id": "subnet-0c736e1e757bd6a5e",
+   "type": "subnet",
+   "region": "eu-north-1",
+   "name": "subnet-0c736e1e757bd6a5e",
+   "properties": {
+    "cidr": "172.31.16.0/20",
+    "availability_zone": "eu-north-1a",
+    "map_public_ip": true
+   },
+   "tags": {},
+   "relations": [
+    {
+     "type": "in_vpc",
+     "target": "vpc-0a0bc583d62ef4461"
+    }
+   ]
+  },
+  {
+   "id": "subnet-0ca8df0fcb1e2386d",
+   "type": "subnet",
+   "region": "eu-north-1",
+   "name": "subnet-0ca8df0fcb1e2386d",
+   "properties": {
+    "cidr": "172.31.32.0/20",
+    "availability_zone": "eu-north-1b",
+    "map_public_ip": true
+   },
+   "tags": {},
+   "relations": [
+    {
+     "type": "in_vpc",
+     "target": "vpc-0a0bc583d62ef4461"
+    }
+   ]
+  },
+  {
+   "id": "arn:aws:elasticloadbalancing:eu-north-1:123456789012:targetgroup/web-tg/95ea4d5b9ac176bb",
+   "type": "target_group",
+   "region": "eu-north-1",
+   "name": "web-tg",
+   "properties": {
+    "port": 80,
+    "protocol": "HTTP",
+    "target_type": "instance",
+    "health_check_path": "/",
+    "health_check_protocol": "HTTP",
+    "health_check_port": "traffic-port",
+    "targets": [
+     {
+      "id": "i-078d4fb3bb0a542c6",
+      "port": 80
+     },
+     {
+      "id": "i-0140a24d3cefab37c",
+      "port": 80
+     }
+    ]
+   },
+   "tags": {},
+   "relations": [
+    {
+     "type": "in_vpc",
+     "target": "vpc-0a0bc583d62ef4461"
+    },
+    {
+     "type": "associated_with",
+     "target": "arn:aws:elasticloadbalancing:eu-north-1:123456789012:loadbalancer/app/web-alb/2edd48748ff69ef1"
+    },
+    {
+     "type": "targets",
+     "target": "i-0140a24d3cefab37c"
+    },
+    {
+     "type": "targets",
+     "target": "i-078d4fb3bb0a542c6"
+    }
+   ]
+  },
+  {
+   "id": "vpc-0a0bc583d62ef4461",
+   "type": "vpc",
+   "region": "eu-north-1",
+   "name": "vpc-0a0bc583d62ef4461",
+   "properties": {
+    "cidr": "172.31.0.0/16",
+    "default": true
+   },
+   "tags": {},
+   "relations": []
+  }
+ ]
+}

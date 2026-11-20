@@ -62,6 +62,14 @@ class AIClient:
     def info(self) -> dict:
         return {"base_url": self.base_url, "model": self.model, "enabled": self.enabled}
 
+    def _routing(self) -> dict | None:
+        # on openrouter, pin inference to one provider (mistral by default) and opt out of data collection
+        # eu.openrouter.ai would do this per region but needs a business plan (docs/research/environment.md)
+        if "openrouter.ai" not in self.base_url:
+            return None
+        only = [p.strip() for p in os.environ.get("SOVEREIGN_AI_PROVIDER_ONLY", "mistral").split(",") if p.strip()]
+        return {"provider": {"only": only, "allow_fallbacks": False, "data_collection": "deny"}}
+
     def _call(self, system: str, user: str) -> str:
         if self._client is None:
             from openai import OpenAI
@@ -71,6 +79,7 @@ class AIClient:
             messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
             response_format={"type": "json_object"},
             temperature=0.2,
+            extra_body=self._routing(),
         )
         return response.choices[0].message.content or ""
 
