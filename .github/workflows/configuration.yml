@@ -1,0 +1,19 @@
+name: Verify environment configuration
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  configuration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required Actions settings
+        env:
+          SOVEREIGN_AI_API_KEY: ${{ secrets.SOVEREIGN_AI_API_KEY }}
+          SOVEREIGN_AI_BASE_URL: ${{ vars.SOVEREIGN_AI_BASE_URL }}
+          SOVEREIGN_AI_MODEL: ${{ vars.SOVEREIGN_AI_MODEL }}
+          AWS_PROFILE: ${{ vars.AWS_PROFILE }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          for name in SOVEREIGN_AI_API_KEY SOVEREIGN_AI_BASE_URL SOVEREIGN_AI_MODEL AWS_PROFILE AWS_REGION; do
+            if [[ -z "${!name}" ]]; then echo "::error::Missing $name"; exit 1; fi
+          done

@@ -96,3 +96,9 @@ sovereign-shift all --from-snapshot examples/sample_inventory.json --mapping exa
 Open `out/demo/report.md`. Follow the inferred connection from the VM to PostgreSQL,
 the public SSH finding, and the database and bucket migration steps. Prices in the
 example are illustrative. Use a dedicated output directory for each assessment.
+
+The CLI loads `.env` from the current directory. Exported environment variables
+take precedence. For scans, explicit `--region` options take precedence over
+`AWS_REGION`; when both are absent the scanner discovers enabled regions.
+The manual GitHub Actions workflow “Verify environment configuration” checks
+the repository secret and four variables without printing their values.

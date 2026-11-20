@@ -6,6 +6,8 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Annotated
 
+from dotenv import load_dotenv
+
 import boto3
 import typer
 from botocore.exceptions import BotoCoreError, ClientError
@@ -26,6 +28,7 @@ app = typer.Typer(no_args_is_help=True)
 @app.callback()
 def main() -> None:
     """Assess cloud infrastructure migrations."""
+    load_dotenv(Path.cwd() / ".env", override=False)
 
 
 @app.command("scan")
@@ -36,6 +39,8 @@ def scan_command(
 ) -> None:
     """Write inventory.json using read-only AWS calls."""
     try:
+        if not region and os.getenv("AWS_REGION"):
+            region = [os.environ["AWS_REGION"]]
         inventory = scan(boto3.Session(profile_name=profile), region)
     except ClientError as exc:
         typer.echo(f"AWS scan failed in {exc.operation_name}: {exc.response['Error']['Code']}", err=True)
