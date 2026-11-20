@@ -89,6 +89,12 @@ def runbook(out: Path, inventory: dict, mapping: dict, no_ai: bool) -> dict:
             steps=[],
         )
         result.append(entry)
+        if kind == "ebs_volume" and entries[identifier].get("via") == "report":
+            # root disks: the translator folds them into the instance, its copy step covers the data
+            entry["not_capable"].append(
+                {"what": kind, "reason": "Root disk, its data moves with the instance's copy steps"}
+            )
+            continue
         if not steps:
             entry["not_capable"].append(
                 {"what": kind, "reason": "No migration template for this resource"}

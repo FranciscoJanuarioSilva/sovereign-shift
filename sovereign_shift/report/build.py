@@ -13,26 +13,66 @@ def cell(value: object) -> str:
     return escape(str(value)).replace("|", "&#124;").replace("\n", " ")
 
 
+def display_names(resources: dict, entries: dict) -> dict[str, str]:
+    """Human name per resource id: the aws name, or a short form when the name is just an arn."""
+    out = {}
+    for ident, r in resources.items():
+        name = r.get("name") or ident
+        if name.startswith("arn:"):
+            # listeners have no name, the translator's tf_name (e.g. lb_listener_443) reads better
+            name = entries.get(ident, {}).get("tf_name") or name.rsplit("/", 2)[-2]
+        out[ident] = name
+    return out
+
+
+def alternative_text(alt: dict) -> str:
+    steps = "; ".join(alt.get("manual_steps") or [])
+    text = f"AI alternative: {alt.get('name', '?')} (effort {alt.get('effort', '?')}, confidence {alt.get('confidence', '?')})"
+    return text + (f". Steps: {steps}" if steps else "")
+
+
 def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> None:
     resources, entries = indexed(inventory, mapping)
     graph, findings, plan, book = (
         read(out, name) for name in ("graph", "findings", "finalize", "runbook")
     )
+    display = display_names(resources, entries)
+    account = inventory.get("account_id", "")
+    if account:
+        # data gets the account masked before rendering, so look names up by the masked id too
+        display |= {k.replace(account, "****" + account[-4:]): v for k, v in display.items()}
+
+    def show(ident: str) -> str:
+        return display.get(ident, ident)
+
     names = {node["id"]: f"n{i}" for i, node in enumerate(graph["nodes"])}
     diagram = ["flowchart LR"]
     for node in graph["nodes"]:
-        label = re.sub(r"[^\w .:/-]", "_", node["name"])
+        label = re.sub(r"[^\w .:/-]", "_", display.get(node["id"], node["name"]))
         diagram.append(f'  {names[node["id"]]}["{label}"]')
     for edge in graph["edges"]:
         arrow = "-.->" if edge.get("inferred") else "-->"
         diagram.append(f"  {names[edge['from']]} {arrow} {names[edge['to']]}")
     graph["mermaid"] = "\n".join(diagram)
     costs, work = [], []
+    unpriced = 0
     for ident, e in entries.items():
-        costs.append({"source_id": ident, **(e.get("monthly_cost_eur") or {})})
+        price = e.get("monthly_cost_eur") or {}
+        if price.get("aws") is None and price.get("leaseweb") is None:
+            unpriced += 1
+        else:
+            costs.append({
+                "source_id": ident, "name": show(ident), "type": e["source_type"],
+                "aws_type": resources[ident].get("properties", {}).get("instance_type")
+                or resources[ident].get("properties", {}).get("instance_class"),
+                "leaseweb_type": (e.get("target") or {}).get("instance_type"),
+                "oversized": any("over-provisioned" in n for n in e.get("notes", [])),
+                **price,
+            })
         work.append(
             dict(
                 source_id=ident,
+                name=show(ident),
                 status=e["status"],
                 via=e["via"],
                 what=e.get("justification", ""),
@@ -41,10 +81,15 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
                 ai_suggested=e.get("ai_suggested", False),
             )
         )
+    oversized = [c for c in costs if c["oversized"]]
     cost = {
         "lines": costs,
+        "unpriced_resources": unpriced,
+        "oversized": len(oversized),
         "assumptions": [
-            "Monthly EUR estimates supplied by Translate. Missing prices are unknown."
+            "Monthly EUR estimates supplied by Translate. Only compute (instances, databases) is priced, the rest has no separate cost here.",
+            "AWS: approximate on-demand list prices. Leaseweb: catalog price, or an estimate where marked *.",
+            "The smallest Leaseweb size is 2 vCPU, so tiny AWS instances map to a bigger, pricier VM.",
         ],
     }
     for provider in ("aws", "leaseweb"):
@@ -91,16 +136,29 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
         data["graph"]["mermaid"],
         "```",
         "## Monthly costs (EUR)",
-        "| Resource | AWS | Leaseweb |",
-        "|---|---:|---:|",
+        "| Resource | AWS type | AWS | Leaseweb type | Leaseweb |",
+        "|---|---|---:|---|---:|",
     ]
+
+    def eur(value: object, estimated: bool = False) -> str:
+        return "unknown" if value is None else f"{value:.2f}{'*' if estimated else ''}"
+
     for c in data["cost"]["lines"]:
+        flag = " (over-provisioned)" if c["oversized"] else ""
         lines.append(
-            f"| {cell(c['source_id'])} | {c.get('aws') if c.get('aws') is not None else 'unknown'} | {c.get('leaseweb') if c.get('leaseweb') is not None else 'unknown'} |"
+            f"| {cell(c['name'])} | {cell(c.get('aws_type') or '')} | {eur(c.get('aws'))} | "
+            f"{cell(c.get('leaseweb_type') or '')}{flag} | {eur(c.get('leaseweb'), c.get('leaseweb_estimated', False))} |"
         )
     lines += [
-        f"| Subtotal of priced resources | {cost['aws_priced_subtotal_eur']:.2f} | {cost['leaseweb_priced_subtotal_eur']:.2f} |",
-        "Unknown prices are excluded from the subtotal.",
+        f"| **Total** | | {cost['aws_priced_subtotal_eur']:.2f} | | {cost['leaseweb_priced_subtotal_eur']:.2f} |",
+        "\n".join(f"- {a}" for a in cost["assumptions"]),
+    ]
+    if oversized:
+        lines.append(
+            f"{len(oversized)} of {len(costs)} priced resources are smaller than Leaseweb's smallest size (2 vCPU). "
+            "For them the Leaseweb VM is bigger than what runs today, so compare on capacity, not on the bill alone."
+        )
+    lines += [
         "## Migration work",
         "| Resource | Status | Via | Details |",
         "|---|---|---|---|",
@@ -108,14 +166,14 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
     for e in data["work"]:
         detail = [e["what"], *e["notes"]]
         if e["alternative"]:
-            detail.append(str(e["alternative"]))
+            detail.append(alternative_text(e["alternative"]))
         if e["ai_suggested"]:
             detail.insert(0, "ai-suggested")
         lines.append(
             "| "
             + " | ".join(
                 cell(v)
-                for v in (e["source_id"], e["status"], e["via"], " ".join(detail))
+                for v in (e["name"], e["status"], e["via"], " ".join(detail))
             )
             + " |"
         )
@@ -124,7 +182,7 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
         "Security group attachments and target registrations are pending until finalize runs.",
     ]
     lines.extend(
-        f"- {cell(m['source_id'])} — {cell(m['what'])}"
+        f"- {cell(show(m['source_id']))} — {cell(m['what'])}"
         for m in data["finalize"].get("manual", [])
     )
     lines += [
@@ -136,20 +194,29 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
         lines.append(
             "| "
             + " | ".join(
-                cell(f[k]) for k in ("resource", "severity", "evidence", "fix")
+                cell(show(f[k]) if k == "resource" else f[k]) for k in ("resource", "severity", "evidence", "fix")
             )
             + " |"
         )
     for item in data["graph"].get("findings", []):
-        lines.append(f"- {cell(item['resource'])} — {cell(item['message'])}")
+        lines.append(f"- {cell(show(item['resource']))} — {cell(item['message'])}")
     for agent, title in [("explainer","Migration summary"), ("reviewer","Firewall review")]:
         if agent in data:
             lines.extend(["## "+title, "ai-suggested — "+cell(data[agent]["text"]), cell(data[agent]["justification"])])
         elif agent == "reviewer":
             lines.append("Firewall translation is unreviewed.")
     lines.append("## Migration runbook")
+    nothing_to_move = []
     for entry in data["runbook"]["entries"]:
-        lines.append("### " + cell(entry["source_id"]))
+        generic = all(
+            "No migration template" in i.get("reason", "") or "moves with the instance" in i.get("reason", "")
+            for i in entry["not_capable"]
+        )
+        # networks, groups, keys etc. carry no data, list them once instead of one empty section each
+        if not entry["steps"] and not entry["personalised"] and generic:
+            nothing_to_move.append(show(entry["source_id"]))
+            continue
+        lines.append("### " + cell(show(entry["source_id"])))
         if entry["personalised"]:
             lines.append("ai-suggested — " + cell(entry["justification"]))
         lines.extend(cell(i["reason"]) for i in entry["not_capable"])
@@ -164,6 +231,8 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
                     "```",
                 ]
             )
+    if nothing_to_move:
+        lines.append("No separate data move for: " + cell(", ".join(nothing_to_move)) + " (no data, or moved with their instance).")
     lines += ["## Terraform files", ", ".join(data["terraform_files"])]
     write(
         out / "report.md",

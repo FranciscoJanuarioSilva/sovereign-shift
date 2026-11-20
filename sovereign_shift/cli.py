@@ -166,7 +166,18 @@ def all_command(
     generate_command(out)
     runbook_command(out, no_ai)
     report_command(out, no_ai)
+    publish_command(out)
     typer.echo(f"Assessment ready at {out / 'report.md'}")
+
+
+@app.command("publish")
+def publish_command(out: Path = typer.Option(Path("out"), "--out")) -> None:
+    """Write shareable copies to out/public with the AWS account id masked."""
+    from sovereign_shift.publish import publish
+
+    account = json.loads((out / "inventory.json").read_text()).get("account_id", "")
+    written = publish(out, account)
+    typer.echo(f"Wrote {len(written)} shareable files to {out / 'public'} (account id masked)")
 
 
 @app.command("translate")

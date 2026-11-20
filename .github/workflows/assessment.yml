@@ -74,13 +74,5 @@ jobs:
           name: migration-assessment-${{ github.run_id }}
           retention-days: 3
           if-no-files-found: error
-          path: |
-            out/graph.json
-            out/graph.html
-            out/findings.json
-            out/mapping.json
-            out/runbook.json
-            out/finalize.json
-            out/report.json
-            out/report.md
-            out/terraform/*.tf
+          # only the masked copies, the account id never leaves the runner
+          path: out/public/

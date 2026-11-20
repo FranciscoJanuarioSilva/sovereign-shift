@@ -17,7 +17,7 @@ From the project directory, with Python 3.11 or later:
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
-sovereign-shift scan --profile readonly --region eu-west-1 --out out/
+sovereign-shift scan --profile sovereign-readonly --region eu-north-1 --out out/
 ```
 
 Use a configured AWS profile with the [scanner IAM policy](docs/iam-policy.json),
@@ -98,6 +98,7 @@ the public SSH finding, and the database and bucket migration steps. Prices in t
 example are illustrative. Use a dedicated output directory for each assessment.
 
 For a live assessment, run `sovereign-shift all --profile sovereign-readonly --region eu-north-1 --out out/live`.
+`all` ends with `publish`, which copies the shareable files to `out/<dir>/public/` with the AWS account id masked. Share only that folder. `inventory.json` is never copied there.
 Pass `--mapping FILE` to replay an existing translation. With AI enabled, the report can include a
 migration summary and a firewall review. Cost subtotals include only resources with a price.
 For post-apply finalization, `--private-network-cidr` supplies the private network range used by load balancer rules.

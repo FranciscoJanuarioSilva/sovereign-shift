@@ -26,15 +26,26 @@ def literal(value: object) -> str:
     )
 
 
+LABEL = re.compile(r"^[a-z][a-z0-9_]{0,62}$")
+
+
+def resource_labels(resources: dict, entries: dict) -> dict[str, str]:
+    """Terraform labels from the translator's tf_name, so no aws id or account number ends up in main.tf."""
+    labels: dict[str, str] = {}
+    used: set[str] = set()
+    for key in resources:
+        name = entries.get(key, {}).get("tf_name") or ""
+        if not LABEL.match(name) or name in used:
+            # fallback is a hash only, never the raw id (arns carry the account id)
+            name = "r_" + hashlib.sha256(key.encode()).hexdigest()[:12]
+        used.add(name)
+        labels[key] = name
+    return labels
+
+
 def generate(out: Path, inventory: dict, graph: dict, mapping: dict) -> dict:
     resources, entries = indexed(inventory, mapping)
-    labels = {
-        key: "r_"
-        + re.sub(r"[^A-Za-z0-9_]", "_", key)[:60]
-        + "_"
-        + hashlib.sha256(key.encode()).hexdigest()[:10]
-        for key in resources
-    }
+    labels = resource_labels(resources, entries)
     targets = {key: entry.get("target") or {} for key, entry in entries.items()}
     related = defaultdict(set)
     for edge in graph["edges"]:

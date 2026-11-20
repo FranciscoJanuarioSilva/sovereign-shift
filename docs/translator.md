@@ -101,9 +101,9 @@ The full table per `target.kind` is in `docs/contracts.md`, section "As implemen
 - On the fixture, graph → translate → generate → runbook → report all run, and `terraform validate` passes with `leaseweb/leaseweb` v1.32.1 (in podman).
 
 ## Known gaps / for other owners
-1. Generator: it rebuilds SG rules from the raw inventory and ignores `target.rules` / `attach_to`. So `finalize.json` loses the fixes above: the DB group attaches to nothing, an open 5432 becomes a manual item, and LB-group rules become "resolve missing source group". Suggested fix: read `target.rules` and map `tf_name` to the generator's labels.
+1. ~~Generator ignores `target.rules`~~: fixed in `ceba5dc`. ~~Account id in Terraform labels~~: fixed, labels are now the `tf_name` (hash fallback, never the raw id), and `publish` writes masked copies of every shareable file to `out/public/`. CI uploads only that folder.
 2. Generator: listener build raises if a listener forwards to more than one target group (ALB rules). The translator keeps only the default target group and flags path/host rules.
-3. Report: prints `alternative` with `str(dict)`. Render `name`, `effort` and `manual_steps` instead.
+3. ~~Report noise~~: fixed. Costs list priced rows only, by name, with AWS/Leaseweb types and an over-provisioned flag. AI alternatives are rendered as text. The runbook skips resources with nothing to move (including root disks) and lists them in one line.
 4. AI model and base URL to be chosen and put in `.env`.
 5. Real Leaseweb prices need a token and a catalog fetch script.
 6. Leaseweb region codes other than `eu-west-3` / `eu-central-1`, and image ids marked `verified: false`, still need checking against the API.
