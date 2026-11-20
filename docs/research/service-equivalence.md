@@ -12,7 +12,7 @@ Target A = `leaseweb/leaseweb` provider. Target API = Leaseweb Public Cloud REST
 | EIP | none | manual | every instance gets one public IPv4, but it can't be reserved or moved. The IP changes, so DNS must be updated (we generate the records) |
 | Key pair | A `ssh_key` on the instance | full | AWS never exposes private keys; the public key comes from `describe_key_pairs(IncludePublicKey=True)` |
 | user_data | A `user_data` | full | can't combine with `ssh_key`, so merge the key into cloud-init |
-| VPC / subnets / route tables / IGW | A `has_private_network = true` | partial | everything collapses to one private network (`eth1`, DHCP /27). Report what was lost (isolation between subnets) |
+| VPC / subnets / route tables / IGW | A `has_private_network = true` | partial | everything collapses to one private network (second NIC, DHCP /27). Report what was lost (isolation between subnets) |
 | NAT gateway | none needed | partial | every instance has its own public IPv4. Report it |
 | Security group | API `POST /securityGroups`, `authorizeFirewallRules`, `attachSecurityGroups` | full | rules take CIDRs only, so SG-to-SG references become /32 rules on the source instances' private IPs, resolved after apply |
 | ALB / NLB | A `leaseweb_public_cloud_load_balancer` + `_listener` + `_target_group` | full | path/host routing rules and multiple AZ backends aren't supported (flag them). HTTPS needs a cert, ACM can't be exported |

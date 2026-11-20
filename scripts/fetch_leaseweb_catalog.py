@@ -13,7 +13,7 @@ import json
 import os
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 
 import httpx
@@ -120,7 +120,7 @@ def main() -> None:
             print(f"{region['name']:15} {region['location']:14} {region['currency']}  {len(items):3} instance types")
 
     header = {
-        "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "fetched_at": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "source": "api",
         "note": NOTE,
         "regions": [

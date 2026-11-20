@@ -1,7 +1,7 @@
 import json
 import re
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from html import escape
 from pathlib import Path
 
@@ -35,7 +35,7 @@ def leaseweb_price_notes(source: str) -> list[str]:
             "Regions that Leaseweb bills in another currency (e.g. London in GBP) show unknown, never a converted guess.",
         ]
         try:
-            age = (datetime.now(timezone.utc) - datetime.fromisoformat(taken + "T00:00:00+00:00")).days
+            age = (datetime.now(UTC) - datetime.fromisoformat(taken + "T00:00:00+00:00")).days
         except ValueError:
             return notes
         if age > 30:
@@ -139,7 +139,7 @@ def report(out: Path, inventory: dict, mapping: dict, no_ai: bool = True) -> Non
     account = inventory.get("account_id", "")
     counts = Counter(e["status"] for e in entries.values())
     data = dict(
-        generated_at=datetime.now(timezone.utc).isoformat(),
+        generated_at=datetime.now(UTC).isoformat(),
         source=dict(
             cloud=inventory.get("source", "aws"),
             account_id="****" + account[-4:],

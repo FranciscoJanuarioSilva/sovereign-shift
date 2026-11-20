@@ -37,8 +37,8 @@ data/           # leaseweb_catalog.json (committed API snapshot, refresh with sc
 runbook/templates/  # YAML: allowed runbook steps per resource type
 docs/           # research, contracts, schemas
 scripts/        # fetch-corpus.sh, extract_schemas.py
-testdata/       # fixture inventory and golden outputs
-examples/       # sample_inventory.json for offline demo
+testdata/       # synthetic fixtures: inventories, mappings, small catalog (tests and the pitch demo)
+examples/       # aws_demo_inventory.json (our real demo account, identifiers replaced), cloudflare-worker/
 corpus/         # reference repos, gitignored
 ```
 
@@ -50,7 +50,7 @@ Python 3.11+, boto3, pydantic, networkx, typer, jinja2, openai SDK (custom `base
 ./scripts/fetch-corpus.sh                       # reference repos (optional)
 pytest
 sovereign-shift scan --profile sovereign-readonly --region eu-north-1
-sovereign-shift all --from-snapshot examples/sample_inventory.json --no-ai --out out/
+sovereign-shift all --from-snapshot examples/aws_demo_inventory.json --no-ai --out out/demo
 sovereign-shift finalize --out out/ --dry-run      # after terraform apply; drop --dry-run to call the API
 ```
 Terraform isn't installed on this machine. Run it through the container:

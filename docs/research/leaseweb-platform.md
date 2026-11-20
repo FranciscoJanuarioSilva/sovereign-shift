@@ -54,7 +54,7 @@ Sources: https://kb.leaseweb.com/kb/object-storage/object-storage-overview/, htt
 ## Networking
 - Leaseweb VPC (https://kb.leaseweb.com/kb/leaseweb-vpc/leaseweb-vpc-overview/): "first release phase", set up via support ticket. L2 isolated or L3 routed networks (up to 5, no ACLs between them). Connects dedicated servers and public cloud. Network ACLs and security groups are "available in a future release".
 - Private Network (https://kb.leaseweb.com/kb/private-network/private-network-overview/): metro-wide L2, free traffic within a metro. Connects dedicated servers, colocation, public cloud, Elastic Compute, VMware and file/block storage. Doesn't connect object storage or VPS. Default DHCP /27, max /24, jumbo frames.
-- Public cloud private network inside the instance: interface `eth1`, not up by default, DHCP must be configured (netplan/nmcli). Source: https://kb.leaseweb.com/kb/public-cloud/public-cloud-adding-public-cloud-instance-to-private-network/
+- Public cloud private network inside the instance: interface `eth1` on the old platform (our new-platform VM uses `enp3s0`), not up by default, DHCP must be configured (netplan/nmcli). Source: https://kb.leaseweb.com/kb/public-cloud/public-cloud-adding-public-cloud-instance-to-private-network/
 - Each instance has its own security group, "IP-table based", rules managed in the portal "or via the API", default rule ALL from 0.0.0.0/0. Source: https://kb.leaseweb.com/kb/public-cloud/public-cloud-managing-firewall-of-public-cloud/
 - Conclusion for the tool: VPC/subnets collapse to the private network (`has_private_network`). Security groups go to the Public Cloud API through finalize (`leaseweb-api.md`).
 

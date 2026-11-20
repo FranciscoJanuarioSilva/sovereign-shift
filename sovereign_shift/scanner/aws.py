@@ -1,7 +1,7 @@
 """Build the migration inventory from read-only AWS APIs."""
 
 from collections.abc import Iterator
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from typing import Any
 
 from boto3 import Session
@@ -386,7 +386,7 @@ def scan(session: Session, regions: list[str] | None = None) -> Item:
     return {
         "source": "aws",
         "account_id": account,
-        "scanned_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "scanned_at": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "regions": regions,
         "denied": denied,
         "resources": sorted(resources, key=lambda item: (item["region"], item["type"], item["id"])),

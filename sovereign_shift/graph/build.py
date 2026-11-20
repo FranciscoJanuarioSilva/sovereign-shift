@@ -99,13 +99,12 @@ def build_graph(inventory: dict[str, Any]) -> dict[str, Any]:
                         allowed[source] = f"{group_id} allows {source} on TCP/{port}"
         for instance_id in instances:
             matches = sorted(security_groups[instance_id].intersection(allowed))
-            if matches:
-                # an explicit relationship takes precedence over an inference
-                if not graph.has_edge(instance_id, database_id, "talks_to"):
-                    graph.add_edge(
-                        instance_id, database_id, key="talks_to",
-                        type="talks_to", inferred=True, evidence=allowed[matches[0]],
-                    )
+            # an explicit relationship takes precedence over an inference
+            if matches and not graph.has_edge(instance_id, database_id, "talks_to"):
+                graph.add_edge(
+                    instance_id, database_id, key="talks_to",
+                    type="talks_to", inferred=True, evidence=allowed[matches[0]],
+                )
 
     return {
         "nodes": [

@@ -29,7 +29,7 @@ def validate_selection(choice: Selection, steps: list[dict]) -> None:
     required = [step["id"] for step in steps]
     if [item.id for item in choice.steps] != required:
         raise ValueError("Missing, unknown or out-of-order migration step")
-    for item, template in zip(choice.steps, steps):
+    for item, template in zip(choice.steps, steps, strict=True):
         expected = {k: spec["source"] for k, spec in template["inputs"].items()}
         if item.inputs != expected:
             raise ValueError("Unknown input value or provenance")

@@ -56,7 +56,7 @@ def findings(inventory: dict, graph: dict) -> list[dict]:
         kind = resource["type"]
         props = resource.get("properties", {})
 
-        def add(code: str, severity: str, title: str, evidence: str) -> None:
+        def add(code: str, severity: str, title: str, evidence: str, resource: dict = resource) -> None:
             result.append(
                 dict(
                     id=code,

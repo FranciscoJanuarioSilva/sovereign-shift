@@ -13,6 +13,7 @@ from tempfile import TemporaryDirectory
 from threading import Lock
 from urllib.parse import urlsplit
 from uuid import uuid4
+import contextlib
 
 ROOT = Path(__file__).resolve().parent
 MAX_INVENTORY_BYTES = 16 * 1024 * 1024
@@ -185,10 +186,8 @@ def serve(port: int, terraform: str | None = None) -> None:
 
     with ThreadingHTTPServer(("127.0.0.1", port), Handler) as server:
         print(f"Frontend: http://127.0.0.1:{port}", flush=True)
-        try:
+        with contextlib.suppress(KeyboardInterrupt):
             server.serve_forever()
-        except KeyboardInterrupt:
-            pass
 
 
 if __name__ == "__main__":

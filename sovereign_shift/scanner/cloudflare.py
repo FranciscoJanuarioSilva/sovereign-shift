@@ -3,7 +3,7 @@
 import os
 import re
 from collections.abc import Iterator
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from urllib.parse import quote
 
 import httpx
@@ -122,7 +122,7 @@ def scan_account(account: str, client: httpx.Client) -> dict:
                 props["ttl"] = min(props.get("ttl", 2**31), 300 if ttl == 1 else ttl)
                 props.setdefault("values", []).append(record["content"])
     return dict(source="cloudflare", account_id=account, regions=["global"],
-                scanned_at=datetime.now(timezone.utc).isoformat(), resources=list(resources.values()), denied=denied)
+                scanned_at=datetime.now(UTC).isoformat(), resources=list(resources.values()), denied=denied)
 
 
 def scan() -> dict:

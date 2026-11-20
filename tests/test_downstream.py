@@ -113,10 +113,10 @@ def test_offline_commands(tmp_path: Path):
 
 
 def test_offline_demo(tmp_path: Path):
-    examples = Path(__file__).resolve().parents[1] / "examples"
+    fixtures = Path(__file__).resolve().parents[1] / "testdata"
     result = CliRunner().invoke(app, [
-        "all", "--from-snapshot", str(examples / "sample_inventory.json"),
-        "--mapping", str(examples / "sample_mapping.json"), "--no-ai", "--out", str(tmp_path),
+        "all", "--from-snapshot", str(fixtures / "sample_inventory.json"),
+        "--mapping", str(fixtures / "sample_mapping.json"), "--no-ai", "--out", str(tmp_path),
     ])
     assert result.exit_code == 0, result.exception
     assessment = json.loads((tmp_path / "report.json").read_text())
@@ -136,10 +136,18 @@ def test_all_translates_and_finalizes_snapshot(tmp_path):
     assert data["cost"]["aws_priced_subtotal_eur"] > 0
     plan = data["finalize"]
     registration = plan["target_registrations"][0]
-    outputs = {label: {"value": str(i + 1)} for i, label in enumerate([registration["target_group"], *registration["instances"]])}
+    # every terraform output the plan points at: target groups, lb members and security group attachments
+    labels = [registration["target_group"], *registration["instances"]]
+    labels += [name for group in plan["security_groups"] for name in group["attach_to"]]
+    outputs = {label: {"value": str(i + 1)} for i, label in enumerate(dict.fromkeys(labels))}
     calls = finalize(plan, outputs, "192.0.2.0/24", None, private_network_cidr="10.0.0.0/27")
     assert any(rule["source"] == "10.0.0.0/27" for c in calls if "authorizeFirewallRules" in c["path"] for rule in c["body"]["rules"])
-    assert any("manual provisioning" in m["what"] for m in plan["manual"])
+    # the self-hosted database gets its own vm in terraform, and its security group is attached to it
+    terraform = (tmp_path / "terraform/main.tf").read_text()
+    db_vms = [m["tf_name"] for m in json.loads((tmp_path / "mapping.json").read_text())["entries"]
+              if (m.get("target") or {}).get("kind") == "self_hosted_db"]
+    assert db_vms and all(f'resource "leaseweb_public_cloud_instance" "{name}"' in terraform for name in db_vms)
+    assert any(set(db_vms) & set(group["attach_to"]) for group in plan["security_groups"])
 
 
 def test_report_ai_uses_aggregate_data_and_marks_suggestions(monkeypatch):

@@ -79,7 +79,7 @@ resource "leaseweb_public_cloud_instance" "web" {
 ```
 - Valid `region` values: `eu-west-3`, `us-east-1`, `eu-central-1`, `ap-southeast-1`, `us-west-1`, `eu-west-2`, `ca-central-1`, `ap-northeast-1`.
 - Valid `type` values: families `lsw.m*` (general), `lsw.c*` (compute), `lsw.r*` (memory), `lsw.g6.*`, `lsw.gr6.*` (GPU), with generations 3, 4, 5, 5a, 6a and sizes large to 24xlarge. Full list in the schema dump.
-- Gotcha: `ssh_key` and `user_data` can't both be set. We always use `user_data` (cloud-init brings up `eth1` too) and put the key in it.
+- Gotcha: `ssh_key` and `user_data` can't both be set. We always use `user_data` (cloud-init also brings up the private network NIC, whatever its name) and put the key in it.
 - `user_data` is sent as plain text, not base64 (SDK `model_launch_instance_opts.go`).
 - Gotcha: the `image.id` values are Leaseweb OS ids like `UBUNTU_22_04_64BIT`, not AMIs. Map the AMI's OS family to the closest id (list via the `leaseweb_public_cloud_images` data source).
 

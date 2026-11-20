@@ -3,7 +3,7 @@
 import json
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any
 
@@ -176,7 +176,7 @@ def translate(
             ai_info["disabled_reason"] = ai.why_disabled()
     return Mapping(
         source=inventory.get("source", "aws"),
-        generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        generated_at=datetime.now(UTC).isoformat(timespec="seconds"),
         target_region=target_region or region_for(regions[0] if regions else None),
         catalog_source=catalog_source,
         ai=ai_info,

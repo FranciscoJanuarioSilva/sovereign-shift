@@ -9,7 +9,7 @@ from sovereign_shift.ai.client import AIClient
 from sovereign_shift.cli import app
 from sovereign_shift.translator.models import Mapping
 from sovereign_shift.translator import translate
-from sovereign_shift.translator.translate import AIAnswer, ai_payload, tf_names
+from sovereign_shift.translator.translate import tf_names
 
 FIXTURE = Path(__file__).resolve().parents[1] / "testdata" / "clickops_inventory.json"
 

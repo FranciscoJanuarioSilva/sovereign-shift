@@ -13,11 +13,75 @@ from sovereign_shift.artifacts import indexed, save, write
 API = "https://api.leaseweb.com/publicCloud/v1"
 KINDS = {
     "public_cloud_instance": "public_cloud_instance",
+    # the database lands on its own instance, the data itself moves with the runbook
+    "self_hosted_db": "public_cloud_instance",
     "load_balancer": "public_cloud_load_balancer",
     "target_group": "public_cloud_target_group",
     "lb_listener": "public_cloud_load_balancer_listener",
     "dns_record": "dns_resource_record_set",
 }
+
+
+VMS = {"public_cloud_instance", "self_hosted_db"}
+
+# the provider adds the private nic after launch (AddToPrivateNetwork), so it can show up after cloud-init ran.
+# the name differs per platform (eth1 on the old one, enp*/ens* on the openstack one), so match "any nic without ipv4".
+PRIVATE_NET = """#!/bin/sh
+# waits up to 10 min for the leaseweb private network nic and brings it up with dhcp
+f=/etc/netplan/60-leaseweb-private.yaml
+for try in $(seq 60); do
+  nics=""
+  for i in $(ls /sys/class/net); do
+    [ "$i" = lo ] && continue
+    ip -4 -o addr show dev "$i" | grep -q inet || nics="$nics $i"
+  done
+  if [ -n "$nics" ]; then
+    printf 'network:\\n  version: 2\\n  ethernets:\\n' > "$f"
+    for i in $nics; do
+      # no default route over the private network
+      printf '    %s:\\n      dhcp4: true\\n      dhcp4-overrides:\\n        use-routes: false\\n' "$i" >> "$f"
+    done
+    chmod 600 "$f" && netplan apply && exit 0
+  fi
+  sleep 10
+done
+"""
+
+# same major version as on aws, ubuntu's own packages are older and pg_restore can't go backwards
+PGDG_KEY = "B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8"
+
+
+def cloud_init(keys: list[str], db: dict | None = None) -> str:
+    config: dict = {
+        "write_files": [
+            {"path": "/usr/local/sbin/leaseweb-private-net", "permissions": "0755", "content": PRIVATE_NET},
+        ],
+        "runcmd": [["sh", "-c", "nohup /usr/local/sbin/leaseweb-private-net >/var/log/leaseweb-private-net.log 2>&1 &"]],
+    }
+    if keys:
+        config["ssh_authorized_keys"] = keys
+    if db:
+        engine = str(db.get("engine", "")).lower()
+        major = str(db.get("engine_version") or "").split(".")[0]
+        if engine.startswith("postgres"):
+            package = f"postgresql-{major}" if major.isdigit() else "postgresql"
+            config["apt"] = {"sources": {"pgdg": {
+                "source": "deb http://apt.postgresql.org/pub/repos/apt $RELEASE-pgdg main", "keyid": PGDG_KEY,
+            }}}
+            config["packages"] = [package]
+            config["runcmd"] += [
+                # listen on the private network too, the leaseweb security group decides who gets in
+                ["sh", "-c", "sed -i \"s/^#*listen_addresses.*/listen_addresses = '*'/\" /etc/postgresql/*/main/postgresql.conf"],
+                ["sh", "-c", "echo 'host all all samenet scram-sha-256' >> /etc/postgresql/*/main/pg_hba.conf"],
+                ["systemctl", "restart", "postgresql"],
+            ]
+        elif engine in {"mysql", "mariadb"}:
+            config["packages"] = ["mariadb-server" if engine == "mariadb" else "mysql-server"]
+            config["runcmd"] += [
+                ["sh", "-c", "sed -i 's/^bind-address.*/bind-address = 0.0.0.0/' /etc/mysql/*.conf.d/*.cnf"],
+                ["systemctl", "restart", "mariadb" if engine == "mariadb" else "mysql"],
+            ]
+    return "#cloud-config\n" + yaml.safe_dump(config, sort_keys=False)
 
 
 def literal(value: object) -> str:
@@ -43,6 +107,13 @@ def resource_labels(resources: dict, entries: dict) -> dict[str, str]:
     return labels
 
 
+def rendered(entry: dict, target: dict) -> bool:
+    # manual entries stay out of terraform, except a self-hosted db: its vm is terraform, its data is the runbook
+    if entry["status"] in {"auto", "partial"}:
+        return True
+    return target.get("kind") == "self_hosted_db" and bool(target.get("instance_type")) and entry["status"] == "manual"
+
+
 def generate(out: Path, inventory: dict, graph: dict, mapping: dict) -> dict:
     resources, entries = indexed(inventory, mapping)
     labels = resource_labels(resources, entries)
@@ -53,15 +124,12 @@ def generate(out: Path, inventory: dict, graph: dict, mapping: dict) -> dict:
             related[edge["from"]].add(edge["to"])
     members = defaultdict(list)
     for key, links in related.items():
-        if targets.get(key, {}).get("kind") == "public_cloud_instance" and entries[key][
-            "status"
-        ] in {"auto", "partial"}:
+        if targets.get(key, {}).get("kind") in VMS and rendered(entries[key], targets[key]):
             for link in sorted(links):
                 members[link].append(key)
     mapped_instances = {
         entry["tf_name"]: labels[key] for key, entry in entries.items()
-        if entry.get("tf_name") and targets[key].get("kind") == "public_cloud_instance"
-        and entry["status"] in {"auto", "partial"}
+        if entry.get("tf_name") and targets[key].get("kind") in VMS and rendered(entry, targets[key])
     }
     plan = dict(api=API, security_groups=[], target_registrations=[], manual=[])
     items = []
@@ -70,7 +138,7 @@ def generate(out: Path, inventory: dict, graph: dict, mapping: dict) -> dict:
         kind = t.get("kind")
         props = resources[key].get("properties", {})
         links = sorted(related[key])
-        if entry["status"] in {"manual", "unsupported"}:
+        if not rendered(entry, t):
             continue
         if kind == "security_group":
             rules = []
@@ -170,7 +238,7 @@ def generate(out: Path, inventory: dict, graph: dict, mapping: dict) -> dict:
         region = t.get("region", mapping["target_region"])
         contract = {"type": "HOURLY", "term": 0, "billing_frequency": 1}
         refs = {}
-        if kind == "public_cloud_instance":
+        if kind in VMS:
             key_name = props.get("key_name")
             if key_name:
                 links = sorted(
@@ -189,17 +257,6 @@ def generate(out: Path, inventory: dict, graph: dict, mapping: dict) -> dict:
                 if i in resources
                 and resources[i].get("properties", {}).get("public_key")
             ]
-            config = {
-                "ssh_authorized_keys": keys,
-                "write_files": [
-                    {
-                        "path": "/etc/netplan/60-leaseweb-private.yaml",
-                        "permissions": "0600",
-                        "content": "network:\n  version: 2\n  ethernets:\n    eth1:\n      dhcp4: true\n",
-                    }
-                ],
-                "runcmd": [["netplan", "apply"]],
-            }
             attrs = dict(
                 region=region,
                 type=t["instance_type"],
@@ -209,7 +266,7 @@ def generate(out: Path, inventory: dict, graph: dict, mapping: dict) -> dict:
                 has_private_network=True,
                 contract=contract,
                 reference=resources[key].get("name", key),
-                user_data="#cloud-config\n" + yaml.safe_dump(config),
+                user_data=cloud_init(keys, t if kind == "self_hosted_db" else None),
             )
             if props.get("key_name") and not keys:
                 plan["manual"].append(
@@ -307,7 +364,7 @@ def generate(out: Path, inventory: dict, graph: dict, mapping: dict) -> dict:
                 provider_type="leaseweb_" + KINDS[kind],
                 label=labels[key],
                 attributes={**{k: literal(v) for k, v in attrs.items()}, **refs},
-                export=kind in {"public_cloud_instance", "target_group"},
+                export=kind in VMS | {"target_group"},
             )
         )
     env = Environment(

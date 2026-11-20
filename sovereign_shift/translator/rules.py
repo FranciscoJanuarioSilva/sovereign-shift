@@ -3,7 +3,8 @@
 import math
 import re
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from sovereign_shift.translator.models import Alternative, Cost, MappingEntry
 
@@ -652,7 +653,7 @@ RULES: dict[str, Callable[[dict[str, Any], Context], MappingEntry]] = {
     "key_pair": key_pair,
     "ebs_volume": ebs_volume,
     "elastic_ip": elastic_ip,
-    "vpc": ec2_like_note("vpc", "Collapsed into the leaseweb private network (eth1, dhcp /27), subnet isolation is lost."),
+    "vpc": ec2_like_note("vpc", "Collapsed into the leaseweb private network (second nic, dhcp /27), subnet isolation is lost."),
     "subnet": ec2_like_note("subnet", "Collapsed into the leaseweb private network, every instance gets a public ip too (security groups close it)."),
 }
 

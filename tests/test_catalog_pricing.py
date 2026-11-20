@@ -120,9 +120,9 @@ def test_fetch_script_follows_pages_and_sends_the_token():
 
 def test_fetch_script_stops_on_a_rejected_token():
     script = load_script()
-    with httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(401, json={}))) as client:
-        with pytest.raises(SystemExit) as stop:
-            script.get(client, "/regions")
+    transport = httpx.MockTransport(lambda r: httpx.Response(401, json={}))
+    with httpx.Client(transport=transport) as client, pytest.raises(SystemExit) as stop:
+        script.get(client, "/regions")
     assert "401" in str(stop.value)
 
 
