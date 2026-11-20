@@ -8,13 +8,15 @@ on:
         options:
           - demo
           - aws
+          - cloudflare-demo
+          - cloudflare
         default: demo
       use_ai:
         description: Enable configured OpenRouter suggestions
         type: boolean
         default: false
       publish_live_results:
-        description: Share AWS assessment files with everyone who can read this repository
+        description: Share live assessment files with everyone who can read this repository
         type: boolean
         default: false
 
@@ -51,6 +53,31 @@ jobs:
         run: |
           : "${AWS_REGION:?Set AWS_REGION}" "${AWS_ACCESS_KEY_ID:?Set read-only credentials}" "${AWS_SECRET_ACCESS_KEY:?Set read-only credentials}"
           sovereign-shift scan --region "$AWS_REGION" --out out
+      - name: Load synthetic Cloudflare inventory
+        if: inputs.source == 'cloudflare-demo'
+        run: |
+          mkdir -p out
+          cp examples/cloudflare-worker/sample_snapshot.json out/inventory.json
+      - name: Scan Cloudflare
+        if: inputs.source == 'cloudflare'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          : "${CLOUDFLARE_ACCOUNT_ID:?Set CLOUDFLARE_ACCOUNT_ID}" "${CLOUDFLARE_API_TOKEN:?Set CLOUDFLARE_API_TOKEN}"
+          python - <<'PYSCAN'
+          from pathlib import Path
+          from sovereign_shift.artifacts import save
+          from sovereign_shift.scanner.cloudflare import scan
+
+          inventory = scan()
+          if any("/workers/scripts" in operation["operation"] for operation in inventory["denied"]):
+              raise SystemExit("Cloudflare denied access to Worker scripts, settings or schedules")
+          if not any(resource["type"] == "cloudflare_worker" for resource in inventory["resources"]):
+              raise SystemExit("Cloudflare returned no Workers for the configured account")
+          save(Path("out"), "inventory", inventory)
+          print("Read Cloudflare Workers inventory")
+          PYSCAN
       - name: Build assessment
         env:
           USE_AI: ${{ inputs.use_ai }}
@@ -69,7 +96,7 @@ jobs:
           terraform -chdir=out/terraform init -backend=false -input=false
           terraform -chdir=out/terraform validate
       - uses: actions/upload-artifact@v4
-        if: inputs.source == 'demo' || inputs.publish_live_results
+        if: inputs.source == 'demo' || inputs.source == 'cloudflare-demo' || inputs.publish_live_results
         with:
           name: migration-assessment-${{ github.run_id }}
           retention-days: 3
