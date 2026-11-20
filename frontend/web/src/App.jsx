@@ -40,9 +40,10 @@ export default function App() {
   return (
     <>
       <a className="skip" href="#main">Skip to content</a>
-      {state.report
-        ? <Report report={state.report} label={state.label} onReset={() => setState({ report: null, label: "", busy: false, error: "" })} />
-        : <Landing busy={state.busy} error={state.error} onScan={onScan} onFile={onFile} onDemo={onDemo} />}
+      <Landing hidden={Boolean(state.report)} busy={state.busy} error={state.error}
+        onScan={onScan} onFile={onFile} onDemo={onDemo} />
+      {state.report && <Report report={state.report} label={state.label}
+        onReset={() => setState({ report: null, label: "", busy: false, error: "" })} />}
     </>
   );
 }

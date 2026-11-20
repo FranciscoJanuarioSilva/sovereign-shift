@@ -17,8 +17,6 @@ export default function Connect({ busy, error, onScan, onFile, onDemo }) {
   function submit(event) {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(form.current));
-    // the inputs are cleared right away, the values only live in this request
-    form.current.reset();
     onScan({ ...data, provider, use_ai: useAi });
   }
 
@@ -64,7 +62,8 @@ export default function Connect({ busy, error, onScan, onFile, onDemo }) {
             ) : (
               <>
                 <label>Account ID<input name="account_id" required spellCheck="false" pattern="[a-fA-F0-9]{32}" placeholder="32 hexadecimal characters" /></label>
-                <label><span>API token <span className="optional">read permissions</span></span><input name="api_token" type="password" required spellCheck="false" /></label>
+                <label>Worker name<input name="worker_name" required spellCheck="false" pattern="[a-zA-Z0-9_\-]+" /></label>
+                <label><span>API token <span className="optional">Worker metadata read-only</span></span><input name="api_token" type="password" required spellCheck="false" /></label>
               </>
             )}
             <label>Destination

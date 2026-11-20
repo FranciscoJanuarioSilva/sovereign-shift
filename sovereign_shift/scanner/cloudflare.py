@@ -13,7 +13,7 @@ class ScanError(ValueError):
     pass
 
 
-def scan_account(account: str, client: httpx.Client) -> dict:
+def scan_account(account: str, client: httpx.Client, *, worker_name: str | None = None) -> dict:
     denied = []
     resources = {}
     base = f"/accounts/{account}"
@@ -57,31 +57,35 @@ def scan_account(account: str, client: httpx.Client) -> dict:
                                                  region="global", properties={}, relations=[]))
 
     namespaces = {}
-    for path, kind, key, label in [
-        ("storage/kv/namespaces", "kv_namespace", "id", "title"),
-        ("d1/database", "d1", "uuid", "name"),
-        ("r2/buckets", "r2_bucket", "name", "name"),
-        ("workflows", "workflow", "name", "name"),
-        ("workers/durable_objects/namespaces", "durable_object_namespace", "id", "name"),
-        ("queues", "queue", "queue_name", "queue_name"),
-    ]:
-        for row in rows(f"{base}/{path}"):
-            resource = add(kind, row[key], row[label])
-            if kind == "durable_object_namespace":
-                namespaces[row.get("script"), row.get("class")] = row[key]
-            if kind == "queue":
-                for consumer in row.get("consumers", []):
-                    if script_name := consumer.get("script_name"):
-                        resource["relations"].append(dict(type="consumed_by", target=f"cf:worker:{script_name}"))
-            if kind == "workflow" and row.get("script_name"):
-                resource["relations"].append(dict(type="runs_on", target="cf:worker:" + row["script_name"]))
+    if worker_name is None:
+        for path, kind, key, label in [
+            ("storage/kv/namespaces", "kv_namespace", "id", "title"),
+            ("d1/database", "d1", "uuid", "name"),
+            ("r2/buckets", "r2_bucket", "name", "name"),
+            ("workflows", "workflow", "name", "name"),
+            ("workers/durable_objects/namespaces", "durable_object_namespace", "id", "name"),
+            ("queues", "queue", "queue_name", "queue_name"),
+        ]:
+            for row in rows(f"{base}/{path}"):
+                resource = add(kind, row[key], row[label])
+                if kind == "durable_object_namespace":
+                    namespaces[row.get("script"), row.get("class")] = row[key]
+                if kind == "queue":
+                    for consumer in row.get("consumers", []):
+                        if script_name := consumer.get("script_name"):
+                            resource["relations"].append(dict(type="consumed_by", target=f"cf:worker:{script_name}"))
+                if kind == "workflow" and row.get("script_name"):
+                    resource["relations"].append(dict(type="runs_on", target="cf:worker:" + row["script_name"]))
 
     fields = {"r2_bucket": "bucket_name", "d1": "database_id", "kv_namespace": "namespace_id",
               "queue": "queue_name", "service": "service", "workflow": "workflow_name"}
-    for script in rows(f"{base}/workers/scripts"):
-        name = script["id"]
+    names = (worker_name,) if worker_name is not None else (script["id"] for script in rows(f"{base}/workers/scripts"))
+    for name in names:
+        script_path = f"{base}/workers/scripts/{quote(name, safe='')}"
+        settings = get(f"{script_path}/settings", {})
+        if worker_name is not None and settings is None:
+            raise ScanError("The token cannot read the specified Worker’s settings.")
         worker = add("worker", name, name)
-        settings = get(f"{base}/workers/scripts/{quote(name, safe='')}/settings", {})
         for binding in settings["result"].get("bindings", []) if settings else []:
             kind = binding["type"]
             key = binding.get(fields.get(kind, ""))
@@ -94,33 +98,35 @@ def scan_account(account: str, client: httpx.Client) -> dict:
             if kind == "r2_bucket" and binding.get("jurisdiction") not in (None, "", "default"):
                 kind = "jurisdictional_r2_bucket"
                 key = f"{binding['jurisdiction']}:{key}"
-            target = add("worker" if kind == "service" else kind,
+            target_kind = "worker" if kind == "service" and (worker_name is None or key == name) else kind
+            target = add(target_kind,
                          key or f"{name}/{binding['name']}", key or binding["name"])
             worker["relations"].append(dict(type="binds_" + binding["name"], target=target["id"]))
 
-        schedules = get(f"{base}/workers/scripts/{quote(name, safe='')}/schedules", {})
+        schedules = get(f"{script_path}/schedules", {})
         for schedule in schedules["result"]["schedules"] if schedules else []:
             cron = schedule["cron"]
             trigger = add("cron_trigger", f"{name}/{cron}", cron)
             trigger["relations"].append(dict(type="triggers", target=worker["id"]))
 
-    for zone in rows("/zones", {"account.id": account}):
-        domain = zone["name"]
-        parent = add("dns_zone", zone["id"], domain)
-        for record in rows(f"/zones/{zone['id']}/dns_records"):
-            name, kind = record["name"], record["type"]
-            resource = add("dns_record", f"{zone['id']}/{name}/{kind}", name)
-            resource["relations"] = [dict(type="in_zone", target=parent["id"])]
-            props = resource["properties"]
-            props.update(domain_name=domain, record_type=kind)
-            flattened = kind == "CNAME" and (name == domain or record.get("settings", {}).get("flatten_cname"))
-            if record.get("proxied") or flattened or kind not in {"A", "AAAA", "CNAME"}:
-                props["manual_review"] = True
-                props.pop("values", None)
-            elif not props.get("manual_review"):
-                ttl = record["ttl"]
-                props["ttl"] = min(props.get("ttl", 2**31), 300 if ttl == 1 else ttl)
-                props.setdefault("values", []).append(record["content"])
+    if worker_name is None:
+        for zone in rows("/zones", {"account.id": account}):
+            domain = zone["name"]
+            parent = add("dns_zone", zone["id"], domain)
+            for record in rows(f"/zones/{zone['id']}/dns_records"):
+                name, kind = record["name"], record["type"]
+                resource = add("dns_record", f"{zone['id']}/{name}/{kind}", name)
+                resource["relations"] = [dict(type="in_zone", target=parent["id"])]
+                props = resource["properties"]
+                props.update(domain_name=domain, record_type=kind)
+                flattened = kind == "CNAME" and (name == domain or record.get("settings", {}).get("flatten_cname"))
+                if record.get("proxied") or flattened or kind not in {"A", "AAAA", "CNAME"}:
+                    props["manual_review"] = True
+                    props.pop("values", None)
+                elif not props.get("manual_review"):
+                    ttl = record["ttl"]
+                    props["ttl"] = min(props.get("ttl", 2**31), 300 if ttl == 1 else ttl)
+                    props.setdefault("values", []).append(record["content"])
     return dict(source="cloudflare", account_id=account, regions=["global"],
                 scanned_at=datetime.now(UTC).isoformat(), resources=list(resources.values()), denied=denied)
 

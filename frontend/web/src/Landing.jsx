@@ -3,9 +3,9 @@ import HeroGraphic from "./HeroGraphic.jsx";
 import EuropeMap from "./EuropeMap.jsx";
 import { AiFlow, FixDiagram, InferDiagram, Pipeline, SizeDiagram } from "./Diagrams.jsx";
 
-export default function Landing(props) {
+export default function Landing({ hidden, ...props }) {
   return (
-    <main id="main" className="landing">
+    <main id={hidden ? undefined : "main"} className="landing" hidden={hidden}>
       <section className="hero">
         <nav className="topnav" aria-label="Page">
           <a className="brand" href="#main"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" /><path d="M7 22 C13 22 13 10 25 10" /></svg>Sovereign Shift</a>

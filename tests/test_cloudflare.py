@@ -113,3 +113,28 @@ def test_pagination_denials_and_private_bindings():
     assert snapshot["denied"][0]["operation"] == "/zones"
     assert "never-store" not in json.dumps(snapshot)
     assert {"first", "second", "NEXT"} <= {r["name"] for r in snapshot["resources"]}
+
+
+def test_scoped_worker_scan_only_reads_named_worker():
+    base = "/accounts/test/workers/scripts/demo"
+    responses = {
+        f"{base}/settings": {"bindings": [
+            {"type": "service", "name": "UPSTREAM", "service": "other-worker"},
+            {"type": "kv_namespace", "name": "CACHE", "namespace_id": "demo-cache"},
+        ]},
+        f"{base}/schedules": {"schedules": [{"cron": "0 9 * * *"}]},
+    }
+
+    def respond(request):
+        return httpx.Response(200, json={"success": True, "result": responses.pop(request.url.path)})
+
+    with httpx.Client(base_url="https://example.test", transport=httpx.MockTransport(respond)) as client:
+        inventory = scan_account("test", client, worker_name="demo")
+
+    assert not responses
+    assert {resource["id"] for resource in inventory["resources"]} == {
+        "cf:worker:demo",
+        "cf:service:other-worker",
+        "cf:kv_namespace:demo-cache",
+        "cf:cron_trigger:demo/0 9 * * *",
+    }

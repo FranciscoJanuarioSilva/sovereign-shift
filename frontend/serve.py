@@ -142,10 +142,13 @@ def scan_cloudflare(request: dict) -> dict:
     token = str(request.get("api_token", "")).strip()
     if not re.fullmatch(r"[a-fA-F0-9]{32}", account) or not token:
         raise ScanProblem("Enter the 32-character Cloudflare account ID and an API token with read permissions.")
+    worker_name = str(request.get("worker_name") or "").strip()
+    if not re.fullmatch(r"[a-zA-Z0-9_-]+", worker_name):
+        raise ScanProblem("Enter the Worker script name from the Cloudflare dashboard.")
     with httpx.Client(base_url="https://api.cloudflare.com/client/v4", timeout=30,
                       headers={"Authorization": f"Bearer {token}"}) as client:
         try:
-            return cloudflare_scanner.scan_account(account, client)
+            return cloudflare_scanner.scan_account(account, client, worker_name=worker_name)
         except cloudflare_scanner.ScanError as error:
             raise ScanProblem(str(error)) from None
         except httpx.HTTPError:

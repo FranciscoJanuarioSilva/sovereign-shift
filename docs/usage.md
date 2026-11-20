@@ -124,7 +124,7 @@ Runbook defaults are offline. For AI notes and the report's summary and firewall
 Open <http://127.0.0.1:8001>. Three ways in:
 - **AWS**: access key ID, secret, optional session token and the region. The server checks the key with STS, then refuses it if a dry-run `CreateSecurityGroup` would succeed (the key can change the account). Use a key with the managed policy `ReadOnlyAccess`.
 - **Google Cloud**: project ID and an access token from a Viewer account (`gcloud auth print-access-token --impersonate-service-account=VIEWER_SA`, valid for an hour). The server reads the token's scopes from Google's `tokeninfo`; if they go beyond read-only, it calls `testIamPermissions` on the project and refuses the token if it may create instances, firewalls, buckets or Cloud SQL. No live project was available, so this path is tested with recorded API responses only.
-- **Cloudflare**: account ID and an API token with the read permissions listed above.
+- **Cloudflare**: account ID, Worker script name and an API token with Metadata Read-Only access scoped to that Worker. The web scan reads the Worker’s settings and schedules and derives dependencies from its bindings.
 - **File**: an `inventory.json` from `sovereign-shift scan`, or a `report.json` from an earlier assessment.
 
 Tick **Add AI suggestions** to run the assessment with the AI settings from `.env`. <http://127.0.0.1:8001/#demo> opens the synthetic demo shop straight away.
