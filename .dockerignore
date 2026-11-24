@@ -1,0 +1,12 @@
+.git
+.venv
+.env
+.env.*
+!.env.example
+corpus
+out
+node_modules
+frontend/web
+apresentacao
+__pycache__
+.pytest_cache

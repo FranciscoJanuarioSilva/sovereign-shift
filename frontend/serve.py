@@ -208,10 +208,15 @@ def validate(terraform: str, files: dict[str, str]) -> dict:
         return {"passed": result.returncode == 0, "output": "\n\n".join(output)}
 
 
-def serve(port: int, terraform: str | None = None) -> None:
+def serve(port: int, terraform: str | None = None, bind: str = "127.0.0.1", public_host: str = "") -> None:
     assessments: OrderedDict[str, dict[str, str]] = OrderedDict()
     lock = Lock()
     local_hosts = {f"127.0.0.1:{port}", f"localhost:{port}"}
+    # behind a proxy the browser sends the public name, with whichever scheme the proxy uses
+    allowed_origins = {f"http://{host}" for host in local_hosts}
+    if public_host:
+        local_hosts.add(public_host)
+        allowed_origins |= {f"https://{public_host}", f"http://{public_host}"}
 
     class Handler(BaseHTTPRequestHandler):
         def reply(self, data: bytes, content_type: str, status: int = 200) -> None:
@@ -247,7 +252,7 @@ def serve(port: int, terraform: str | None = None) -> None:
 
         def do_POST(self) -> None:
             host = self.headers.get("Host")
-            if host not in local_hosts or self.headers.get("Origin") != f"http://{host}":
+            if host not in local_hosts or self.headers.get("Origin") not in allowed_origins:
                 self.problem(403, "Open the dashboard on localhost to analyse an inventory.")
                 return
             route = urlsplit(self.path).path
@@ -342,8 +347,8 @@ def serve(port: int, terraform: str | None = None) -> None:
                 return
             self.json_reply(result)
 
-    with ThreadingHTTPServer(("127.0.0.1", port), Handler) as server:
-        print(f"Frontend: http://127.0.0.1:{port}", flush=True)
+    with ThreadingHTTPServer((bind, port), Handler) as server:
+        print(f"Frontend: http://{bind}:{port}", flush=True)
         with contextlib.suppress(KeyboardInterrupt):
             server.serve_forever()
 
@@ -352,6 +357,8 @@ if __name__ == "__main__":
     parser = ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--terraform", type=Path, help="Path to the Terraform executable")
+    parser.add_argument("--bind", default="127.0.0.1", help="Address to listen on, 0.0.0.0 inside a container")
+    parser.add_argument("--public-host", default=os.environ.get("SOVEREIGN_PUBLIC_HOST", ""), help="Public hostname served behind a tls proxy")
     args = parser.parse_args()
     terraform = str(args.terraform.resolve()) if args.terraform else shutil.which("terraform")
-    serve(args.port, terraform)
+    serve(args.port, terraform, args.bind, args.public_host)

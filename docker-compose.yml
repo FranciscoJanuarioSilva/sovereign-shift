@@ -1,0 +1,10 @@
+services:
+  sovereign-shift:
+    build: .
+    restart: unless-stopped
+    environment:
+      SOVEREIGN_PUBLIC_HOST: sovereign-shift.andrecadete.com
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.sovereign.rule=Host(`sovereign-shift.andrecadete.com`)
+      - traefik.http.services.sovereign.loadbalancer.server.port=8000
