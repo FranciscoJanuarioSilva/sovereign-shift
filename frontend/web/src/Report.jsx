@@ -1,3 +1,4 @@
+import GitHubLink from "./GitHubLink.jsx";
 import { useMemo, useState } from "react";
 import Terraform from "./Terraform.jsx";
 import { AiNarrative, Performance, Posture, Risk, Scaling } from "./Assessment.jsx";
@@ -205,6 +206,7 @@ export default function Report({ report, label, onReset }) {
       <nav className="side" aria-label="Report sections">
         <a className="brand" href="#summary">Sovereign Shift</a>
         {SECTIONS.map(([id, text]) => <a key={id} href={`#${id}`}>{text}</a>)}
+        <GitHubLink className="side-gh" />
         <button type="button" className="secondary" onClick={onReset}>Assess another account</button>
       </nav>
       <main id="main">

@@ -1,3 +1,4 @@
+import GitHubLink from "./GitHubLink.jsx";
 import Connect from "./Connect.jsx";
 import HeroGraphic from "./HeroGraphic.jsx";
 import EuropeMap from "./EuropeMap.jsx";
@@ -10,6 +11,7 @@ export default function Landing({ hidden, ...props }) {
         <nav className="topnav" aria-label="Page">
           <a className="brand" href="#main"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" /><path d="M7 22 C13 22 13 10 25 10" /></svg>Sovereign Shift</a>
           <div><a href="#how">How it works</a><a href="#ai">The AI</a><a href="#connect">Try it</a></div>
+          <GitHubLink />
         </nav>
         <div className="hero-copy">
           <h1>Your AWS account, rebuilt on Leaseweb.</h1>

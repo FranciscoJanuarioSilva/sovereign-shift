@@ -391,3 +391,14 @@ details { margin-top: 0.75rem; } summary { cursor: pointer; font-weight: 600; }
 .links .quiet { font-size: 0.85rem; text-align: right; }
 .legend .item { cursor: help; }
 @media (max-width: 860px) { .links li { grid-template-columns: 1fr; } .link-line { display: none; } .links .quiet { text-align: left; } }
+
+/* github link */
+.gh-link { display: inline-flex; align-items: center; gap: 0.45rem; text-decoration: none; color: inherit; font-size: 0.92rem; padding: 0.35rem 0.75rem; border: 1px solid currentColor; border-radius: 999px; opacity: 0.85; transition: opacity 0.15s, border-color 0.15s; }
+.gh-link:hover, .gh-link:focus-visible { opacity: 1; border-color: var(--route); }
+.gh-link svg { width: 18px; height: 18px; fill: currentColor; flex: none; }
+.topnav > div { margin-left: auto; } .topnav .gh-link { margin-left: 0.5rem; }
+@media (max-width: 860px) { .topnav .gh-link { margin-left: auto; } }
+.side .side-gh { margin-top: auto; border-color: var(--line); color: var(--ink-soft); padding: 0.4rem 0.6rem; border-radius: 5px; opacity: 1; }
+.side .side-gh:hover { background: var(--mist); color: var(--ink); border-color: var(--line); }
+.side .side-gh + .secondary { margin-top: 0.5rem; }
+@media (max-width: 860px) { .side .side-gh { margin: 0 0 0 auto; } .side .side-gh + .secondary { margin: 0 0 0 0.5rem; } }
