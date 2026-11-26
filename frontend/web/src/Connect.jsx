@@ -4,6 +4,7 @@ import { AWS_REGIONS } from "./format.js";
 const PROVIDERS = [
   { id: "aws", label: "AWS" },
   { id: "gcp", label: "Google Cloud" },
+  { id: "azure", label: "Azure" },
   { id: "cloudflare", label: "Cloudflare" },
   { id: "file", label: "File" },
 ];
@@ -58,6 +59,14 @@ export default function Connect({ busy, error, onScan, onFile, onDemo }) {
                 <label>Project ID<input name="project_id" required spellCheck="false" pattern="[a-z][a-z0-9\-]{4,28}[a-z0-9]" placeholder="my-shop-prod" /></label>
                 <label><span>Access token <span className="optional">from a Viewer account</span></span><input name="access_token" type="password" required spellCheck="false" /></label>
                 <p className="hint">Get one with <code>gcloud auth print-access-token --impersonate-service-account=VIEWER_SA</code>. It expires after an hour.</p>
+              </>
+            ) : provider === "azure" ? (
+              <>
+                <label>Subscription ID<input name="subscription_id" required spellCheck="false" pattern="[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}" placeholder="00000000-0000-0000-0000-000000000000" /></label>
+                <label>Tenant ID<input name="tenant_id" required spellCheck="false" pattern="[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}" /></label>
+                <label><span>Client ID <span className="optional">service principal with the Reader role</span></span><input name="client_id" required spellCheck="false" pattern="[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}" /></label>
+                <label>Client secret<input name="client_secret" type="password" required spellCheck="false" /></label>
+                <p className="hint">Create one with <code>az ad sp create-for-rbac --role Reader --scopes /subscriptions/SUBSCRIPTION_ID</code>. It prints the tenant, client ID and secret.</p>
               </>
             ) : (
               <>

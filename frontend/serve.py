@@ -25,6 +25,7 @@ import botocore.exceptions
 import httpx
 
 from sovereign_shift.scanner import aws as aws_scanner
+from sovereign_shift.scanner import azure as azure_scanner
 from sovereign_shift.scanner import cloudflare as cloudflare_scanner
 from sovereign_shift.scanner import gcp as gcp_scanner
 
@@ -135,6 +136,59 @@ def scan_gcp(request: dict, transport: httpx.BaseTransport | None = None) -> dic
             raise ScanProblem("Could not reach Google Cloud. Check the network connection and try again.") from None
         except (KeyError, TypeError, ValueError):
             raise ScanProblem("Google Cloud answered in an unexpected shape. Check the project ID.") from None
+
+
+AZURE_GUID = re.compile(r"^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$")
+AZURE_ARM = "https://management.azure.com"
+
+
+def azure_can_write(subscription: str, token: str, client: httpx.Client) -> bool:
+    # asks arm which actions the caller holds on the subscription, reading this changes nothing
+    answer = client.get(f"{AZURE_ARM}/subscriptions/{subscription}/providers/Microsoft.Authorization/permissions",
+                        params={"api-version": "2022-04-01"}, headers={"Authorization": f"Bearer {token}"})
+    if answer.status_code in (401, 403):
+        raise ScanProblem("This service principal has no access to the subscription. Give it the Reader role there.")
+    if answer.status_code != 200:
+        raise ScanProblem("Could not check this service principal's permissions on the subscription.")
+    # reader is just "*/read", anything else (like "*" for contributor) could change resources
+    actions = [a for p in answer.json().get("value", []) for a in p.get("actions", [])]
+    return any(not a.lower().endswith("/read") for a in actions)
+
+
+def azure_credential(tenant: str, client_id: str, secret: str):
+    try:
+        from azure.identity import ClientSecretCredential
+    except ImportError:
+        raise ScanProblem("The Azure SDK isn't installed on this server. Install it with: pip install -e '.[azure]'") from None
+    # explicit service principal only, so nothing logged in on this machine is picked up instead
+    return ClientSecretCredential(tenant, client_id, secret)
+
+
+def scan_azure(request: dict, transport: httpx.BaseTransport | None = None, credential=None) -> dict:
+    subscription = str(request.get("subscription_id", "")).strip()
+    tenant = str(request.get("tenant_id", "")).strip()
+    client_id = str(request.get("client_id", "")).strip()
+    secret = str(request.get("client_secret", "")).strip()
+    if not all(AZURE_GUID.match(v) for v in (subscription, tenant, client_id)) or len(secret) < 20:
+        raise ScanProblem("Enter the subscription ID, tenant ID and client ID (all GUIDs) and the client secret of a Reader service principal.")
+    credential = credential or azure_credential(tenant, client_id, secret)
+    try:
+        token = credential.get_token(f"{AZURE_ARM}/.default").token
+    except Exception:  # azure.identity raises its own auth errors, all mean the same thing here
+        raise ScanProblem("Azure rejected these credentials. Check the tenant ID, client ID and client secret.") from None
+    with httpx.Client(timeout=30, transport=transport) as client:
+        try:
+            if azure_can_write(subscription, token, client):
+                raise ScanProblem("This service principal can change resources in the subscription. "
+                                  "Give it only the Reader role and use that one instead.")
+        except httpx.HTTPError:
+            raise ScanProblem("Could not reach Azure. Check the network connection and try again.") from None
+    try:
+        return azure_scanner.build_inventory(azure_scanner.collect(subscription, credential))
+    except azure_scanner.ScanError as error:
+        raise ScanProblem(str(error)) from None
+    except (KeyError, TypeError, ValueError):
+        raise ScanProblem("Azure answered in an unexpected shape. Check the subscription ID.") from None
 
 
 def scan_cloudflare(request: dict) -> dict:
@@ -290,7 +344,7 @@ def serve(port: int, terraform: str | None = None, bind: str = "127.0.0.1", publ
                     self.problem(400, "Choose Amsterdam, Frankfurt or the region closest to the source.")
                     return
                 try:
-                    scanner = {"aws": scan_aws, "gcp": scan_gcp, "cloudflare": scan_cloudflare}.get(request.get("provider"))
+                    scanner = {"aws": scan_aws, "gcp": scan_gcp, "azure": scan_azure, "cloudflare": scan_cloudflare}.get(request.get("provider"))
                     inventory = scanner(request) if scanner else None
                 except ScanProblem as error:
                     self.problem(422, str(error))
@@ -299,7 +353,7 @@ def serve(port: int, terraform: str | None = None, bind: str = "127.0.0.1", publ
                     # drop the secrets as soon as the scan is done
                     request.clear()
                 if inventory is None:
-                    self.problem(400, "Choose AWS, Google Cloud or Cloudflare.")
+                    self.problem(400, "Choose AWS, Google Cloud, Azure or Cloudflare.")
                     return
                 body = json.dumps(inventory).encode()
             try:

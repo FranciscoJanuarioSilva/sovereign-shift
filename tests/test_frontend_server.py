@@ -133,3 +133,60 @@ def test_gcp_full_path_with_recorded_responses() -> None:
     inventory = serve.scan_gcp({"project_id": FIXTURE["project"], "access_token": FAKE_TOKEN}, httpx.MockTransport(handle))
     golden = json.loads(GOLDEN.read_text())
     assert sorted(r["id"] for r in inventory["resources"]) == sorted(r["id"] for r in golden["resources"])
+
+
+# azure: fake credential and mock arm transport, no live subscription
+AZ_SUB, AZ_TENANT, AZ_CLIENT = "11111111-2222-3333-4444-555555555555", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "99999999-8888-7777-6666-555555555555"
+AZ_FORM = {"subscription_id": AZ_SUB, "tenant_id": AZ_TENANT, "client_id": AZ_CLIENT, "client_secret": "s" * 40}
+
+
+class FakeCredential:
+    def __init__(self, fail: bool = False) -> None:
+        self.fail = fail
+
+    def get_token(self, scope: str):
+        if self.fail:
+            raise RuntimeError("bad secret")
+        return type("Token", (), {"token": "fake-arm-token"})()
+
+
+def arm(actions: list[str], status: int = 200):
+    import httpx
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/providers/Microsoft.Authorization/permissions"):
+            return httpx.Response(status, json={"value": [{"actions": actions, "notActions": []}]})
+        return httpx.Response(404, json={})
+
+    return httpx.MockTransport(handle)
+
+
+@pytest.fixture
+def fake_azure(monkeypatch):
+    monkeypatch.setattr(serve.azure_scanner, "collect", lambda sub, cred: {"subscription_id": sub})
+    monkeypatch.setattr(serve.azure_scanner, "build_inventory", lambda raw: {"source": "azure", "resources": [], "sub": raw["subscription_id"]})
+
+
+def test_azure_form_is_checked_before_any_call() -> None:
+    with pytest.raises(serve.ScanProblem, match="subscription ID"):
+        serve.scan_azure({**AZ_FORM, "tenant_id": "not-a-guid"}, credential=FakeCredential(fail=True))
+
+
+def test_azure_reader_is_scanned(fake_azure) -> None:
+    inventory = serve.scan_azure(AZ_FORM, arm(["*/read"]), FakeCredential())
+    assert inventory["source"] == "azure" and inventory["sub"] == AZ_SUB
+
+
+def test_azure_contributor_is_refused(fake_azure) -> None:
+    with pytest.raises(serve.ScanProblem, match="can change resources"):
+        serve.scan_azure(AZ_FORM, arm(["*"]), FakeCredential())
+
+
+def test_azure_rejected_secret(fake_azure) -> None:
+    with pytest.raises(serve.ScanProblem, match="rejected these credentials"):
+        serve.scan_azure(AZ_FORM, arm(["*/read"]), FakeCredential(fail=True))
+
+
+def test_azure_no_role_on_subscription(fake_azure) -> None:
+    with pytest.raises(serve.ScanProblem, match="Reader role"):
+        serve.scan_azure(AZ_FORM, arm([], status=403), FakeCredential())

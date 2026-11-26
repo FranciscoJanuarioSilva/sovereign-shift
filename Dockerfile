@@ -19,7 +19,7 @@ COPY frontend/serve.py ./frontend/serve.py
 COPY frontend/dist ./frontend/dist
 
 # editable so the code finds data/ and mappings/ in /app
-RUN pip install -e .
+RUN pip install -e '.[azure]'
 
 RUN useradd --system --uid 10001 --create-home app && chown -R app /app
 USER app

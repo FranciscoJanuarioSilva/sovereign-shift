@@ -298,7 +298,7 @@ def build_inventory(raw: Item) -> Item:
     }
 
 
-def collect(subscription_id: str) -> Item:  # pragma: no cover - needs a live subscription
+def collect(subscription_id: str, credential: Any = None) -> Item:  # pragma: no cover - needs a live subscription
     """Read every record build_inventory needs, with the Reader role only."""
     try:
         from azure.identity import DefaultAzureCredential
@@ -315,7 +315,8 @@ def collect(subscription_id: str) -> Item:  # pragma: no cover - needs a live su
     except ImportError as exc:
         raise ScanError("Azure SDK missing: pip install -e '.[azure]'") from exc
 
-    cred = DefaultAzureCredential()
+    # the web page passes its own service principal, the cli falls back to whatever is logged in
+    cred = credential or DefaultAzureCredential()
     compute = ComputeManagementClient(cred, subscription_id)
     network = NetworkManagementClient(cred, subscription_id)
     raw: Item = {"subscription_id": subscription_id, "denied": []}
